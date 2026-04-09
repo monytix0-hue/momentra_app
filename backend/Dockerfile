@@ -12,8 +12,13 @@ COPY app ./app
 RUN pip install --upgrade pip && pip install .
 
 # Bind all interfaces inside the container (required for reverse proxies / bridge networks).
-# docker ps "0.0.0.0:6000->6000/tcp" only appears when the host publishes -p 6000:6000;
-# Dokploy/Traefik often routes without that line; "6000/tcp" still means the app listens on :6000.
+#
+# EXPOSE does NOT publish the port on the host machine. Docker has no Dockerfile instruction
+# for host mapping; that is always: docker run -p 6000:6000, Compose "ports:", or your
+# platform UI (e.g. Dokploy → Ports → 6000:6000). See docker-compose.yml in this folder.
+#
+# Swarm/Dokploy without host publish: "docker ps" may show only "6000/tcp" while Traefik
+# still reaches the container on the overlay network.
 ENV API_HOST=0.0.0.0 \
     API_PORT=6000
 
