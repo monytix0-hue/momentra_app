@@ -80,6 +80,34 @@ def init_firebase() -> None:
     except ValueError:
         pass
     s = get_settings()
+
+    # PaaS-friendly: paste full service account JSON in env (e.g. Dokploy) — no file mount.
+    json_raw = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
+    if json_raw:
+        try:
+            data = json.loads(json_raw)
+        except json.JSONDecodeError:
+            _log.warning("FIREBASE_SERVICE_ACCOUNT_JSON is set but is not valid JSON")
+        else:
+            if not isinstance(data, dict):
+                _log.warning("FIREBASE_SERVICE_ACCOUNT_JSON must be a JSON object")
+            else:
+                cred = credentials.Certificate(data)
+                pid = (s.firebase_project_id or "").strip()
+                if not pid:
+                    raw_pid = data.get("project_id")
+                    pid = raw_pid.strip() if isinstance(raw_pid, str) else ""
+                if not pid:
+                    for key in ("GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT"):
+                        v = os.environ.get(key, "").strip()
+                        if v:
+                            pid = v
+                            break
+                app_options: dict[str, Any] | None = {"projectId": pid} if pid else None
+                firebase_admin.initialize_app(cred, app_options)
+                _log.info("Firebase Admin initialized from FIREBASE_SERVICE_ACCOUNT_JSON (project_id=%s)", pid or "(unset)")
+                return
+
     cred_path = _resolve_credentials_file(s.firebase_credentials_path) if s.firebase_credentials_path else None
     project_id = _firebase_project_id(s, cred_path)
     app_options: dict[str, Any] | None = (

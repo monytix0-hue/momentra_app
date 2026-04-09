@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     firebase_project_id: str = Field(default="", description="GCP / Firebase project id")
 
     api_host: str = "0.0.0.0"
-    api_port: int = 8000
+    api_port: int = 6000
     cors_origins: str = "http://localhost:3000"
 
     app_public_url: str = Field(
