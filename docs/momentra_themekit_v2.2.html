@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Momentra Theme Kit — Recommended v2.2</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  /* Base surfaces */
+  --bg:       #120F20;
+  --s100:     #1A1728;
+  --s200:     #241F38;
+  --s300:     #302A48;
+  /* Brand */
+  --brand:    #6C4EF2;
+  --brand-l:  #8B6FF5;
+  --brand-d:  #2D1F5E;
+  /* Urgency */
+  --u-high:   #E24B4A;
+  --u-high-t: #FCA5A5;
+  --u-high-s: #450A0A;
+  --u-med:    #F59E0B;
+  --u-med-t:  #FDE68A;
+  --u-med-s:  #451A00;
+  --u-cta:    #10B981;
+  --paid-bg:  #064E35;
+  --paid-t:   #10B981;
+  --pend-bg:  #451A00;
+  --pend-t:   #F59E0B;
+  --over-bg:  #450A0A;
+  --over-t:   #E24B4A;
+  /* Personal */
+  --p-cover:  #1A0E38;
+  --p-surf:   #2D1F5E;
+  --p-acc:    #6C4EF2;
+  --p-acc-e:  #8B6FF5;
+  --p-text:   #C4B5FD;
+  --p-hero:   #0F0A20;
+  --p-tab:    #1A1430;
+  --p-dim:    #6B5FA0;
+  /* Group — with recommended warmth tweak */
+  --g-cover:  #0A2A1A;
+  --g-surf:   #064E35;
+  --g-acc:    #0EC97F; /* TWEAK: was #10B981 — slightly warmer */
+  --g-acc-e:  #34D399;
+  --g-text:   #A7F3D0;
+  --g-hero:   #091A12;
+  --g-tab:    #0E2018;
+  --g-dim:    #3D7A5C;
+  /* Business — Burnished Amber (changed from blue v2.1 → amber v2.2) */
+  --b-cover:  #1A1200;
+  --b-surf:   #2E2000;
+  --b-acc:    #D4880A;
+  --b-acc-e:  #F5A623;
+  --b-text:   #FDE68A;
+  --b-hero:   #0D0900;
+  --b-tab:    #1A1000;
+  --b-dim:    #7A5010;
+  /* Circle */
+  --c-cover:  #1A0828;
+  --c-surf:   #4A1060;
+  --c-acc:    #D946EF;
+  --c-acc-e:  #E879F9;
+  --c-text:   #F5D0FE;
+  --c-hero:   #100520;
+  --c-tab:    #1E0E30;
+  --c-dim:    #7A3A90;
+  /* Type */
+  --font:     'Plus Jakarta Sans', 'DM Sans', -apple-system, sans-serif;
+  --on-dark:  #F5F0FF;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--on-dark); min-height: 100vh; }
+
+/* ── PAGE ── */
+.page { max-width: 960px; margin: 0 auto; padding: 36px 20px 80px; }
+
+/* ── HEADER ── */
+.hdr { padding: 0 0 32px; border-bottom: 0.5px solid var(--s300); margin-bottom: 36px; }
+.hdr-eye { font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: rgba(245,240,255,.3); margin-bottom: 10px; }
+.hdr-title { font-size: 36px; font-weight: 700; letter-spacing: -.8px; line-height: 1; margin-bottom: 6px; }
+.hdr-title span { color: var(--brand); }
+.hdr-sub { font-size: 13px; color: rgba(245,240,255,.45); line-height: 1.65; max-width: 560px; }
+.hdr-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+.hpill { display: inline-flex; align-items: center; gap: 5px; background: var(--s100); border: 0.5px solid var(--s300); border-radius: 100px; padding: 4px 12px; font-size: 11px; font-weight: 500; color: rgba(245,240,255,.45); }
+.hpill.rec { background: rgba(108,78,242,.15); border-color: rgba(108,78,242,.4); color: var(--brand-l); }
+.hpill.tweak { background: rgba(14,201,127,.12); border-color: rgba(14,201,127,.35); color: #34D399; }
+
+/* ── SECTION ── */
+.sec { margin-bottom: 48px; }
+.sec-lbl { font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: rgba(245,240,255,.28); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.sec-lbl::after { content: ''; flex: 1; height: 0.5px; background: var(--s300); }
+
+/* ── CONTEXT TABS ── */
+.ctx-nav { display: flex; gap: 6px; background: var(--s100); border-radius: 14px; padding: 6px; margin-bottom: 28px; flex-wrap: wrap; }
+.ctx-btn { flex: 1; min-width: 80px; padding: 9px 16px; border-radius: 10px; font-size: 12px; font-weight: 500; font-family: var(--font); border: none; background: transparent; color: rgba(245,240,255,.38); cursor: pointer; transition: all .18s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.ctx-btn .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ctx-btn.active { color: var(--on-dark); }
+.ctx-panel { display: none; }
+.ctx-panel.active { display: block; }
+
+/* ── CONTEXT HERO CARD ── */
+.ctx-hero { border-radius: 18px; padding: 26px 26px 22px; margin-bottom: 22px; position: relative; overflow: hidden; }
+.ctx-orb1 { position: absolute; width: 220px; height: 220px; border-radius: 50%; top: -70px; right: -70px; opacity: .18; pointer-events: none; }
+.ctx-orb2 { position: absolute; width: 140px; height: 140px; border-radius: 50%; bottom: -50px; left: 50px; opacity: .10; pointer-events: none; }
+.ctx-eye { font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; opacity: .5; margin-bottom: 8px; }
+.ctx-name { font-size: 22px; font-weight: 700; letter-spacing: -.3px; margin-bottom: 5px; }
+.ctx-feel { font-size: 12px; opacity: .55; line-height: 1.6; margin-bottom: 14px; }
+.ctx-types { display: flex; flex-wrap: wrap; gap: 5px; }
+.typill { font-size: 10px; font-weight: 500; padding: 3px 10px; border-radius: 100px; border: 1px solid; opacity: .75; }
+.ctx-social { display: inline-flex; align-items: center; gap: 5px; margin-top: 12px; font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 100px; border: 1px solid; }
+
+/* ── COLOUR GRID ── */
+.clr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 8px; margin-bottom: 22px; }
+.clr-cell { background: var(--s100); border: 0.5px solid var(--s300); border-radius: 12px; overflow: hidden; }
+.clr-swatch { height: 54px; position: relative; }
+.clr-hex-lbl { position: absolute; bottom: 6px; left: 8px; font-size: 9px; font-weight: 600; font-family: monospace; }
+.clr-meta { padding: 8px 10px 10px; }
+.clr-name { font-size: 10px; font-weight: 600; color: var(--on-dark); margin-bottom: 2px; }
+.clr-hex { font-size: 9px; font-family: monospace; color: rgba(245,240,255,.38); }
+.clr-use { font-size: 9px; color: rgba(245,240,255,.3); line-height: 1.4; margin-top: 2px; }
+.clr-new { display: inline-block; font-size: 8px; font-weight: 700; background: rgba(14,201,127,.2); color: #34D399; border-radius: 3px; padding: 1px 5px; margin-left: 4px; letter-spacing: .04em; }
+
+/* ── SWATCH ROWS ── */
+.sw-wrap { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.sw-lbl { font-size: 10px; font-weight: 500; color: rgba(245,240,255,.4); margin-bottom: 4px; }
+.sw-row { display: flex; border-radius: 10px; overflow: hidden; height: 44px; border: 0.5px solid var(--s300); }
+.sw { flex: 1; display: flex; align-items: flex-end; padding: 4px 7px; }
+.sw span { font-size: 9px; font-weight: 600; }
+.sw-note { font-size: 9px; color: rgba(245,240,255,.28); margin-top: 3px; }
+
+/* ── DEMO GRID ── */
+.demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
+.demo-card { background: var(--s100); border: 0.5px solid var(--s300); border-radius: 14px; padding: 16px; }
+.demo-lbl { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgba(245,240,255,.3); margin-bottom: 10px; }
+
+/* ── MOMENT CARD ── */
+.mc { border-radius: 16px; padding: 16px; position: relative; overflow: hidden; margin-bottom: 10px; }
+.mc-orb { position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; border-radius: 50%; }
+.mc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px; }
+.mc-title { font-size: 15px; font-weight: 600; }
+.mc-sub { font-size: 11px; opacity: .5; margin-bottom: 12px; }
+.mc-track { height: 4px; border-radius: 100px; background: rgba(255,255,255,.12); margin-bottom: 5px; }
+.mc-fill { height: 4px; border-radius: 100px; }
+.mc-meta { display: flex; justify-content: space-between; font-size: 10px; opacity: .5; }
+.mc-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.av-stack { display: flex; }
+.av { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; margin-right: -7px; border: 1.5px solid; }
+
+/* ── BADGE ── */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 10px; font-weight: 600; border: 1px solid; }
+.badge-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+
+/* ── BUTTONS ── */
+.btn { display: block; width: 100%; padding: 12px; border-radius: 14px; font-size: 13px; font-weight: 600; font-family: var(--font); border: none; cursor: pointer; text-align: center; margin-bottom: 7px; color: #fff; }
+.btn-ghost { display: block; width: 100%; padding: 11px; border-radius: 14px; font-size: 13px; font-weight: 500; font-family: var(--font); background: transparent; cursor: pointer; text-align: center; margin-bottom: 7px; }
+
+/* ── TABS ── */
+.tab-row { display: flex; gap: 4px; padding: 5px; border-radius: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.tab-chip { padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 500; font-family: var(--font); border: none; cursor: pointer; }
+
+/* ── URGENCY STRIPS ── */
+.urg-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.urg-chip { flex: 1; padding: 12px 10px; border-radius: 10px; text-align: center; border: 1px solid; }
+.urg-lbl { font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 5px; }
+.urg-val { font-size: 11px; font-family: monospace; }
+
+/* ── GRADIENT SWATCHES ── */
+.grad-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-bottom: 22px; }
+.grad-cell { border-radius: 10px; height: 56px; display: flex; align-items: flex-end; padding: 8px 10px; overflow: hidden; position: relative; border: 0.5px solid var(--s300); }
+.grad-name { font-size: 9px; font-weight: 600; color: rgba(245,240,255,.7); }
+
+/* ── TYPOGRAPHY ── */
+.type-list { display: flex; flex-direction: column; border: 0.5px solid var(--s300); border-radius: 14px; overflow: hidden; margin-bottom: 22px; }
+.type-row { padding: 12px 16px; border-bottom: 0.5px solid var(--s300); display: flex; align-items: baseline; gap: 12px; }
+.type-row:last-child { border-bottom: none; }
+.type-meta { font-size: 10px; color: rgba(245,240,255,.3); margin-left: auto; white-space: nowrap; }
+
+/* ── SPACING ── */
+.sp-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
+.sp-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.sp-block { background: var(--brand); border-radius: 2px; opacity: .55; }
+.sp-lbl { font-size: 9px; color: rgba(245,240,255,.3); letter-spacing: .04em; }
+
+/* ── RADIUS ── */
+.rad-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.rad-item { background: var(--s100); border: 0.5px solid var(--s300); padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; min-width: 76px; border-radius: 10px; }
+.rad-box { width: 42px; height: 42px; background: var(--s300); }
+.rad-lbl { font-size: 9px; color: rgba(245,240,255,.3); text-align: center; line-height: 1.4; }
+
+/* ── SIZING TABLE ── */
+.size-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 22px; }
+.size-table th { text-align: left; padding: 7px 12px; font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgba(245,240,255,.28); border-bottom: 0.5px solid var(--s300); }
+.size-table td { padding: 8px 12px; border-bottom: 0.5px solid rgba(48,42,72,.5); color: rgba(245,240,255,.55); }
+.size-table td:first-child { font-family: monospace; color: rgba(245,240,255,.4); font-size: 11px; }
+.size-table td:nth-child(2) { color: var(--on-dark); font-weight: 500; }
+.size-table tr:last-child td { border-bottom: none; }
+
+/* ── ANIMATION TABLE ── */
+.anim-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 22px; }
+.anim-table th { text-align: left; padding: 7px 12px; font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgba(245,240,255,.28); border-bottom: 0.5px solid var(--s300); }
+.anim-table td { padding: 8px 12px; border-bottom: 0.5px solid rgba(48,42,72,.5); color: rgba(245,240,255,.55); }
+.anim-table td:first-child { font-family: monospace; color: rgba(245,240,255,.4); font-size: 11px; }
+.anim-table td:nth-child(2) { color: var(--on-dark); font-weight: 500; }
+.anim-table tr:last-child td { border-bottom: none; }
+
+/* ── SURFACE MAP ── */
+.sm-wrap { background: var(--s100); border: 0.5px solid var(--s300); border-radius: 14px; overflow: hidden; margin-bottom: 22px; }
+.sm-row { display: flex; padding: 8px 14px; border-bottom: 0.5px solid rgba(48,42,72,.5); gap: 0; }
+.sm-row:last-child { border-bottom: none; }
+.sm-key { font-size: 10px; font-family: monospace; color: rgba(245,240,255,.38); width: 240px; flex-shrink: 0; }
+.sm-val { font-size: 11px; color: rgba(245,240,255,.6); line-height: 1.5; }
+
+/* ── RULES ── */
+.rules-wrap { display: flex; flex-direction: column; border: 0.5px solid var(--s300); border-radius: 14px; overflow: hidden; margin-bottom: 22px; }
+.rule { display: flex; padding: 10px 16px; border-bottom: 0.5px solid rgba(48,42,72,.5); gap: 12px; align-items: flex-start; }
+.rule:last-child { border-bottom: none; }
+.rule-id { font-size: 10px; font-weight: 700; color: rgba(245,240,255,.22); min-width: 26px; padding-top: 1px; flex-shrink: 0; }
+.rule-txt { font-size: 11px; color: rgba(245,240,255,.55); line-height: 1.6; }
+.rule-tag { display: inline-block; font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; margin-left: 6px; vertical-align: middle; }
+
+/* ── PLATFORM ── */
+.plat-wrap { display: flex; flex-direction: column; gap: 8px; }
+.plat-card { background: var(--s100); border: 0.5px solid var(--s300); border-radius: 12px; padding: 14px 16px; }
+.plat-title { font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+.plat-body { font-size: 11px; color: rgba(245,240,255,.45); line-height: 1.75; }
+code { background: var(--s200); padding: 1px 5px; border-radius: 3px; font-size: 10px; color: var(--brand-l); }
+
+/* ── TINTS TABLE ── */
+.tints { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+.tint-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tint-swatch { width: 54px; height: 36px; border-radius: 8px; border: 0.5px solid var(--s300); }
+.tint-lbl { font-size: 9px; color: rgba(245,240,255,.3); }
+
+/* ── ICON GUIDE ── */
+.icon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 22px; }
+.icon-card { background: var(--s100); border: 0.5px solid var(--s300); border-radius: 10px; padding: 12px 14px; }
+.icon-title { font-size: 10px; font-weight: 600; color: rgba(245,240,255,.3); margin-bottom: 8px; letter-spacing: .06em; text-transform: uppercase; }
+.icon-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.icon-pill { font-size: 10px; background: var(--s200); border-radius: 4px; padding: 3px 8px; color: rgba(245,240,255,.5); font-family: monospace; }
+
+/* ── TWEAK NOTE ── */
+.tweak-note { background: rgba(14,201,127,.08); border: 1px solid rgba(14,201,127,.2); border-radius: 12px; padding: 14px 16px; margin-bottom: 22px; display: flex; gap: 12px; align-items: flex-start; }
+.tweak-dot { width: 8px; height: 8px; border-radius: 50%; background: #0EC97F; flex-shrink: 0; margin-top: 3px; }
+.tweak-txt { font-size: 12px; color: rgba(167,243,208,.7); line-height: 1.6; }
+.tweak-txt strong { color: #A7F3D0; font-weight: 600; }
+
+@media(max-width:640px) {
+  .demo-grid { grid-template-columns: 1fr; }
+  .clr-grid { grid-template-columns: repeat(2, 1fr); }
+  .ctx-btn { font-size: 11px; padding: 8px 10px; }
+  .icon-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══ HEADER ══ -->
+<div class="hdr">
+  <div class="hdr-eye">Momentra · Design System</div>
+  <div class="hdr-title">Theme Kit <span>v2.2</span></div>
+  <div class="hdr-sub">Recommended production theme · Deep indigo base · 4 contexts · CRED-premium dark · Plus Jakarta Sans · India fintech market</div>
+  <div class="hdr-pills">
+    <span class="hpill rec">✦ Senior UX recommendation</span>
+    <span class="hpill tweak">Group teal warmth tweak</span>
+    <span class="hpill" style="background:rgba(212,136,10,.12);border-color:rgba(212,136,10,.35);color:#F5A623">Business → Burnished Amber</span>
+    <span class="hpill">Android · iOS · FastAPI</span>
+    <span class="hpill">Plus Jakarta Sans</span>
+    <span class="hpill">v2.2 · Apr 2026</span>
+  </div>
+</div>
+
+<!-- ══ TWEAK NOTE ══ -->
+<div class="sec">
+  <div class="sec-lbl">Changes from v2.0</div>
+  <div class="tweak-note" style="margin-bottom:10px">
+    <div class="tweak-dot"></div>
+    <div class="tweak-txt">
+      <strong>v2.1 — Group warmth tweak:</strong> group.accent <code>#10B981</code> → <code>#0EC97F</code> (3° warmer hue, same luminance). Group card orb opacity <code>0.25</code> → <code>0.30</code>. Fixes emotional coldness in the most social context.
+    </div>
+  </div>
+  <div class="tweak-note" style="background:rgba(212,136,10,.08);border-color:rgba(212,136,10,.25)">
+    <div class="tweak-dot" style="background:#D4880A"></div>
+    <div class="tweak-txt" style="color:rgba(253,230,138,.7)">
+      <strong style="color:#FDE68A">v2.2 — Business → Burnished Amber:</strong> All 8 business tokens replaced. Blue (#1E3A5F) was too close in temperature to Personal indigo (#2D1F5E) — indistinguishable on screen. Amber is thermally opposite to both indigo (Personal) and teal (Group), and semantically perfect for finance: gold, ledger, audit, receipt.<br>
+      cover <code>#1A1200</code> · surface <code>#2E2000</code> · accent <code>#D4880A</code> · accent.end <code>#F5A623</code> · text <code>#FDE68A</code> · hero <code>#0D0900</code> · tab.bg <code>#1A1000</code> · tab.dim <code>#7A5010</code>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BASE TOKENS ══ -->
+<div class="sec">
+  <div class="sec-lbl">Base tokens — every screen, every context</div>
+
+  <div class="sw-wrap">
+    <div>
+      <div class="sw-lbl">Screen surfaces</div>
+      <div class="sw-row">
+        <div class="sw" style="background:#120F20"><span style="color:rgba(245,240,255,.4)">bg #120F20</span></div>
+        <div class="sw" style="background:#1A1728"><span style="color:rgba(245,240,255,.45)">s100</span></div>
+        <div class="sw" style="background:#241F38"><span style="color:rgba(245,240,255,.5)">s200</span></div>
+        <div class="sw" style="background:#302A48"><span style="color:rgba(245,240,255,.55)">s300</span></div>
+      </div>
+      <div class="sw-note">bg = every screen bg (no exceptions) · s100 = cards, sheets, nav · s200 = inputs, inactive chips · s300 = borders, separators</div>
+    </div>
+    <div>
+      <div class="sw-lbl">Brand purple</div>
+      <div class="sw-row">
+        <div class="sw" style="background:#0F0A20"><span style="color:rgba(245,240,255,.3)">hero bg</span></div>
+        <div class="sw" style="background:#1A0E38"><span style="color:rgba(245,240,255,.35)">cover</span></div>
+        <div class="sw" style="background:#2D1F5E"><span style="color:rgba(245,240,255,.5)">deep ✦</span></div>
+        <div class="sw" style="background:#6C4EF2"><span style="color:#fff">brand ✦</span></div>
+        <div class="sw" style="background:#8B6FF5"><span style="color:#fff">light</span></div>
+        <div class="sw" style="background:#C4B5FD"><span style="color:#3C3489">text</span></div>
+      </div>
+      <div class="sw-note">deep = Personal context surface · brand = primary CTA, key actions · light = gradient end, hover</div>
+    </div>
+    <div>
+      <div class="sw-lbl">On-dark text</div>
+      <div class="sw-row">
+        <div class="sw" style="background:#F5F0FF"><span style="color:#2D1F5E">100%</span></div>
+        <div class="sw" style="background:rgba(245,240,255,.8)"><span style="color:#2D1F5E">80%</span></div>
+        <div class="sw" style="background:rgba(245,240,255,.6)"><span style="color:rgba(245,240,255,.8)">60%</span></div>
+        <div class="sw" style="background:rgba(245,240,255,.4)"><span style="color:rgba(245,240,255,.8)">40%</span></div>
+        <div class="sw" style="background:rgba(245,240,255,.2)"><span style="color:rgba(245,240,255,.8)">20%</span></div>
+      </div>
+      <div class="sw-note">All text on dark backgrounds uses #F5F0FF at various opacities — never pure white #FFFFFF</div>
+    </div>
+  </div>
+
+  <!-- Urgency -->
+  <div class="sec-lbl">Urgency system — always overrides context colour</div>
+  <div class="urg-row">
+    <div class="urg-chip" style="background:var(--u-high-s);border-color:rgba(226,75,74,.4)">
+      <div class="urg-lbl" style="color:var(--u-high)">HIGH</div>
+      <div class="urg-val" style="color:var(--u-high-t)">#E24B4A · #FCA5A5</div>
+    </div>
+    <div class="urg-chip" style="background:var(--u-med-s);border-color:rgba(245,158,11,.4)">
+      <div class="urg-lbl" style="color:var(--u-med)">MEDIUM</div>
+      <div class="urg-val" style="color:var(--u-med-t)">#F59E0B · #FDE68A</div>
+    </div>
+    <div class="urg-chip" style="background:#064E35;border-color:rgba(16,185,129,.4)">
+      <div class="urg-lbl" style="color:#10B981">CLEAR / CTA</div>
+      <div class="urg-val" style="color:#A7F3D0">#10B981 Remind overdue</div>
+    </div>
+  </div>
+  <div class="badge-row">
+    <span class="badge" style="background:var(--paid-bg);color:var(--paid-t);border-color:rgba(16,185,129,.3)">PAID</span>
+    <span class="badge" style="background:var(--pend-bg);color:var(--pend-t);border-color:rgba(245,158,11,.3)">PENDING</span>
+    <span class="badge" style="background:var(--over-bg);color:var(--over-t);border-color:rgba(226,75,74,.3)">OVERDUE</span>
+    <span class="badge" style="background:rgba(59,130,246,.15);color:#60A5FA;border-color:rgba(59,130,246,.25)">INFO</span>
+    <span class="badge" style="background:#2D1F5E;color:#C4B5FD;border-color:rgba(196,181,253,.2)">DRAFT</span>
+    <span class="badge" style="background:#1E3A5F;color:#BFDBFE;border-color:rgba(191,219,254,.2)">CONFIGURED</span>
+  </div>
+</div>
+
+<!-- ══ CONTEXT SWITCHER ══ -->
+<div class="sec">
+  <div class="sec-lbl">Context themes</div>
+
+  <div class="ctx-nav">
+    <button class="ctx-btn active" data-ctx="personal" onclick="sw('personal')">
+      <span class="dot" style="background:#6C4EF2"></span>Personal
+    </button>
+    <button class="ctx-btn" data-ctx="group" onclick="sw('group')">
+      <span class="dot" style="background:#0EC97F"></span>Group
+    </button>
+    <button class="ctx-btn" data-ctx="business" onclick="sw('business')">
+      <span class="dot" style="background:#D4880A"></span>Business
+    </button>
+    <button class="ctx-btn" data-ctx="circle" onclick="sw('circle')">
+      <span class="dot" style="background:#D946EF"></span>Circle
+    </button>
+  </div>
+
+  <!-- ████ PERSONAL ████ -->
+  <div class="ctx-panel active" id="ctx-personal">
+    <div class="ctx-hero" style="background:var(--p-cover)">
+      <div class="ctx-orb1" style="background:var(--p-acc)"></div>
+      <div class="ctx-orb2" style="background:var(--p-acc-e)"></div>
+      <div class="ctx-eye" style="color:rgba(196,181,253,.5)">Context · Personal</div>
+      <div class="ctx-name" style="color:var(--p-text)">Calm. Private. Aspirational.</div>
+      <div class="ctx-feel">Solo financial goals. No social features — no participant stack, no Remind CTA, no activity copy.</div>
+      <div class="ctx-types">
+        <span class="typill" style="color:var(--p-text);border-color:rgba(196,181,253,.25)">SAVINGS_GOAL</span>
+        <span class="typill" style="color:var(--p-text);border-color:rgba(196,181,253,.25)">BUDGET_MONTHLY</span>
+        <span class="typill" style="color:var(--p-text);border-color:rgba(196,181,253,.25)">BILL_TRACKER</span>
+        <span class="typill" style="color:var(--p-text);border-color:rgba(196,181,253,.25)">DEBT_PAYOFF</span>
+        <span class="typill" style="color:var(--p-text);border-color:rgba(196,181,253,.25)">INVESTMENT_PLAN</span>
+      </div>
+      <div class="ctx-social" style="color:rgba(196,181,253,.5);border-color:rgba(196,181,253,.15);margin-top:10px">Social features: HIDDEN</div>
+    </div>
+
+    <div class="clr-grid">
+      <div class="clr-cell"><div class="clr-swatch" style="background:#1A0E38"><span class="clr-hex-lbl" style="color:rgba(196,181,253,.5)">#1A0E38</span></div><div class="clr-meta"><div class="clr-name">personal.cover</div><div class="clr-hex">#1A0E38</div><div class="clr-use">Card cover strip · header gradient top</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#2D1F5E"><span class="clr-hex-lbl" style="color:rgba(196,181,253,.5)">#2D1F5E</span></div><div class="clr-meta"><div class="clr-name">personal.surface</div><div class="clr-hex">#2D1F5E</div><div class="clr-use">Type tag bg · ring outer track · active tab bg</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#6C4EF2"><span class="clr-hex-lbl" style="color:#fff">#6C4EF2</span></div><div class="clr-meta"><div class="clr-name">personal.accent</div><div class="clr-hex">#6C4EF2</div><div class="clr-use">Ring arc (CLEAR) · bar fill · CTA bg (CLEAR)</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#8B6FF5"><span class="clr-hex-lbl" style="color:#fff">#8B6FF5</span></div><div class="clr-meta"><div class="clr-name">personal.accent.end</div><div class="clr-hex">#8B6FF5</div><div class="clr-use">Gradient end — CTA button · ring arc</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#C4B5FD"><span class="clr-hex-lbl" style="color:#3C3489">#C4B5FD</span></div><div class="clr-meta"><div class="clr-name">personal.text</div><div class="clr-hex">#C4B5FD</div><div class="clr-use">Type tag text · story (CLEAR) · active tab text</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#0F0A20"><span class="clr-hex-lbl" style="color:rgba(196,181,253,.35)">#0F0A20</span></div><div class="clr-meta"><div class="clr-name">personal.hero</div><div class="clr-hex">#0F0A20</div><div class="clr-use">Hero card inner background</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#1A1430"><span class="clr-hex-lbl" style="color:rgba(196,181,253,.3)">#1A1430</span></div><div class="clr-meta"><div class="clr-name">personal.tab.bg</div><div class="clr-hex">#1A1430</div><div class="clr-use">Inactive tab chip background</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#6B5FA0"><span class="clr-hex-lbl" style="color:#C4B5FD">#6B5FA0</span></div><div class="clr-meta"><div class="clr-name">personal.tab.dim</div><div class="clr-hex">#6B5FA0</div><div class="clr-use">Inactive tab text</div></div></div>
+    </div>
+
+    <div class="demo-grid">
+      <div class="demo-card">
+        <div class="demo-lbl">Moment card</div>
+        <div class="mc" style="background:#2D1F5E">
+          <div class="mc-orb" style="background:#6C4EF2;opacity:.25"></div>
+          <div class="mc-top">
+            <div class="mc-title">Emergency Fund</div>
+            <span class="badge" style="background:#2D1F5E;color:#C4B5FD;border-color:rgba(196,181,253,.25)">SAVINGS</span>
+          </div>
+          <div class="mc-sub">₹38,000 of ₹1,00,000</div>
+          <div class="mc-track"><div class="mc-fill" style="background:linear-gradient(90deg,#6C4EF2,#8B6FF5);width:38%"></div></div>
+          <div class="mc-meta"><span>38% saved</span><span>62 days left</span></div>
+        </div>
+        <div class="demo-lbl">Buttons</div>
+        <button class="btn" style="background:linear-gradient(135deg,#6C4EF2,#8B6FF5)">Add to My Fund</button>
+        <button class="btn-ghost" style="border:1.5px solid rgba(196,181,253,.35);color:#C4B5FD">View My Plan</button>
+      </div>
+      <div class="demo-card">
+        <div class="demo-lbl">Tabs · Personal</div>
+        <div class="tab-row" style="background:#1A1430">
+          <div class="tab-chip" style="background:#2D1F5E;color:#C4B5FD">Overview</div>
+          <div class="tab-chip" style="background:transparent;color:#6B5FA0">My Plan</div>
+          <div class="tab-chip" style="background:transparent;color:#6B5FA0">Activity</div>
+        </div>
+        <div class="demo-lbl" style="margin-top:12px">Label renames</div>
+        <div style="font-size:11px;color:rgba(245,240,255,.45);line-height:2">
+          Commitments → <span style="color:#C4B5FD">My Plan</span><br>
+          Add Contribution → <span style="color:#C4B5FD">Add to My Fund</span><br>
+          Goal reached! → <span style="color:#C4B5FD">Goal reached! You saved it.</span><br>
+          N people in → <span style="color:#C4B5FD">₹X of ₹Y saved</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ████ GROUP ████ -->
+  <div class="ctx-panel" id="ctx-group">
+    <div class="tweak-note" style="margin-bottom:16px">
+      <div class="tweak-dot"></div>
+      <div class="tweak-txt"><strong>Warmth tweak active:</strong> group.accent is <code>#0EC97F</code> (was <code>#10B981</code>) and group card orb is <code>opacity: 0.30</code> (was 0.25). All other group tokens unchanged.</div>
+    </div>
+    <div class="ctx-hero" style="background:var(--g-cover)">
+      <div class="ctx-orb1" style="background:var(--g-acc)"></div>
+      <div class="ctx-orb2" style="background:var(--g-acc-e)"></div>
+      <div class="ctx-eye" style="color:rgba(167,243,208,.5)">Context · Group</div>
+      <div class="ctx-name" style="color:var(--g-text)">Energetic. Collaborative. Social.</div>
+      <div class="ctx-feel">Shared group goals — trips, roommates, family, events, couples. Full social features enabled.</div>
+      <div class="ctx-types">
+        <span class="typill" style="color:var(--g-text);border-color:rgba(167,243,208,.25)">TRIP</span>
+        <span class="typill" style="color:var(--g-text);border-color:rgba(167,243,208,.25)">ROOMMATES</span>
+        <span class="typill" style="color:var(--g-text);border-color:rgba(167,243,208,.25)">FAMILY</span>
+        <span class="typill" style="color:var(--g-text);border-color:rgba(167,243,208,.25)">EVENT</span>
+        <span class="typill" style="color:var(--g-text);border-color:rgba(167,243,208,.25)">COUPLE</span>
+        <span class="typill" style="color:var(--g-text);border-color:rgba(167,243,208,.25)">CUSTOM</span>
+      </div>
+      <div class="ctx-social" style="color:rgba(167,243,208,.6);border-color:rgba(167,243,208,.2)">Social features: FULL — participant stack · Remind CTA · activity copy · Share · confetti</div>
+    </div>
+
+    <div class="clr-grid">
+      <div class="clr-cell"><div class="clr-swatch" style="background:#0A2A1A"><span class="clr-hex-lbl" style="color:rgba(167,243,208,.45)">#0A2A1A</span></div><div class="clr-meta"><div class="clr-name">group.cover</div><div class="clr-hex">#0A2A1A</div><div class="clr-use">Card cover strip · header gradient top</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#064E35"><span class="clr-hex-lbl" style="color:rgba(167,243,208,.5)">#064E35</span></div><div class="clr-meta"><div class="clr-name">group.surface</div><div class="clr-hex">#064E35</div><div class="clr-use">Type tag bg · ring outer track · active tab bg</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#0EC97F"><span class="clr-hex-lbl" style="color:#fff">#0EC97F</span></div><div class="clr-meta"><div class="clr-name">group.accent <span class="clr-new">TWEAK</span></div><div class="clr-hex">#0EC97F</div><div class="clr-use">Ring arc (CLEAR) · bar fill · CTA bg (CLEAR)</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#34D399"><span class="clr-hex-lbl" style="color:#064E35">#34D399</span></div><div class="clr-meta"><div class="clr-name">group.accent.end</div><div class="clr-hex">#34D399</div><div class="clr-use">Gradient end — CTA button · ring arc</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#A7F3D0"><span class="clr-hex-lbl" style="color:#064E35">#A7F3D0</span></div><div class="clr-meta"><div class="clr-name">group.text</div><div class="clr-hex">#A7F3D0</div><div class="clr-use">Type tag text · story (CLEAR) · active tab text</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#091A12"><span class="clr-hex-lbl" style="color:rgba(167,243,208,.3)">#091A12</span></div><div class="clr-meta"><div class="clr-name">group.hero</div><div class="clr-hex">#091A12</div><div class="clr-use">Hero card inner background</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#0E2018"><span class="clr-hex-lbl" style="color:rgba(167,243,208,.3)">#0E2018</span></div><div class="clr-meta"><div class="clr-name">group.tab.bg</div><div class="clr-hex">#0E2018</div><div class="clr-use">Inactive tab chip background</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#3D7A5C"><span class="clr-hex-lbl" style="color:#A7F3D0">#3D7A5C</span></div><div class="clr-meta"><div class="clr-name">group.tab.dim</div><div class="clr-hex">#3D7A5C</div><div class="clr-use">Inactive tab text</div></div></div>
+    </div>
+
+    <div class="demo-lbl">Moment type cover tints</div>
+    <div class="tints" style="margin-bottom:18px">
+      <div class="tint-item"><div class="tint-swatch" style="background:#0A2A1A"></div><div class="tint-lbl">TRIP</div></div>
+      <div class="tint-item"><div class="tint-swatch" style="background:#160B38"></div><div class="tint-lbl">EVENT</div></div>
+      <div class="tint-item"><div class="tint-swatch" style="background:#0A1E30"></div><div class="tint-lbl">ROOMMATES</div></div>
+      <div class="tint-item"><div class="tint-swatch" style="background:#200A0A"></div><div class="tint-lbl">FAMILY</div></div>
+      <div class="tint-item"><div class="tint-swatch" style="background:#280A20"></div><div class="tint-lbl">COUPLE</div></div>
+      <div class="tint-item"><div class="tint-swatch" style="background:#1A1728"></div><div class="tint-lbl">CUSTOM</div></div>
+    </div>
+
+    <div class="demo-grid">
+      <div class="demo-card">
+        <div class="demo-lbl">Moment card · Group TRIP</div>
+        <div class="mc" style="background:#064E35">
+          <div class="mc-orb" style="background:#0EC97F;opacity:.30"></div>
+          <div class="mc-top">
+            <div class="mc-title">Goa Trip</div>
+            <span class="badge" style="background:#064E35;color:#A7F3D0;border-color:rgba(167,243,208,.25)">TRIP</span>
+          </div>
+          <div class="mc-sub">12 days remaining · 6 people</div>
+          <div class="mc-track"><div class="mc-fill" style="background:linear-gradient(90deg,#0EC97F,#34D399);width:65%"></div></div>
+          <div class="mc-meta"><span>₹45,000 collected</span><span>of ₹60,000</span></div>
+          <div class="mc-footer">
+            <div class="av-stack">
+              <div class="av" style="background:#FAEEDA;color:#633806;border-color:#064E35">RS</div>
+              <div class="av" style="background:#EEEDFE;color:#3C3489;border-color:#064E35">PV</div>
+              <div class="av" style="background:#E1F5EE;color:#085041;border-color:#064E35">AK</div>
+              <div class="av" style="background:#0A2A1A;color:#A7F3D0;border-color:#064E35">+3</div>
+            </div>
+            <button style="background:rgba(14,201,127,.15);border:1px solid rgba(14,201,127,.35);color:#A7F3D0;border-radius:100px;padding:4px 12px;font-size:10px;font-weight:600;font-family:var(--font);cursor:pointer">Remind</button>
+          </div>
+        </div>
+        <button class="btn" style="background:linear-gradient(135deg,#0EC97F,#34D399);color:#091A12">Add Contribution</button>
+      </div>
+      <div class="demo-card">
+        <div class="demo-lbl">Tabs · Group</div>
+        <div class="tab-row" style="background:#0E2018;flex-wrap:wrap">
+          <div class="tab-chip" style="background:#064E35;color:#A7F3D0">Overview</div>
+          <div class="tab-chip" style="background:transparent;color:#3D7A5C">Commitments</div>
+          <div class="tab-chip" style="background:transparent;color:#3D7A5C">Expenses</div>
+          <div class="tab-chip" style="background:transparent;color:#3D7A5C">Budget</div>
+          <div class="tab-chip" style="background:transparent;color:#3D7A5C">Alerts</div>
+          <div class="tab-chip" style="background:transparent;color:#3D7A5C">Activity</div>
+        </div>
+        <div class="demo-lbl" style="margin-top:12px">Avatar variant colours</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <div style="width:30px;height:30px;border-radius:50%;background:#FAEEDA;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#633806">RS</div>
+          <div style="width:30px;height:30px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#3C3489">PV</div>
+          <div style="width:30px;height:30px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#085041">AK</div>
+        </div>
+        <div style="font-size:10px;color:rgba(245,240,255,.3);line-height:1.7">
+          warm: bg #FAEEDA · text #633806<br>
+          deep: bg #EEEDFE · text #3C3489<br>
+          go: bg #E1F5EE · text #085041
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ████ BUSINESS ████ -->
+  <div class="ctx-panel" id="ctx-business">
+    <div class="ctx-hero" style="background:var(--b-cover)">
+      <div class="ctx-orb1" style="background:var(--b-acc)"></div>
+      <div class="ctx-orb2" style="background:var(--b-acc-e)"></div>
+      <div class="ctx-eye" style="color:rgba(253,230,138,.5)">Context · Business</div>
+      <div class="ctx-name" style="color:var(--b-text)">Structured. Professional. Audit-ready.</div>
+      <div class="ctx-feel">Team expenses, project budgets, campaigns, travel policy. No social features, no confetti, receipt-first.</div>
+      <div class="ctx-types">
+        <span class="typill" style="color:var(--b-text);border-color:rgba(253,230,138,.25)">TEAM_EXPENSE</span>
+        <span class="typill" style="color:var(--b-text);border-color:rgba(253,230,138,.25)">PROJECT_BUDGET</span>
+        <span class="typill" style="color:var(--b-text);border-color:rgba(253,230,138,.25)">CAMPAIGN</span>
+        <span class="typill" style="color:var(--b-text);border-color:rgba(253,230,138,.25)">TRAVEL_POLICY</span>
+        <span class="typill" style="color:var(--b-text);border-color:rgba(253,230,138,.25)">CUSTOM</span>
+      </div>
+      <div class="ctx-social" style="color:rgba(253,230,138,.5);border-color:rgba(253,230,138,.15)">Social features: NONE — no Circle sharing · no social copy · confetti OFF</div>
+    </div>
+
+    <div class="clr-grid">
+      <div class="clr-cell"><div class="clr-swatch" style="background:#1A1200"><span class="clr-hex-lbl" style="color:rgba(253,230,138,.4)">#1A1200</span></div><div class="clr-meta"><div class="clr-name">business.cover <span class="clr-new">AMBER</span></div><div class="clr-hex">#1A1200</div><div class="clr-use">Card cover strip · header gradient top</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#2E2000"><span class="clr-hex-lbl" style="color:rgba(253,230,138,.5)">#2E2000</span></div><div class="clr-meta"><div class="clr-name">business.surface <span class="clr-new">AMBER</span></div><div class="clr-hex">#2E2000</div><div class="clr-use">Type tag bg · ring outer track · active tab bg</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#D4880A"><span class="clr-hex-lbl" style="color:#fff">#D4880A</span></div><div class="clr-meta"><div class="clr-name">business.accent <span class="clr-new">AMBER</span></div><div class="clr-hex">#D4880A</div><div class="clr-use">Ring arc (CLEAR) · bar fill · CTA bg (CLEAR)</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#F5A623"><span class="clr-hex-lbl" style="color:#412402">#F5A623</span></div><div class="clr-meta"><div class="clr-name">business.accent.end <span class="clr-new">AMBER</span></div><div class="clr-hex">#F5A623</div><div class="clr-use">Gradient end — CTA button · ring arc</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#FDE68A"><span class="clr-hex-lbl" style="color:#412402">#FDE68A</span></div><div class="clr-meta"><div class="clr-name">business.text <span class="clr-new">AMBER</span></div><div class="clr-hex">#FDE68A</div><div class="clr-use">Type tag text · story (CLEAR) · active tab text</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#0D0900"><span class="clr-hex-lbl" style="color:rgba(253,230,138,.3)">#0D0900</span></div><div class="clr-meta"><div class="clr-name">business.hero <span class="clr-new">AMBER</span></div><div class="clr-hex">#0D0900</div><div class="clr-use">Hero card inner background</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#1A1000"><span class="clr-hex-lbl" style="color:rgba(253,230,138,.3)">#1A1000</span></div><div class="clr-meta"><div class="clr-name">business.tab.bg <span class="clr-new">AMBER</span></div><div class="clr-hex">#1A1000</div><div class="clr-use">Inactive tab chip background</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#7A5010"><span class="clr-hex-lbl" style="color:#FDE68A">#7A5010</span></div><div class="clr-meta"><div class="clr-name">business.tab.dim <span class="clr-new">AMBER</span></div><div class="clr-hex">#7A5010</div><div class="clr-use">Inactive tab text</div></div></div>
+    </div>
+
+    <div class="demo-grid">
+      <div class="demo-card">
+        <div class="demo-lbl">Moment card · Business</div>
+        <div class="mc" style="background:#2E2000">
+          <div class="mc-orb" style="background:#D4880A;opacity:.25"></div>
+          <div class="mc-top">
+            <div class="mc-title">Q2 Campaign</div>
+            <span class="badge" style="background:#2E2000;color:#FDE68A;border-color:rgba(253,230,138,.25)">CAMPAIGN</span>
+          </div>
+          <div class="mc-sub">Budget used — 72%</div>
+          <div class="mc-track"><div class="mc-fill" style="background:linear-gradient(90deg,#D4880A,#F5A623);width:72%"></div></div>
+          <div class="mc-meta"><span>₹3,60,000 spent</span><span>of ₹5,00,000</span></div>
+        </div>
+        <button class="btn" style="background:linear-gradient(135deg,#D4880A,#F5A623);color:#0D0900">Add Expense</button>
+      </div>
+      <div class="demo-card">
+        <div class="demo-lbl">Business extras</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="background:#1A1000;border-radius:8px;padding:8px 12px;font-size:11px;display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(245,240,255,.4)">Receipt required</span><span style="color:#D4880A;font-weight:600">ON</span></div>
+          <div style="background:#1A1000;border-radius:8px;padding:8px 12px;font-size:11px;display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(245,240,255,.4)">Default split</span><span style="color:#F5A623;font-weight:600">ROLE_BASED</span></div>
+          <div style="background:#1A1000;border-radius:8px;padding:8px 12px;font-size:11px;display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(245,240,255,.4)">Alerts tab renamed</span><span style="color:#F5A623;font-weight:600">→ Receipts</span></div>
+          <div style="background:#1A1000;border-radius:8px;padding:8px 12px;font-size:11px;display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(245,240,255,.4)">Export CSV</span><span style="color:#D4880A;font-weight:600">ON</span></div>
+          <div style="background:#1A1000;border-radius:8px;padding:8px 12px;font-size:11px;display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(245,240,255,.4)">Approval flow</span><span style="color:#D4880A;font-weight:600">ON</span></div>
+          <div style="background:#1A1000;border-radius:8px;padding:8px 12px;font-size:11px;display:flex;justify-content:space-between;align-items:center"><span style="color:rgba(245,240,255,.4)">Confetti</span><span style="color:rgba(245,240,255,.22);font-weight:600">OFF</span></div>
+        </div>
+        <div class="demo-lbl" style="margin-top:12px">Label renames</div>
+        <div style="font-size:11px;color:rgba(245,240,255,.35);line-height:2">
+          Alerts → <span style="color:#FDE68A">Receipts</span><br>
+          Goal reached! → <span style="color:#FDE68A">Expenses closed</span><br>
+          Add Contribution → <span style="color:#FDE68A">Add Expense</span><br>
+          Funding → <span style="color:#FDE68A">Budget used</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ████ CIRCLE ████ -->
+  <div class="ctx-panel" id="ctx-circle">
+    <div class="ctx-hero" style="background:var(--c-cover)">
+      <div class="ctx-orb1" style="background:var(--c-acc)"></div>
+      <div class="ctx-orb2" style="background:var(--c-acc-e)"></div>
+      <div class="ctx-eye" style="color:rgba(245,208,254,.5)">Context · Circle</div>
+      <div class="ctx-name" style="color:var(--c-text)">Vibrant. Social. Discovery.</div>
+      <div class="ctx-feel">Electric and expressive — social feed, challenges, milestone posts. V1 strategy: waitlist tab only. Full build in Phase 4.</div>
+      <div class="ctx-types">
+        <span class="typill" style="color:var(--c-text);border-color:rgba(245,208,254,.25)">MILESTONE</span>
+        <span class="typill" style="color:var(--c-text);border-color:rgba(245,208,254,.25)">GOAL_UPDATE</span>
+        <span class="typill" style="color:var(--c-text);border-color:rgba(245,208,254,.25)">CHALLENGE</span>
+        <span class="typill" style="color:var(--c-text);border-color:rgba(245,208,254,.25)">TIP</span>
+        <span class="typill" style="color:var(--c-text);border-color:rgba(245,208,254,.25)">SHARED_MOMENT</span>
+      </div>
+      <div class="ctx-social" style="color:rgba(245,208,254,.5);border-color:rgba(245,208,254,.15)">Privacy: NEVER show exact balances, debt details, group settlements, business data</div>
+    </div>
+
+    <div class="clr-grid">
+      <div class="clr-cell"><div class="clr-swatch" style="background:#1A0828"><span class="clr-hex-lbl" style="color:rgba(245,208,254,.4)">#1A0828</span></div><div class="clr-meta"><div class="clr-name">circle.cover</div><div class="clr-hex">#1A0828</div><div class="clr-use">Card cover strip · header gradient top</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#4A1060"><span class="clr-hex-lbl" style="color:rgba(245,208,254,.5)">#4A1060</span></div><div class="clr-meta"><div class="clr-name">circle.surface</div><div class="clr-hex">#4A1060</div><div class="clr-use">Post card bg · ring track · active tab bg</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#D946EF"><span class="clr-hex-lbl" style="color:#fff">#D946EF</span></div><div class="clr-meta"><div class="clr-name">circle.accent</div><div class="clr-hex">#D946EF</div><div class="clr-use">Ring arc · reaction highlights · CTA</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#E879F9"><span class="clr-hex-lbl" style="color:#4A1060">#E879F9</span></div><div class="clr-meta"><div class="clr-name">circle.accent.end</div><div class="clr-hex">#E879F9</div><div class="clr-use">Gradient end — CTA button · accents</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#F5D0FE"><span class="clr-hex-lbl" style="color:#4A1060">#F5D0FE</span></div><div class="clr-meta"><div class="clr-name">circle.text</div><div class="clr-hex">#F5D0FE</div><div class="clr-use">Post text · active tab text · profile copy</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#100520"><span class="clr-hex-lbl" style="color:rgba(245,208,254,.3)">#100520</span></div><div class="clr-meta"><div class="clr-name">circle.hero</div><div class="clr-hex">#100520</div><div class="clr-use">Profile hero background</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#1E0E30"><span class="clr-hex-lbl" style="color:rgba(245,208,254,.3)">#1E0E30</span></div><div class="clr-meta"><div class="clr-name">circle.tab.bg</div><div class="clr-hex">#1E0E30</div><div class="clr-use">Inactive tab chip background</div></div></div>
+      <div class="clr-cell"><div class="clr-swatch" style="background:#7A3A90"><span class="clr-hex-lbl" style="color:#F5D0FE">#7A3A90</span></div><div class="clr-meta"><div class="clr-name">circle.tab.dim</div><div class="clr-hex">#7A3A90</div><div class="clr-use">Inactive tab text</div></div></div>
+    </div>
+
+    <div class="demo-grid">
+      <div class="demo-card">
+        <div class="demo-lbl">Post card · Circle</div>
+        <div class="mc" style="background:#4A1060">
+          <div class="mc-orb" style="background:#D946EF;opacity:.25"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <div style="width:30px;height:30px;border-radius:50%;background:#7A3A90;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#F5D0FE">RS</div>
+            <div><div style="font-size:12px;font-weight:600;color:#F5D0FE">Rahul S</div><div style="font-size:9px;color:#7A3A90;letter-spacing:.06em;text-transform:uppercase">MILESTONE</div></div>
+          </div>
+          <div style="font-size:13px;color:#F5D0FE;line-height:1.55;margin-bottom:10px">Saved ₹50k this year with my group. Big moments ahead!</div>
+          <div style="display:flex;gap:6px">
+            <span style="font-size:10px;background:rgba(217,70,239,.18);color:#E879F9;border:1px solid rgba(217,70,239,.3);border-radius:100px;padding:3px 9px">❤ 24</span>
+            <span style="font-size:10px;background:rgba(217,70,239,.18);color:#E879F9;border:1px solid rgba(217,70,239,.3);border-radius:100px;padding:3px 9px">🎉 12</span>
+          </div>
+        </div>
+        <button class="btn" style="background:linear-gradient(135deg,#D946EF,#E879F9)">Post to Circle</button>
+      </div>
+      <div class="demo-card">
+        <div class="demo-lbl">Tabs · Circle</div>
+        <div class="tab-row" style="background:#1E0E30;flex-wrap:wrap">
+          <div class="tab-chip" style="background:#4A1060;color:#F5D0FE">Feed</div>
+          <div class="tab-chip" style="background:transparent;color:#7A3A90">Discover</div>
+          <div class="tab-chip" style="background:transparent;color:#7A3A90">Challenges</div>
+          <div class="tab-chip" style="background:transparent;color:#7A3A90">Following</div>
+          <div class="tab-chip" style="background:transparent;color:#7A3A90">Profile</div>
+        </div>
+        <div class="demo-lbl" style="margin-top:12px">Interactions</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          <span style="font-size:10px;background:rgba(217,70,239,.12);color:#E879F9;border:1px solid rgba(217,70,239,.2);border-radius:100px;padding:3px 9px">LIKE</span>
+          <span style="font-size:10px;background:rgba(217,70,239,.12);color:#E879F9;border:1px solid rgba(217,70,239,.2);border-radius:100px;padding:3px 9px">CELEBRATE</span>
+          <span style="font-size:10px;background:rgba(217,70,239,.12);color:#E879F9;border:1px solid rgba(217,70,239,.2);border-radius:100px;padding:3px 9px">SUPPORT</span>
+          <span style="font-size:10px;background:rgba(217,70,239,.12);color:#E879F9;border:1px solid rgba(217,70,239,.2);border-radius:100px;padding:3px 9px">COMMENT</span>
+          <span style="font-size:10px;background:rgba(217,70,239,.12);color:#E879F9;border:1px solid rgba(217,70,239,.2);border-radius:100px;padding:3px 9px">SHARE</span>
+          <span style="font-size:10px;background:rgba(217,70,239,.12);color:#E879F9;border:1px solid rgba(217,70,239,.2);border-radius:100px;padding:3px 9px">SAVE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GRADIENTS ══ -->
+<div class="sec">
+  <div class="sec-lbl">Gradients — hero glow + header + CTA buttons only</div>
+  <div class="grad-grid">
+    <div class="grad-cell" style="background:linear-gradient(180deg,#1A0E38 0%,#120F20 100%)"><span class="grad-name">Personal header gradient</span></div>
+    <div class="grad-cell" style="background:linear-gradient(180deg,#0A2A1A 0%,#120F20 100%)"><span class="grad-name">Group header gradient</span></div>
+    <div class="grad-cell" style="background:linear-gradient(180deg,#1A1200 0%,#120F20 100%)"><span class="grad-name">Business header gradient <span style="font-size:8px;background:rgba(212,136,10,.3);border-radius:3px;padding:1px 4px">AMBER</span></span></div>
+    <div class="grad-cell" style="background:linear-gradient(180deg,#1A0828 0%,#120F20 100%)"><span class="grad-name">Circle header gradient</span></div>
+    <div class="grad-cell" style="background:linear-gradient(135deg,#6C4EF2 0%,#8B6FF5 100%)"><span class="grad-name">Personal CTA</span></div>
+    <div class="grad-cell" style="background:linear-gradient(135deg,#0EC97F 0%,#34D399 100%)"><span class="grad-name">Group CTA <span style="font-size:8px;background:rgba(14,201,127,.3);border-radius:3px;padding:1px 4px">TWEAK</span></span></div>
+    <div class="grad-cell" style="background:linear-gradient(135deg,#D4880A 0%,#F5A623 100%)"><span class="grad-name">Business CTA <span style="font-size:8px;background:rgba(212,136,10,.3);border-radius:3px;padding:1px 4px">AMBER</span></span></div>
+    <div class="grad-cell" style="background:linear-gradient(135deg,#D946EF 0%,#E879F9 100%)"><span class="grad-name">Circle CTA</span></div>
+    <div class="grad-cell" style="background:linear-gradient(135deg,#10B981 0%,#34D399 100%);border:1px solid rgba(16,185,129,.4)"><span class="grad-name">Urgency CTA — any context HIGH/MEDIUM</span></div>
+  </div>
+</div>
+
+<!-- ══ TYPOGRAPHY ══ -->
+<div class="sec">
+  <div class="sec-lbl">Typography — Plus Jakarta Sans</div>
+  <div class="type-list">
+    <div class="type-row"><span style="font-size:28px;font-weight:700;letter-spacing:-.5px">₹38,000</span><span class="type-meta">font.display · 28/700 · hero ring amounts</span></div>
+    <div class="type-row"><span style="font-size:22px;font-weight:700">Moments Home</span><span class="type-meta">font.title.xl · 22/700 · screen titles</span></div>
+    <div class="type-row"><span style="font-size:20px;font-weight:600">NGO Drive 2025</span><span class="type-meta">font.title.lg · 20/600 · moment header title</span></div>
+    <div class="type-row"><span style="font-size:17px;font-weight:600">Commitment summary</span><span class="type-meta">font.title.md · 17/600 · sheet titles, section headers</span></div>
+    <div class="type-row"><span style="font-size:15px;font-weight:600">Summer in Goa</span><span class="type-meta">font.title.sm · 15/600 · home card moment name</span></div>
+    <div class="type-row"><span style="font-size:14px;font-weight:400;color:rgba(245,240,255,.65)">Rahul just paid ₹450 — your group is 3 steps from the goal.</span><span class="type-meta">font.body · 14/400 · story copy, feed</span></div>
+    <div class="type-row"><span style="font-size:14px;font-weight:500;color:rgba(245,240,255,.8)">₹45,000 · On Track</span><span class="type-meta">font.body.medium · 14/500 · amounts, status text</span></div>
+    <div class="type-row"><span style="font-size:12px;font-weight:400;color:rgba(245,240,255,.45)">Nudge sent · 2 min ago</span><span class="type-meta">font.caption · 12/400 · meta info, nudges</span></div>
+    <div class="type-row"><span style="font-size:11px;font-weight:600;letter-spacing:.02em">ADD CONTRIBUTION</span><span class="type-meta">font.label · 11/600 · CTA button text, action labels</span></div>
+    <div class="type-row"><span style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">PERSONAL · ACTIVE</span><span class="type-meta">font.micro · 10/600 · section headers, badges, tab labels</span></div>
+    <div class="type-row"><span style="font-size:9px;font-weight:500;color:rgba(245,240,255,.5)">of ₹1,00,000</span><span class="type-meta">font.nano · 9/500 · ring sub-label, avatar initials</span></div>
+  </div>
+</div>
+
+<!-- ══ SPACING ══ -->
+<div class="sec">
+  <div class="sec-lbl">Spacing tokens</div>
+  <div class="sp-row">
+    <div class="sp-item"><div class="sp-block" style="width:4px;height:4px"></div><div class="sp-lbl">4 · xs</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:6px;height:6px"></div><div class="sp-lbl">6 · inline</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:8px;height:8px"></div><div class="sp-lbl">8 · item</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:12px;height:12px"></div><div class="sp-lbl">12 · section</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:14px;height:14px"></div><div class="sp-lbl">14 · card.h</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:16px;height:16px"></div><div class="sp-lbl">16 · screen.v</div></div>
+    <div class="sp-item"><div class="sp-block" style="width:18px;height:18px"></div><div class="sp-lbl">18 · screen.h</div></div>
+  </div>
+</div>
+
+<!-- ══ RADIUS ══ -->
+<div class="sec">
+  <div class="sec-lbl">Radius tokens — pill-heavy system</div>
+  <div class="rad-row">
+    <div class="rad-item"><div class="rad-box" style="border-radius:4px"></div><div class="rad-lbl">4dp<br>data rows<br>list items</div></div>
+    <div class="rad-item"><div class="rad-box" style="border-radius:12px"></div><div class="rad-lbl">12dp<br>small cards<br>activity</div></div>
+    <div class="rad-item"><div class="rad-box" style="border-radius:14px"></div><div class="rad-lbl">14dp<br>home<br>moment cards</div></div>
+    <div class="rad-item"><div class="rad-box" style="border-radius:14px"></div><div class="rad-lbl">14dp<br>CTA<br>buttons</div></div>
+    <div class="rad-item"><div class="rad-box" style="border-radius:18px"></div><div class="rad-lbl">18dp<br>hero card<br>bottom sheets</div></div>
+    <div class="rad-item"><div class="rad-box" style="border-radius:12px"></div><div class="rad-lbl">12dp<br>input<br>fields</div></div>
+    <div class="rad-item"><div class="rad-box" style="border-radius:100px;height:24px"></div><div class="rad-lbl">999dp<br>chips · tabs<br>badges · avatars</div></div>
+  </div>
+</div>
+
+<!-- ══ SIZING ══ -->
+<div class="sec">
+  <div class="sec-lbl">Sizing tokens</div>
+  <table class="size-table">
+    <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td>size.ring.outer</td><td>80dp</td><td>Health ring total diameter</td></tr>
+      <tr><td>size.ring.inner</td><td>66dp</td><td>Ring inner circle diameter</td></tr>
+      <tr><td>size.ring.stroke</td><td>7dp</td><td>Ring stroke width</td></tr>
+      <tr><td>size.avatar.xl</td><td>44dp</td><td>Profile avatar</td></tr>
+      <tr><td>size.avatar.lg</td><td>34dp</td><td>Header avatar, activity items</td></tr>
+      <tr><td>size.avatar.md</td><td>26dp</td><td>Commitment row avatars</td></tr>
+      <tr><td>size.avatar.sm</td><td>20dp</td><td>Home card avatar stack</td></tr>
+      <tr><td>size.cover.card</td><td>70dp</td><td>Home card cover strip height</td></tr>
+      <tr><td>size.cover.header</td><td>100dp</td><td>Moment header height</td></tr>
+      <tr><td>size.bar.height</td><td>4dp</td><td>All progress bar heights</td></tr>
+      <tr><td>size.indicator.dot</td><td>7dp</td><td>Feed row urgency dot diameter</td></tr>
+      <tr><td>size.trigger.dot</td><td>8dp</td><td>Home trigger bar pulse dot</td></tr>
+      <tr><td>size.nav.height</td><td>54dp</td><td>Bottom navigation bar height</td></tr>
+      <tr><td>size.context.badge.h</td><td>24dp</td><td>Context badge height (pill)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ ANIMATION ══ -->
+<div class="sec">
+  <div class="sec-lbl">Animation tokens</div>
+  <table class="anim-table">
+    <thead><tr><th>Token</th><th>Value</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td>duration.instant</td><td>100ms</td><td>Tap feedback, press states</td></tr>
+      <tr><td>duration.fast</td><td>150ms</td><td>Button CTA state transitions (idle → loading → success)</td></tr>
+      <tr><td>duration.normal</td><td>200ms</td><td>Row fade on success, chip selection, tab switch</td></tr>
+      <tr><td>duration.medium</td><td>350ms</td><td>Sheet appear/dismiss, context switch</td></tr>
+      <tr><td>duration.ring</td><td>900ms</td><td>Health ring arc draw on mount</td></tr>
+      <tr><td>duration.trigger</td><td>2000ms</td><td>Trigger bar red dot pulse period</td></tr>
+      <tr><td>easing.standard</td><td>easeInOut</td><td>All standard transitions</td></tr>
+      <tr><td>easing.spring</td><td>spring(1, 0.8, 0, 0)</td><td>Context switch, sheet appear (iOS spring)</td></tr>
+      <tr><td>opacity.row.done</td><td>0.5</td><td>Feed row after Reminded ✓</td></tr>
+      <tr><td>opacity.disabled</td><td>0.4</td><td>Disabled buttons and inputs</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ ICONS ══ -->
+<div class="sec">
+  <div class="sec-lbl">Icon system — Phosphor Icons or Lucide</div>
+  <div class="icon-grid">
+    <div class="icon-card">
+      <div class="icon-title">Nav outlined (inactive)</div>
+      <div class="icon-row">
+        <span class="icon-pill">house</span>
+        <span class="icon-pill">activity</span>
+        <span class="icon-pill">plus-circle</span>
+        <span class="icon-pill">user-circle</span>
+      </div>
+    </div>
+    <div class="icon-card">
+      <div class="icon-title">Nav filled (active)</div>
+      <div class="icon-row">
+        <span class="icon-pill">house-fill</span>
+        <span class="icon-pill">activity-fill</span>
+        <span class="icon-pill">plus-circle-fill</span>
+        <span class="icon-pill">user-circle-fill</span>
+      </div>
+    </div>
+    <div class="icon-card">
+      <div class="icon-title">Action icons (filled)</div>
+      <div class="icon-row">
+        <span class="icon-pill">bell-fill</span>
+        <span class="icon-pill">arrow-right-fill</span>
+        <span class="icon-pill">check-circle-fill</span>
+        <span class="icon-pill">warning-fill</span>
+        <span class="icon-pill">share-fill</span>
+      </div>
+    </div>
+    <div class="icon-card">
+      <div class="icon-title">Sizes</div>
+      <div style="font-size:10px;color:rgba(245,240,255,.35);line-height:1.9">
+        nav icons: <span style="color:rgba(245,240,255,.55)">24dp</span><br>
+        action icons: <span style="color:rgba(245,240,255,.55)">20dp</span><br>
+        inline icons: <span style="color:rgba(245,240,255,.55)">16dp</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SURFACE MAP ══ -->
+<div class="sec">
+  <div class="sec-lbl">Surface map — replace {ctx} with: personal | group | business | circle</div>
+  <div class="sm-wrap">
+    <div class="sm-row"><span class="sm-key">screen.bg</span><span class="sm-val">base #120F20 — every screen, no exceptions</span></div>
+    <div class="sm-row"><span class="sm-key">card.bg</span><span class="sm-val">base.s100 #1A1728</span></div>
+    <div class="sm-row"><span class="sm-key">input.bg</span><span class="sm-val">base.s200 #241F38</span></div>
+    <div class="sm-row"><span class="sm-key">separator</span><span class="sm-val">base.s300 #302A48</span></div>
+    <div class="sm-row"><span class="sm-key">header.gradient</span><span class="sm-val">gradient.{ctx}.header</span></div>
+    <div class="sm-row"><span class="sm-key">hero.bg</span><span class="sm-val">context.{ctx}.hero</span></div>
+    <div class="sm-row"><span class="sm-key">hero.glow</span><span class="sm-val">gradient.{ctx}.glow (radial, ellipse at 50% 0%)</span></div>
+    <div class="sm-row"><span class="sm-key">ring.track</span><span class="sm-val">context.{ctx}.surface — NOT base.s200</span></div>
+    <div class="sm-row"><span class="sm-key">ring.arc.CLEAR</span><span class="sm-val">context.{ctx}.accent → accent.end (gradient)</span></div>
+    <div class="sm-row"><span class="sm-key">ring.arc.HIGH</span><span class="sm-val">urgency.high.fill #E24B4A — always overrides context</span></div>
+    <div class="sm-row"><span class="sm-key">ring.arc.MEDIUM</span><span class="sm-val">urgency.medium.fill #F59E0B — always overrides context</span></div>
+    <div class="sm-row"><span class="sm-key">context.badge.bg</span><span class="sm-val">context.{ctx}.surface</span></div>
+    <div class="sm-row"><span class="sm-key">context.badge.text</span><span class="sm-val">context.{ctx}.text</span></div>
+    <div class="sm-row"><span class="sm-key">tab.active.bg</span><span class="sm-val">context.{ctx}.surface</span></div>
+    <div class="sm-row"><span class="sm-key">tab.active.text</span><span class="sm-val">context.{ctx}.text</span></div>
+    <div class="sm-row"><span class="sm-key">tab.inactive.bg</span><span class="sm-val">context.{ctx}.tab.bg</span></div>
+    <div class="sm-row"><span class="sm-key">tab.inactive.text</span><span class="sm-val">context.{ctx}.tab.dim</span></div>
+    <div class="sm-row"><span class="sm-key">cta.CLEAR</span><span class="sm-val">gradient.{ctx}.cta</span></div>
+    <div class="sm-row"><span class="sm-key">cta.HIGH_MEDIUM</span><span class="sm-val">gradient.urgency.cta (#10B981 → #34D399) — always teal</span></div>
+    <div class="sm-row"><span class="sm-key">cta.REMIND_OVERDUE</span><span class="sm-val">gradient.urgency.cta — always, never context accent</span></div>
+    <div class="sm-row"><span class="sm-key">bar.funding</span><span class="sm-val">context.{ctx}.accent — ALWAYS, never urgency colour</span></div>
+    <div class="sm-row"><span class="sm-key">bar.budget.warning</span><span class="sm-val">urgency.high.fill #E24B4A — when pct_used ≥ 85</span></div>
+    <div class="sm-row"><span class="sm-key">feed.dot.HIGH</span><span class="sm-val">urgency.high.fill #E24B4A</span></div>
+    <div class="sm-row"><span class="sm-key">feed.dot.MEDIUM</span><span class="sm-val">urgency.medium.fill #F59E0B</span></div>
+    <div class="sm-row"><span class="sm-key">badge.PAID</span><span class="sm-val">bg #064E35 · text #10B981</span></div>
+    <div class="sm-row"><span class="sm-key">badge.PENDING</span><span class="sm-val">bg #451A00 · text #F59E0B</span></div>
+    <div class="sm-row"><span class="sm-key">badge.OVERDUE</span><span class="sm-val">bg #450A0A · text #E24B4A</span></div>
+    <div class="sm-row"><span class="sm-key">story.CLEAR</span><span class="sm-val">context.{ctx}.text</span></div>
+    <div class="sm-row"><span class="sm-key">story.HIGH</span><span class="sm-val">urgency.high.text #FCA5A5</span></div>
+    <div class="sm-row"><span class="sm-key">story.MEDIUM</span><span class="sm-val">urgency.medium.text #FDE68A</span></div>
+  </div>
+</div>
+
+<!-- ══ RULES ══ -->
+<div class="sec">
+  <div class="sec-lbl">Design rules — non-negotiable</div>
+  <div class="rules-wrap">
+    <div class="rule"><span class="rule-id">R01</span><span class="rule-txt">context.accent NEVER on ring arc, story text, or CTA when urgencyLevel is HIGH or MEDIUM<span class="rule-tag" style="background:rgba(226,75,74,.15);color:#FCA5A5">critical</span></span></div>
+    <div class="rule"><span class="rule-id">R02</span><span class="rule-txt">Urgency colours NEVER in context type badge or card cover strip</span></div>
+    <div class="rule"><span class="rule-id">R03</span><span class="rule-txt">Funding bar fill is ALWAYS context.accent — never urgency, regardless of health state</span></div>
+    <div class="rule"><span class="rule-id">R04</span><span class="rule-txt">Budget bar switches to urgency.high.fill (#E24B4A) when pct_used ≥ 85</span></div>
+    <div class="rule"><span class="rule-id">R05</span><span class="rule-txt">REMIND_OVERDUE CTA is ALWAYS gradient.urgency.cta (teal #10B981) — never context accent<span class="rule-tag" style="background:rgba(226,75,74,.15);color:#FCA5A5">critical</span></span></div>
+    <div class="rule"><span class="rule-id">R06</span><span class="rule-txt">All CTA text is #FFFFFF — every context accent is dark enough, no exceptions</span></div>
+    <div class="rule"><span class="rule-id">R07</span><span class="rule-txt">base.bg #120F20 is the ONLY allowed screen background — no variant, no context override<span class="rule-tag" style="background:rgba(226,75,74,.15);color:#FCA5A5">critical</span></span></div>
+    <div class="rule"><span class="rule-id">R08</span><span class="rule-txt">No colour hex hardcoded in any component — always reference a token</span></div>
+    <div class="rule"><span class="rule-id">R09</span><span class="rule-txt">PERSONAL hides: participant stack, Remind CTA, social activity copy, Share on completion</span></div>
+    <div class="rule"><span class="rule-id">R10</span><span class="rule-txt">BUSINESS replaces Alerts → Receipts, disables confetti, sets default split to ROLE_BASED</span></div>
+    <div class="rule"><span class="rule-id">R11</span><span class="rule-txt">CIRCLE posts NEVER show exact figures — abstracted only (e.g. "Saved ₹50k this year")</span></div>
+    <div class="rule"><span class="rule-id">R12</span><span class="rule-txt">Gradients appear ONLY on: hero card glow, header gradient, CTA buttons — all other surfaces flat</span></div>
+    <div class="rule"><span class="rule-id">R13</span><span class="rule-txt">Ring outer track uses context.surface colour — NOT base.s200</span></div>
+    <div class="rule"><span class="rule-id">R14</span><span class="rule-txt">Plus Jakarta Sans is the ONLY typeface. Fallback: DM Sans, Inter, -apple-system</span></div>
+    <div class="rule"><span class="rule-id">R15</span><span class="rule-txt">Pill radius (999dp) for: context badge, tab chips, filter chips, type tags, status badges, avatars</span></div>
+    <div class="rule"><span class="rule-id">R16</span><span class="rule-txt">Group context orb opacity = 0.30 (all other contexts = 0.25) — warmth tweak v2.1<span class="rule-tag" style="background:rgba(14,201,127,.15);color:#34D399">v2.1</span></span></div>
+    <div class="rule"><span class="rule-id">R17</span><span class="rule-txt">Business context uses Burnished Amber (#D4880A → #F5A623) not blue — thermally opposite to Personal (indigo) and Group (teal), semantically correct for financial audit work<span class="rule-tag" style="background:rgba(212,136,10,.15);color:#F5A623">v2.2</span></span></div>
+  </div>
+</div>
+
+<!-- ══ PLATFORM NOTES ══ -->
+<div class="sec">
+  <div class="sec-lbl">Platform implementation</div>
+  <div class="plat-wrap">
+    <div class="plat-card">
+      <div class="plat-title" style="color:#D4880A">FastAPI · Python</div>
+      <div class="plat-body">
+        File: <code>app/services/moment_ui_state.py</code><br>
+        Add <code>context_type: PERSONAL | GROUP | BUSINESS | CIRCLE</code> to MomentSnapshot.<br>
+        Return <code>type_theme</code> dict + gradient keys in MomentUIState.<br>
+        CONTEXT_THEMES replaces TYPE_THEMES. New field: <code>context.context_type</code><br>
+        v2.1 Group accent: replace <code>#10B981</code> → <code>#0EC97F</code> in GROUP theme dict.<br>
+        v2.2 Business accent: replace all <code>#3B82F6</code>/<code>#1E3A5F</code> → <code>#D4880A</code>/<code>#2E2000</code> in BUSINESS theme dict.
+      </div>
+    </div>
+    <div class="plat-card">
+      <div class="plat-title" style="color:#A7F3D0">Android · Kotlin / Jetpack Compose</div>
+      <div class="plat-body">
+        File: <code>com/momentra/ui/theme/MomentraTheme.kt</code><br>
+        Color parse: <code>Color(android.graphics.Color.parseColor(hex))</code><br>
+        Group gradient: <code>Brush.linearGradient(listOf(Color(0xFF0EC97F), Color(0xFF34D399)))</code><br>
+        Business gradient: <code>Brush.linearGradient(listOf(Color(0xFFD4880A), Color(0xFFF5A623)))</code><br>
+        Font: <code>GoogleFonts.plusJakartaSans()</code> or bundled TTF<br>
+        Create separate theme object per context. Switch active theme on context change.
+      </div>
+    </div>
+    <div class="plat-card">
+      <div class="plat-title" style="color:#C4B5FD">iOS · Swift / SwiftUI</div>
+      <div class="plat-body">
+        File: <code>Momentra/Theme/MomentraTheme.swift</code><br>
+        Color init: <code>Color(hex: string)</code> via custom extension<br>
+        Group gradient: <code>LinearGradient(colors: [Color(hex:"0EC97F"), Color(hex:"34D399")], startPoint: .leading, endPoint: .trailing)</code><br>
+        Business gradient: <code>LinearGradient(colors: [Color(hex:"D4880A"), Color(hex:"F5A623")], startPoint: .leading, endPoint: .trailing)</code><br>
+        Font: register Plus Jakarta Sans via Info.plist + UIFontDescriptor<br>
+        Use <code>@EnvironmentObject MomentraTheme</code>. Switch theme on context tab change.
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function sw(ctx) {
+  document.querySelectorAll('.ctx-btn').forEach(b => {
+    const on = b.dataset.ctx === ctx;
+    b.classList.toggle('active', on);
+    const colors = {personal:'#2D1F5E',group:'#064E35',business:'#2E2000',circle:'#4A1060'};
+    b.style.background = on ? colors[ctx] : 'transparent';
+  });
+  document.querySelectorAll('.ctx-panel').forEach(p => p.classList.toggle('active', p.id === 'ctx-' + ctx));
+}
+sw('personal');
+</script>
+</body>
+</html>
