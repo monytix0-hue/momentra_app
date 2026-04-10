@@ -2,6 +2,9 @@ import { SplashGate } from "@/components/splash-gate";
 import type { MomentContext } from "@/lib/design-tokens";
 import { createClient } from "@/utils/supabase/server";
 
+/** Cloudflare Pages (@cloudflare/next-on-pages) requires edge for non-static routes. */
+export const runtime = "edge";
+
 const contexts: MomentContext[] = ["personal", "group", "business", "circle"];
 
 type TodoRow = { id: string; name: string };

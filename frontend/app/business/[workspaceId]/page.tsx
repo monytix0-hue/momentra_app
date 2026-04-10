@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { BusinessWorkspacePage } from "@/components/business/business-workspace-page";
 
+export const runtime = "edge";
+
 export default async function BusinessWorkspaceRoute({
   params,
 }: {
