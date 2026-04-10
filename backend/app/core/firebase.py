@@ -8,6 +8,7 @@ from typing import Any
 
 import firebase_admin
 from firebase_admin import auth, credentials
+from google.auth.exceptions import DefaultCredentialsError
 
 from app.config import Settings, get_settings
 
@@ -131,7 +132,7 @@ def init_firebase() -> None:
             _log.warning(
                 "FIREBASE_CREDENTIALS_PATH is set but file not found (tried: %r). "
                 "Place the JSON in the backend folder, use an absolute path, or set "
-                "FIREBASE_SERVICE_ACCOUNT_JSON (one line). Falling back to ADC.",
+                "FIREBASE_SERVICE_ACCOUNT_JSON (one line).",
                 s.firebase_credentials_path,
             )
 
@@ -173,6 +174,16 @@ def verify_firebase_token(id_token: str) -> dict[str, Any]:
     try:
         firebase_admin.get_app()
     except ValueError as e:
-        raise RuntimeError("Firebase Admin is not initialized") from e
-    decoded: dict[str, Any] = auth.verify_id_token(id_token)
-    return decoded
+        raise RuntimeError(
+            "Firebase Admin is not initialized. Set FIREBASE_SERVICE_ACCOUNT_JSON (one-line JSON) "
+            "or FIREBASE_CREDENTIALS_PATH to a mounted key file, then rebuild and restart the container."
+        ) from e
+    try:
+        return auth.verify_id_token(id_token)
+    except DefaultCredentialsError as e:
+        raise RuntimeError(
+            "Firebase Admin is using Application Default Credentials, but none exist in this "
+            "environment (typical in Docker). Set FIREBASE_SERVICE_ACCOUNT_JSON to the full "
+            "service account JSON on one line, run `docker compose build --no-cache api` and "
+            "redeploy so the latest app code is used, and unset FIREBASE_ALLOW_APPLICATION_DEFAULT_CREDENTIALS."
+        ) from e
