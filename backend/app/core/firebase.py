@@ -141,13 +141,29 @@ def init_firebase() -> None:
             "(or use a service account JSON with project_id) so Auth can verify ID tokens."
         )
 
-    try:
-        firebase_admin.initialize_app(options=app_options)
-        _log.info("Firebase Admin initialized with application default credentials")
-    except ValueError:
-        _log.warning(
-            "Firebase Admin not configured (missing service account file and no ADC). "
-            "Protected routes will fail until configured."
+    # Do not call initialize_app() with ADC by default: in Docker it "succeeds" but
+    # verify_id_token then raises DefaultCredentialsError. Use explicit credentials
+    # (FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_CREDENTIALS_PATH), or opt in on GCP:
+    allow_adc = os.environ.get("FIREBASE_ALLOW_APPLICATION_DEFAULT_CREDENTIALS", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    if allow_adc:
+        try:
+            firebase_admin.initialize_app(options=app_options)
+            _log.info("Firebase Admin initialized with application default credentials (opt-in)")
+        except ValueError:
+            _log.warning(
+                "Firebase Admin not configured (missing service account file and no ADC). "
+                "Protected routes will fail until configured."
+            )
+    else:
+        _log.error(
+            "Firebase Admin has no service account. Set FIREBASE_SERVICE_ACCOUNT_JSON (one line) "
+            "or mount a key file and set FIREBASE_CREDENTIALS_PATH. "
+            "Protected routes will return errors until this is fixed. "
+            "(On GCP with metadata credentials only, set FIREBASE_ALLOW_APPLICATION_DEFAULT_CREDENTIALS=true.)"
         )
 
 
