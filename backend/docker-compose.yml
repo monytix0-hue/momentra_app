@@ -9,7 +9,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # Local tag only — do not pull from Docker Hub (avoids "pull access denied" in Dockge).
     image: momentra-api:latest
+    pull_policy: never
     container_name: momentra-api
     restart: unless-stopped
     ports:
