@@ -18,6 +18,14 @@ function sanitizeFirebaseEnvVar(value: string | undefined): string | undefined {
   return s || undefined;
 }
 
+/** GA4 IDs are `G-` + alphanumeric; hosting env often has trailing `\\` or junk after paste. */
+function sanitizeMeasurementId(value: string | undefined): string | undefined {
+  const cleaned = sanitizeFirebaseEnvVar(value);
+  if (!cleaned) return undefined;
+  const m = cleaned.match(/^(G-[A-Z0-9]+)/i);
+  return m ? m[1] : cleaned;
+}
+
 const firebaseConfig = {
   apiKey: sanitizeFirebaseEnvVar(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
   authDomain: sanitizeFirebaseEnvVar(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
@@ -25,7 +33,7 @@ const firebaseConfig = {
   storageBucket: sanitizeFirebaseEnvVar(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET),
   messagingSenderId: sanitizeFirebaseEnvVar(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
   appId: sanitizeFirebaseEnvVar(process.env.NEXT_PUBLIC_FIREBASE_APP_ID),
-  measurementId: sanitizeFirebaseEnvVar(process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID),
+  measurementId: sanitizeMeasurementId(process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID),
 };
 
 function hasConfig(): boolean {
