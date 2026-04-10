@@ -103,8 +103,8 @@ def init_firebase() -> None:
                         if v:
                             pid = v
                             break
-                app_options: dict[str, Any] | None = {"projectId": pid} if pid else None
-                firebase_admin.initialize_app(cred, app_options)
+                json_app_options: dict[str, Any] | None = {"projectId": pid} if pid else None
+                firebase_admin.initialize_app(cred, json_app_options)
                 _log.info("Firebase Admin initialized from FIREBASE_SERVICE_ACCOUNT_JSON (project_id=%s)", pid or "(unset)")
                 return
 
@@ -124,12 +124,16 @@ def init_firebase() -> None:
         )
         return
 
-    if s.firebase_credentials_path:
-        _log.warning(
-            "FIREBASE_CREDENTIALS_PATH is set but file not found (tried: %r). "
-            "Place the JSON in the backend folder or use an absolute path. Falling back to ADC.",
-            s.firebase_credentials_path,
-        )
+    if s.firebase_credentials_path and cred_path is None:
+        # If JSON env is set but invalid, we already logged above — do not also blame the file path
+        # (Compose/Dokploy often leave FIREBASE_CREDENTIALS_PATH=/run/secrets/... without a mount).
+        if not json_raw:
+            _log.warning(
+                "FIREBASE_CREDENTIALS_PATH is set but file not found (tried: %r). "
+                "Place the JSON in the backend folder, use an absolute path, or set "
+                "FIREBASE_SERVICE_ACCOUNT_JSON (one line). Falling back to ADC.",
+                s.firebase_credentials_path,
+            )
 
     if not project_id:
         _log.warning(

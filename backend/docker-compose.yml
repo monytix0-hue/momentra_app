@@ -1,3 +1,5 @@
+version: "1.0.1"
+
 services:
   api:
     build:
@@ -10,7 +12,7 @@ services:
       - "6000:6000"
     env_file:
       - .env
-    environment:
-      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase.json
-    volumes:
-      - ./secrets/firebase-service-account.json:/run/secrets/firebase.json:ro
+    # File-based Firebase only: uncomment and add FIREBASE_CREDENTIALS_PATH=/run/secrets/firebase.json
+    # to .env, with JSON at ./secrets/firebase-service-account.json next to this file.
+    # volumes:
+    #   - ./secrets/firebase-service-account.json:/run/secrets/firebase.json:ro
