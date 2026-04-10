@@ -1,7 +1,5 @@
 import { GroupDetailLayout } from "@/components/group/group-detail-layout";
 
-export const runtime = "edge";
-
 export default async function GroupDetailPage({ params }: { params: Promise<{ groupId: string }> }) {
   const { groupId } = await params;
   return (

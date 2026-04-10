@@ -4,6 +4,9 @@ import { FirebaseAnalytics } from "@/components/firebase-analytics";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
+/** Required for Cloudflare Pages (@cloudflare/next-on-pages): all routes use Edge Runtime. */
+export const runtime = "edge";
+
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
   subsets: ["latin"],
