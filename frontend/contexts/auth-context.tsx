@@ -20,7 +20,8 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
-import { getFirebaseAuth, logAnalyticsEvent } from "@/lib/firebase/client";
+import { logAnalyticsEvent } from "@/lib/firebase/analytics-lazy";
+import { getFirebaseAuth } from "@/lib/firebase/core";
 import { syncUserProfile } from "@/lib/api/client";
 
 type AuthContextValue = {

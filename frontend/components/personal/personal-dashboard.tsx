@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { logAnalyticsEvent } from "@/lib/firebase/client";
+import { logAnalyticsEvent } from "@/lib/firebase/analytics-lazy";
 import {
   applyBudgetTemplate,
   BUDGET_TEMPLATE_CUSTOM,
