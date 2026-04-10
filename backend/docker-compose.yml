@@ -1,4 +1,8 @@
-version: "1.0.1"
+# Dockge: set the project stack directory to this folder (`backend/`) so `build.context: .`
+# and paths like `./secrets/...` resolve next to this file.
+#
+# Default stack: no Firebase file mount — use FIREBASE_SERVICE_ACCOUNT_JSON in `.env` (one line).
+# For file-based credentials instead, merge docker-compose.firebase-file.yml (see .env.example).
 
 services:
   api:
@@ -9,10 +13,6 @@ services:
     container_name: momentra-api
     restart: unless-stopped
     ports:
-      - "6000:6000"
+      - "8002:8002"
     env_file:
       - .env
-    # File-based Firebase only: uncomment and add FIREBASE_CREDENTIALS_PATH=/run/secrets/firebase.json
-    # to .env, with JSON at ./secrets/firebase-service-account.json next to this file.
-    # volumes:
-    #   - ./secrets/firebase-service-account.json:/run/secrets/firebase.json:ro
