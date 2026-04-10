@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 import logging
 import os
@@ -34,6 +36,80 @@ def _looks_like_shell_placeholder_not_json(s: str) -> bool:
     if "/path/to" in t or "your-firebase" in t:
         return True
     return False
+
+
+def _service_account_dict_from_env() -> tuple[dict[str, Any] | None, str]:
+    """
+    Load service account JSON from env. Returns (dict, description) or (None, "").
+
+    Prefer FIREBASE_*_B64 in Dokploy: multiline JSON in UI/.env often breaks json.loads.
+    """
+    for key in ("FIREBASE_SERVICE_ACCOUNT_JSON_B64", "FIREBASE_CREDENTIALS_JSON_B64"):
+        b64 = os.environ.get(key, "").strip()
+        if not b64:
+            continue
+        try:
+            raw = base64.standard_b64decode(b64).decode("utf-8")
+            data = json.loads(raw)
+        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as e:
+            _log.warning("%s is set but decode/parse failed: %s", key, e)
+            return None, ""
+        if not isinstance(data, dict):
+            _log.warning("%s must decode to a JSON object", key)
+            return None, ""
+        _log.info("Firebase credentials loaded from %s", key)
+        return data, key
+
+    json_raw = _service_account_json_raw_from_env()
+    if json_raw and _looks_like_shell_placeholder_not_json(json_raw):
+        _log.error(
+            "Firebase env contains a jq/path placeholder, not JSON. On your computer run "
+            "`jq -c . your-service-account.json` and paste ONLY the printed line as the value "
+            "of FIREBASE_SERVICE_ACCOUNT_JSON (starts with {\"type\":\"service_account\"...})."
+        )
+        json_raw = ""
+    if json_raw:
+        try:
+            data = json.loads(json_raw)
+        except json.JSONDecodeError:
+            _log.warning(
+                "FIREBASE_SERVICE_ACCOUNT_JSON (or FIREBASE_CREDENTIALS_JSON) is not valid JSON. "
+                "Pretty-printed / multiline values in Dokploy often break parsing — use "
+                "FIREBASE_SERVICE_ACCOUNT_JSON_B64 (base64 of the whole file; see .env.example) "
+                "or `jq -c . key.json` and paste a single line.",
+            )
+            return None, ""
+        if not isinstance(data, dict):
+            _log.warning("Firebase service account env must be a JSON object")
+            return None, ""
+        return data, "FIREBASE_SERVICE_ACCOUNT_JSON"
+
+    return None, ""
+
+
+def _init_app_from_service_account_dict(
+    data: dict[str, Any],
+    s: Settings,
+    source_label: str,
+) -> None:
+    cred = credentials.Certificate(data)
+    pid = (s.firebase_project_id or "").strip()
+    if not pid:
+        raw_pid = data.get("project_id")
+        pid = raw_pid.strip() if isinstance(raw_pid, str) else ""
+    if not pid:
+        for key in ("GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT"):
+            v = os.environ.get(key, "").strip()
+            if v:
+                pid = v
+                break
+    json_app_options: dict[str, Any] | None = {"projectId": pid} if pid else None
+    firebase_admin.initialize_app(cred, json_app_options)
+    _log.info(
+        "Firebase Admin initialized from %s (project_id=%s)",
+        source_label,
+        pid or "(unset)",
+    )
 
 
 def _resolve_credentials_file(raw: str) -> Path | None:
@@ -100,41 +176,12 @@ def init_firebase() -> None:
         pass
     s = get_settings()
 
-    # PaaS-friendly: paste full service account JSON in env (e.g. Dokploy) — no file mount.
+    data, source_label = _service_account_dict_from_env()
+    if data is not None:
+        _init_app_from_service_account_dict(data, s, source_label)
+        return
+
     json_raw = _service_account_json_raw_from_env()
-    if json_raw and _looks_like_shell_placeholder_not_json(json_raw):
-        _log.error(
-            "Firebase env contains a jq/path placeholder, not JSON. On your computer run "
-            "`jq -c . your-service-account.json` and paste ONLY the printed line as the value "
-            "of FIREBASE_SERVICE_ACCOUNT_JSON (starts with {\"type\":\"service_account\"...})."
-        )
-        json_raw = ""
-    if json_raw:
-        try:
-            data = json.loads(json_raw)
-        except json.JSONDecodeError:
-            _log.warning(
-                "FIREBASE_SERVICE_ACCOUNT_JSON (or FIREBASE_CREDENTIALS_JSON) is set but is not valid JSON",
-            )
-        else:
-            if not isinstance(data, dict):
-                _log.warning("Firebase service account env must be a JSON object")
-            else:
-                cred = credentials.Certificate(data)
-                pid = (s.firebase_project_id or "").strip()
-                if not pid:
-                    raw_pid = data.get("project_id")
-                    pid = raw_pid.strip() if isinstance(raw_pid, str) else ""
-                if not pid:
-                    for key in ("GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT"):
-                        v = os.environ.get(key, "").strip()
-                        if v:
-                            pid = v
-                            break
-                json_app_options: dict[str, Any] | None = {"projectId": pid} if pid else None
-                firebase_admin.initialize_app(cred, json_app_options)
-                _log.info("Firebase Admin initialized from FIREBASE_SERVICE_ACCOUNT_JSON (project_id=%s)", pid or "(unset)")
-                return
 
     cred_path = _resolve_credentials_file(s.firebase_credentials_path) if s.firebase_credentials_path else None
     project_id = _firebase_project_id(s, cred_path)
@@ -188,10 +235,9 @@ def init_firebase() -> None:
             )
     else:
         _log.error(
-            "Firebase Admin has no service account. Set FIREBASE_SERVICE_ACCOUNT_JSON (one line) "
-            "or mount a key file and set FIREBASE_CREDENTIALS_PATH. "
-            "Protected routes will return errors until this is fixed. "
-            "(On GCP with metadata credentials only, set FIREBASE_ALLOW_APPLICATION_DEFAULT_CREDENTIALS=true.)"
+            "Firebase Admin has no service account. Set FIREBASE_SERVICE_ACCOUNT_JSON_B64 (base64 of JSON; "
+            "best for Dokploy), or FIREBASE_SERVICE_ACCOUNT_JSON (one line from `jq -c`), or a key file + "
+            "FIREBASE_CREDENTIALS_PATH. (GCP metadata only: FIREBASE_ALLOW_APPLICATION_DEFAULT_CREDENTIALS=true.)"
         )
 
 
