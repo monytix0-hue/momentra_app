@@ -18,6 +18,24 @@ _log = logging.getLogger(__name__)
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _service_account_json_raw_from_env() -> str:
+    """Full service account JSON as a single line. FIREBASE_CREDENTIALS_JSON is a supported alias."""
+    for key in ("FIREBASE_SERVICE_ACCOUNT_JSON", "FIREBASE_CREDENTIALS_JSON"):
+        v = os.environ.get(key, "").strip()
+        if v:
+            return v
+    return ""
+
+
+def _looks_like_shell_placeholder_not_json(s: str) -> bool:
+    t = s.strip().lower()
+    if t.startswith("jq ") or t.startswith("cat "):
+        return True
+    if "/path/to" in t or "your-firebase" in t:
+        return True
+    return False
+
+
 def _resolve_credentials_file(raw: str) -> Path | None:
     """
     Resolve FIREBASE_CREDENTIALS_PATH for local dev.
@@ -83,15 +101,24 @@ def init_firebase() -> None:
     s = get_settings()
 
     # PaaS-friendly: paste full service account JSON in env (e.g. Dokploy) — no file mount.
-    json_raw = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
+    json_raw = _service_account_json_raw_from_env()
+    if json_raw and _looks_like_shell_placeholder_not_json(json_raw):
+        _log.error(
+            "Firebase env contains a jq/path placeholder, not JSON. On your computer run "
+            "`jq -c . your-service-account.json` and paste ONLY the printed line as the value "
+            "of FIREBASE_SERVICE_ACCOUNT_JSON (starts with {\"type\":\"service_account\"...})."
+        )
+        json_raw = ""
     if json_raw:
         try:
             data = json.loads(json_raw)
         except json.JSONDecodeError:
-            _log.warning("FIREBASE_SERVICE_ACCOUNT_JSON is set but is not valid JSON")
+            _log.warning(
+                "FIREBASE_SERVICE_ACCOUNT_JSON (or FIREBASE_CREDENTIALS_JSON) is set but is not valid JSON",
+            )
         else:
             if not isinstance(data, dict):
-                _log.warning("FIREBASE_SERVICE_ACCOUNT_JSON must be a JSON object")
+                _log.warning("Firebase service account env must be a JSON object")
             else:
                 cred = credentials.Certificate(data)
                 pid = (s.firebase_project_id or "").strip()
