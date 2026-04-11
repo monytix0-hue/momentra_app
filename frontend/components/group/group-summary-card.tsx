@@ -28,7 +28,7 @@ export function GroupSummaryCard({ summary, title }: { summary: GroupSummaryBloc
           <p className="mt-1 font-serif text-2xl font-semibold tabular-nums text-ctx-text">{money(collected)}</p>
           {target != null ? (
             <p className="mt-2 text-[13px] text-ctx-text/85">
-              of {money(target)} target
+              of {money(target)} moment budget
             </p>
           ) : null}
         </div>

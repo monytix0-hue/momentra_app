@@ -75,7 +75,7 @@ export function CycleTabs({
             </dd>
           </div>
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-ctx-text/65">Target</dt>
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-ctx-text/65">Moment budget</dt>
             <dd className="text-right font-semibold text-ctx-text tabular-nums">{money(num(current.target_amount))}</dd>
           </div>
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">

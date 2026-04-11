@@ -142,6 +142,11 @@ export type GroupCommitment = {
   paid_amount: string | number;
   due_date: string | null;
   status: string;
+  /** planned | active | final — mirrors DB when present */
+  commitment_type?: string;
+  /** auto_seeded | admin_set | expense_split | participant_set */
+  source?: string;
+  expense_id?: string | null;
 };
 
 export type GroupExpenseShare = {

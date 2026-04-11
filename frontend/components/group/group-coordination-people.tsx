@@ -238,11 +238,11 @@ export function GroupCoordinationPeople({
                   {p.status === "active" && r ? (
                     <div className="mt-m-3 space-y-1 text-[12px] text-ink-2">
                       <div className="flex flex-wrap justify-between gap-2">
-                        <span className="text-ink-4">Committed</span>
+                        <span className="text-ink-4">Planned Commitment</span>
                         <span className="tabular-nums font-medium text-ink">{money(r.committed)}</span>
                       </div>
                       <div className="flex flex-wrap justify-between gap-2">
-                        <span className="text-ink-4">Paid</span>
+                        <span className="text-ink-4">Paid contribution</span>
                         <span className="tabular-nums font-medium text-ink">{money(r.paid)}</span>
                       </div>
                       <div className="flex flex-wrap justify-between gap-2">

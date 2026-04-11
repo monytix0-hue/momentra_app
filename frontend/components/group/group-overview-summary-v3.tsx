@@ -29,7 +29,7 @@ export function GroupOverviewSummaryV3({ data }: { data: GroupHome }) {
         : openSignals > 0
           ? { label: "Open signals", value: String(openSignals), color: "text-urgency-medium", cta: "Open signals" }
           : {
-              label: "Pooled targets",
+              label: "Moment budgets (pooled)",
               value: totalTarget > 0 ? formatInr(totalTarget) : "—",
               color: "text-ctx-accent",
               cta: null,
@@ -63,7 +63,7 @@ export function GroupOverviewSummaryV3({ data }: { data: GroupHome }) {
             { label: "Active groups", value: String(data.active_group_count) },
             { label: "Pending people", value: String(data.pending_commitment_count) },
             { label: "Open signals", value: String(openSignals) },
-            { label: "Pooled", value: totalTarget > 0 ? formatInr(totalTarget) : "—" },
+            { label: "Pooled budgets", value: totalTarget > 0 ? formatInr(totalTarget) : "—" },
           ].map((c) => (
             <div key={c.label} className="rounded-m-card border border-surface-300 bg-surface-100 px-3 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/35">{c.label}</p>

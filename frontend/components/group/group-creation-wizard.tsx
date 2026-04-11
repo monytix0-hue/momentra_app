@@ -93,7 +93,7 @@ function StepProgress({ step }: { step: Step }) {
         {step === 1 && "One-off or recurring money rhythm."}
         {step === 2 && "Name it and add context."}
         {step === 3 && "Who is in — you stay admin."}
-        {step === 4 && "Optional pool target in ₹."}
+        {step === 4 && "Optional moment budget (pool target) in ₹."}
         {step === 5 && "Confirm and create."}
       </p>
     </div>
@@ -386,8 +386,8 @@ export function GroupCreationWizard() {
           <div>
             <StepHeading
               kicker="Funding"
-              title="Pool target"
-              hint="Optional total in ₹ for pooled groups. Leave blank to skip; the API still applies type-based defaults."
+              title="Moment budget"
+              hint="Optional total planned spend (pool target) in ₹ for pooled groups. Leave blank to skip; type-based defaults still apply."
             />
             <label className="block">
               <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-4">Amount</span>
@@ -414,7 +414,7 @@ export function GroupCreationWizard() {
                   ["Type", groupType],
                   ["Duration", durationType === "one_time" ? "One-time" : "Ongoing"],
                   ["Title", title.trim() || "Untitled group"],
-                  ["Pool target", targetAmount.trim() || "—"],
+                  ["Moment budget", targetAmount.trim() || "—"],
                   ["Money style", reviewUx.wizardReviewMoneyLine],
                 ] as const
               ).map(([k, v]) => (

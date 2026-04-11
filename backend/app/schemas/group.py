@@ -198,6 +198,9 @@ class GroupCommitmentOut(BaseModel):
     status: str
     created_at: str | None = None
     updated_at: str | None = None
+    commitment_type: str = "planned"
+    source: str = "auto_seeded"
+    expense_id: UUID | None = None
 
 
 class PayCommitmentBody(BaseModel):

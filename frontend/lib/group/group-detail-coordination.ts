@@ -186,3 +186,13 @@ export function pendingInActiveCycle(
 ): number {
   return scopedCommitments.filter((c) => n(c.committed_amount) > n(c.paid_amount)).length;
 }
+
+/** Short UI line explaining how this commitment row was created (Momentra lifecycle). */
+export function commitmentSourceCaption(source: string | undefined | null): string | null {
+  const s = (source || "").toLowerCase();
+  if (s === "auto_seeded") return "Planned share from moment budget (equal split)";
+  if (s === "admin_set") return "Planned share set by admin";
+  if (s === "expense_split") return "Share from an expense split";
+  if (s === "participant_set") return "Share set by participant";
+  return null;
+}

@@ -147,7 +147,7 @@ function GroupCycleCoordinationBlockInner({
 
         <div className="grid gap-m-3 sm:grid-cols-2">
           <div className="rounded-m-chip border border-surface-300 bg-bg2/50 px-m-4 py-m-3">
-            <p className="text-[10px] uppercase tracking-wider text-ink-3">Target</p>
+            <p className="text-[10px] uppercase tracking-wider text-ink-3">Moment budget</p>
             <p className="mt-1 text-[16px] font-semibold tabular-nums text-ctx-text">{money(target)}</p>
           </div>
           <div className="rounded-m-chip border border-surface-300 bg-bg2/50 px-m-4 py-m-3">
@@ -172,7 +172,7 @@ function GroupCycleCoordinationBlockInner({
         ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-m-2 rounded-m-chip border border-surface-300/80 bg-bg2/40 px-m-3 py-m-2">
-          <span className="text-[12px] text-ink-3">Open commitments in this cycle</span>
+          <span className="text-[12px] text-ink-3">Open planned commitments (unpaid)</span>
           <span className="text-[14px] font-semibold tabular-nums text-status-pending-fg">{pending}</span>
         </div>
 

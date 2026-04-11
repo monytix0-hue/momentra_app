@@ -57,7 +57,7 @@ export function PendingCommitmentsSectionV3({ rows }: { rows: GroupHome["pending
                     </div>
                     <div className="flex flex-wrap items-center gap-m-3 md:justify-end">
                       <div className="text-right text-[12px] tabular-nums">
-                        <p className="text-ink-4">Committed / paid</p>
+                        <p className="text-ink-4">Planned / paid</p>
                         <p className="font-medium text-ctx-text">
                           {formatInr(num(r.committed_amount))} / {formatInr(num(r.paid_amount))}
                         </p>

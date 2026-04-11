@@ -93,7 +93,7 @@ function ActiveGroupCardV3({ row }: { row: ActiveGroupConsoleRow }) {
 
       {hasTarget ? (
         <p className="mt-m-3 text-[12px] tabular-nums text-ink-2">
-          Pool target <span className="font-semibold text-ctx-text">{formatInr(target)}</span>
+          Moment budget <span className="font-semibold text-ctx-text">{formatInr(target)}</span>
           {openInGroup > 0 ? (
             <>
               <span className="text-ink-4"> · </span>

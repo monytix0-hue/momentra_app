@@ -404,6 +404,8 @@ def _seed_equal_commitments(sb: Client, group_id: str, cycle_id: str | None, tot
             "paid_amount": 0.0,
             "due_date": str(due),
             "status": "pending",
+            "commitment_type": "planned",
+            "source": "auto_seeded",
         }
         if cycle_id:
             row_ins["cycle_id"] = cycle_id
@@ -805,6 +807,9 @@ def generate_next_cycle(sb: Client, user_id: str, group_id: str) -> dict[str, An
                 "paid_amount": 0.0,
                 "due_date": str(due),
                 "status": "pending",
+                "commitment_type": str(c.get("commitment_type") or "planned"),
+                "source": str(c.get("source") or "auto_seeded"),
+                "expense_id": None,
             }
         ).execute()
     log_activity(sb, group_id, event_type="cycle_rolled", message=f"New cycle «{label}»", actor_id=user_id, cycle_id=new_id)
@@ -848,6 +853,8 @@ def bulk_create_commitments(sb: Client, user_id: str, group_id: str, body: Group
                 "paid_amount": 0.0,
                 "due_date": str(due) if due else None,
                 "status": "pending",
+                "commitment_type": "planned",
+                "source": "admin_set",
             }
             if cycle_id:
                 row["cycle_id"] = cycle_id
@@ -867,6 +874,8 @@ def bulk_create_commitments(sb: Client, user_id: str, group_id: str, body: Group
                 "paid_amount": 0.0,
                 "due_date": str(dd) if dd else None,
                 "status": "pending",
+                "commitment_type": "planned",
+                "source": "admin_set",
             }
             if cycle_id:
                 row["cycle_id"] = cycle_id
@@ -921,6 +930,7 @@ def update_commitment(
         "paid_amount": _f(row["paid_amount"]),
         "due_date": row.get("due_date"),
         "status": row["status"],
+        "source": "admin_set",
     }
     sb.table("group_commitments").update(up).eq("commitment_id", commitment_id).execute()
     r2 = sb.table("group_commitments").select("*").eq("commitment_id", commitment_id).maybe_single().execute()

@@ -44,7 +44,8 @@ export function ExpenseList({
     <div className="space-y-m-4">
       {!hideIntro ? (
         <p className="text-[12px] leading-relaxed text-ink-3">
-          Log shared costs to split across the group. This is separate from paying your pool commitment.
+          Log each shared cost and split it across participants (who owes what for that bill). Paying into the pool is tracked
+          separately as planned commitment and paid contribution on the People / Commitments tabs.
         </p>
       ) : null}
       <ul className="space-y-m-2">

@@ -54,7 +54,7 @@ export function GroupCard({ g }: { g: GroupMomentSummary }) {
       </p>
       {hasTarget ? (
         <p className="mt-m-3 text-[12px] tabular-nums text-ink-2">
-          <span className="text-ink-4">Target </span>
+          <span className="text-ink-4">Moment budget </span>
           <span className="font-medium text-ctx-text">{money(target)}</span>
         </p>
       ) : null}

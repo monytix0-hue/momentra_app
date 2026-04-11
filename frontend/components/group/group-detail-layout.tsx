@@ -35,6 +35,7 @@ import { GroupRecentMovementPreview } from "@/components/group/group-recent-move
 import { GroupSplitRuleCard } from "@/components/group/group-split-rule-card";
 import { RecurringExpensesPanel } from "@/components/group/recurring-expenses-panel";
 import {
+  commitmentSourceCaption,
   commitmentsForScope,
   coordinationHealth,
   daysLeftInCycle,
@@ -326,7 +327,7 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
     if (!user || !commitmentEditId) return;
     const amt = parseFloat(editCommitted);
     if (!Number.isFinite(amt) || amt < 0) {
-      setErr("Enter a valid committed amount.");
+      setErr("Enter a valid planned commitment amount.");
       return;
     }
     setCommitmentActionBusy(true);
@@ -795,7 +796,10 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                   <div ref={peopleSectionRef}>
                     <SectionRule title="People & commitments" />
                     <p className="mb-m-4 max-w-2xl text-[13px] leading-relaxed text-ink-3">
-                      Who’s in, what they owe, and quick nudges — this is the coordination core for this group.
+                      Moment budget (above) is the pool target. Each person&apos;s{" "}
+                      <span className="font-medium text-ink">planned commitment</span> is their expected share toward that pool;{" "}
+                      <span className="font-medium text-ink">paid contribution</span> is what has actually been recorded. Expense splits
+                      allocate each bill across participants separately.
                     </p>
                     <GroupCoordinationPeople
                       participants={detail.participants}
@@ -859,6 +863,7 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                           c.cycle_id && detail.cycles.length > 0
                             ? detail.cycles.find((cy) => cy.cycle_id === c.cycle_id)?.label ?? null
                             : null;
+                        const sourceCap = commitmentSourceCaption(c.source);
                         const editing = commitmentEditId === c.commitment_id;
                         return (
                           <li
@@ -870,10 +875,13 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                               {cycleLabel ? (
                                 <span className="text-ink-4"> · {cycleLabel}</span>
                               ) : null}
+                              {!editing && sourceCap ? (
+                                <p className="mt-1 text-[11px] leading-snug text-ink-4">{sourceCap}</p>
+                              ) : null}
                               {editing ? (
                                 <div className="mt-m-3 grid max-w-md gap-m-2 sm:grid-cols-2">
                                   <div>
-                                    <label className={fieldLabel}>Committed (₹)</label>
+                                    <label className={fieldLabel}>Planned Commitment (₹)</label>
                                     <input
                                       type="number"
                                       min={0}
@@ -1350,7 +1358,9 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
               {tab === "positions" && (
                 <div>
                   <p className="mb-m-4 text-[12px] leading-relaxed text-ink-3">
-                    Per-member financial position across all cycles. Planned commitment is the total amount committed; paid contribution is what has actually been recorded as paid.
+                    Per-member financial position across all cycles. Planned commitment is the expected share (pool lines +
+                    any split-derived rows); paid contribution is what was recorded; net position is paid − planned (positive
+                    means ahead / owed back).
                   </p>
                   {positions.length === 0 ? (
                     <p className="text-[13px] text-ink-3">No commitments recorded yet.</p>

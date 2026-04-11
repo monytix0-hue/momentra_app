@@ -38,10 +38,10 @@ export function getGroupUxProfile(input: { group_type: string; funding_model: st
       overviewPeopleFirst: true,
       overviewSplitTitle: "Default split for expenses",
       overviewSplitHint:
-        "Logged expenses use this default (usually equal across members). Commitments track who pays into the pool; shares show each person’s portion of a line item.",
+        "Moment budget is the pool target. Planned commitments are expected shares into the pool; each expense also carries splits (each person’s share of that bill).",
       primaryExpenseCta: "Record spend",
       expensesTabIntro:
-        "Log spending from the shared pot. New entries split equally by default—you can open custom or % splits if you need them.",
+        "Log spending from the shared pot. Each expense is split across participants (equal by default); that split is separate from planned pool commitments.",
       wizardReviewMoneyLine:
         "Pooled funding with a monthly rhythm. The API defaults new expenses to equal splits; you can adjust per expense.",
     };
@@ -56,7 +56,7 @@ export function getGroupUxProfile(input: { group_type: string; funding_model: st
         "Defaults apply to new expenses. Use custom or % when rent and bills don’t divide evenly.",
       primaryExpenseCta: "Add expense",
       expensesTabIntro:
-        "Add shared costs for this group. Splits are recorded separately from commitments.",
+        "Add shared costs: each expense is split across participants (who owes what for that bill). That’s distinct from any optional pool planned commitments.",
       wizardReviewMoneyLine:
         "Split-expense style: good for rent, utilities, and itemized bills—with full control per expense.",
     };
@@ -71,9 +71,9 @@ export function getGroupUxProfile(input: { group_type: string; funding_model: st
         "Trips and one-off events often need custom or % splits; equal is the default.",
       primaryExpenseCta: "Add expense",
       expensesTabIntro:
-        "Add shared costs for this group. Splits are recorded separately from commitments.",
+        "Add trip or event costs: each line item is split across participants. The moment budget is the pool target; planned commitments are expected contributions into the pool.",
       wizardReviewMoneyLine:
-        "Pooled target for the trip or event—split each expense equally, by amount, or by percent.",
+        "Moment budget for the trip or event—split each expense equally, by amount, or by percent.",
     };
   }
 
@@ -84,7 +84,7 @@ export function getGroupUxProfile(input: { group_type: string; funding_model: st
     overviewSplitHint: "",
     primaryExpenseCta: "Add expense",
     expensesTabIntro:
-      "Add shared costs for this group. Splits are recorded separately from commitments.",
+      "Add shared costs with per-expense splits. Optional pool + moment budget uses planned commitments; expense splits allocate each bill.",
     wizardReviewMoneyLine:
       "Hybrid setup: optional pool plus flexible expense splits as you go.",
   };
