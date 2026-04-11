@@ -9,13 +9,17 @@ async function headersJson(token: string) {
 
 async function parseJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    const t = await res.text();
-    try {
-      const j = JSON.parse(t) as { detail?: string };
-      throw new Error((j.detail || "").trim() || t || `${res.status}`);
-    } catch {
-      throw new Error(t || `${res.status}`);
+    const text = await res.text().catch(() => "");
+    if (text) {
+      try {
+        const json = JSON.parse(text) as Record<string, unknown>;
+        if (typeof json.detail === "string") throw new Error(json.detail);
+        if (typeof json.message === "string") throw new Error(json.message);
+      } catch (e) {
+        if (e instanceof Error && e.message !== text) throw e;
+      }
     }
+    throw new Error(text || `${res.status}`);
   }
   return res.json() as Promise<T>;
 }

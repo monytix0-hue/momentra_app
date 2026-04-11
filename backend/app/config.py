@@ -39,11 +39,11 @@ class Settings(BaseSettings):
 
     api_host: str = "0.0.0.0"
     api_port: int = 6000
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002"
     #: Matches any Vercel preview/production hostname so you do not list every deploy URL.
     #: Set CORS_ORIGIN_REGEX= to empty to disable.
     cors_origin_regex: str = Field(
-        default=r"https://.*\.vercel\.app",
+        default=r"https://.*\.vercel\.app|https://momentra\.tech|https://www\.momentra\.tech",
         description="Optional regex; origins matching this are allowed in addition to cors_origins",
     )
 
