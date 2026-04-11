@@ -195,6 +195,7 @@ class PersonalSummaryOut(BaseModel):
     planned_monthly_envelope: Decimal = Decimal("0")
     plan_remaining: Decimal = Decimal("0")
     potential_savings: Decimal = Decimal("0")
+    savings_contributed: Decimal = Decimal("0")
     total_allocated: Decimal
     total_spent_period: Decimal
     total_income_period: Decimal = Decimal("0")

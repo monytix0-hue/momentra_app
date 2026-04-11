@@ -366,11 +366,29 @@ export function PersonalDashboard() {
     () => (summary ? Number(summary.plan_remaining ?? summary.money_left ?? (plannedEnvelope - spentThisPeriod)) : 0),
     [summary, plannedEnvelope, spentThisPeriod],
   );
-  const potentialSavings = useMemo(
-    () => (summary ? Number(summary.potential_savings ?? (plannedEnvelope - spentThisPeriod)) : 0),
-    [summary, plannedEnvelope, spentThisPeriod],
+  const savingsContributed = useMemo(
+    () => (summary ? Number(summary.savings_contributed ?? 0) : 0),
+    [summary],
   );
   const moneyStory = useMemo(() => moneyLeftStory(planUsedPct, planRemaining), [planUsedPct, planRemaining]);
+
+  const spendingHint = useMemo(() => {
+    if (lifestyleBudget <= 0) return "No budget set";
+    const pct = (spentThisPeriod / lifestyleBudget) * 100;
+    if (pct < 40) return "Plenty of room";
+    if (pct < 75) return "On track";
+    if (pct < 90) return "Watch spending";
+    return "At limit";
+  }, [spentThisPeriod, lifestyleBudget]);
+
+  const savingsHint = useMemo(() => {
+    if (savingsMonthlyTarget <= 0) return "No target set";
+    if (savingsContributed <= 0) return "Yet to start";
+    const pct = (savingsContributed / savingsMonthlyTarget) * 100;
+    if (pct >= 100) return "Target met";
+    if (pct >= 75) return "Almost there";
+    return "In progress";
+  }, [savingsContributed, savingsMonthlyTarget]);
   const todaySnapshot = useMemo(() => computeTodaySnapshot(transactions), [transactions]);
   const pace = useMemo(
     () => computeMonthlyPace(summary, txMonth || currentMonthStr()),
@@ -809,8 +827,10 @@ export function PersonalDashboard() {
               planUsedPct={planUsedPct}
               spendingLabel={inr(spentThisPeriod)}
               spendingTargetLabel={inr(lifestyleBudget)}
-              savingsLabel={inr(potentialSavings)}
+              spendingHint={spendingHint}
+              savingsContributedLabel={inr(savingsContributed)}
               savingsTargetLabel={inr(savingsMonthlyTarget)}
+              savingsHint={savingsHint}
               expectedSoFar={pace?.expectedSoFar ?? null}
               actualSoFar={pace?.actualSoFar ?? null}
               showPaceCompare={Boolean(summary && plannedEnvelope > 0 && pace)}

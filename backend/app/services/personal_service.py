@@ -350,6 +350,8 @@ def build_summary(sb: Client, user_id: str) -> dict[str, Any]:
     planned_envelope = lifestyle_budget + savings_target
     plan_remaining = planned_envelope - total_spent_period
     potential_savings = planned_envelope - total_spent_period
+    # Savings actually realised this period: income minus expenses, floored at zero.
+    savings_contributed = max(Decimal("0"), total_income_period - total_spent_period)
     # Compatibility field for older clients; mirrors plan_remaining now.
     money_left = plan_remaining
 
@@ -383,6 +385,7 @@ def build_summary(sb: Client, user_id: str) -> dict[str, Any]:
         "planned_monthly_envelope": planned_envelope,
         "plan_remaining": plan_remaining,
         "potential_savings": potential_savings,
+        "savings_contributed": savings_contributed,
         "total_allocated": total_allocated,
         "total_spent_period": total_spent_period,
         "total_income_period": total_income_period,

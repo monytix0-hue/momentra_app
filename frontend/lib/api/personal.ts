@@ -31,6 +31,7 @@ export type PersonalSummary = {
   planned_monthly_envelope?: string | number;
   plan_remaining?: string | number;
   potential_savings?: string | number;
+  savings_contributed?: string | number;
   total_allocated: string | number;
   total_spent_period: string | number;
   total_income_period?: string | number;

@@ -9,8 +9,10 @@ export function PersonalMoneyHero({
   planUsedPct,
   spendingLabel,
   spendingTargetLabel,
-  savingsLabel,
+  spendingHint,
+  savingsContributedLabel,
   savingsTargetLabel,
+  savingsHint,
   expectedSoFar,
   actualSoFar,
   showPaceCompare = false,
@@ -21,8 +23,10 @@ export function PersonalMoneyHero({
   planUsedPct: number;
   spendingLabel: string;
   spendingTargetLabel: string;
-  savingsLabel: string;
+  spendingHint: string;
+  savingsContributedLabel: string;
   savingsTargetLabel: string;
+  savingsHint: string;
   expectedSoFar: number | null;
   actualSoFar: number | null;
   showPaceCompare?: boolean;
@@ -67,12 +71,14 @@ export function PersonalMoneyHero({
           <p className="mt-1 text-[13px] tabular-nums text-ink">
             {spendingLabel} / {spendingTargetLabel}
           </p>
+          <p className="mt-0.5 text-[11px] text-ink/45">→ {spendingHint}</p>
         </div>
         <div className="rounded-m-card border border-ctx-border/40 bg-ctx-hero/45 p-m-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/45">Potential savings</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-ink/45">Savings</p>
           <p className="mt-1 text-[13px] tabular-nums text-ink">
-            {savingsLabel} / {savingsTargetLabel}
+            {savingsContributedLabel} / {savingsTargetLabel}
           </p>
+          <p className="mt-0.5 text-[11px] text-ink/45">→ {savingsHint}</p>
         </div>
       </div>
 
