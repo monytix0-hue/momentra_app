@@ -460,12 +460,10 @@ def update_group(sb: Client, user_id: str, group_id: str, body: GroupMomentUpdat
     return _detail_payload(sb, group_id)
 
 
-def archive_group(sb: Client, user_id: str, group_id: str) -> None:
-    m = assert_member(sb, user_id, group_id)
-    if str(m.get("role")) != "admin":
-        raise PermissionError("admin_only")
-    sb.table("group_moments").update({"status": "archived"}).eq("group_id", group_id).execute()
-    log_activity(sb, group_id, event_type="group_archived", message="Group archived", actor_id=user_id)
+def delete_group(sb: Client, user_id: str, group_id: str) -> None:
+    """Permanently remove the group and all cascaded rows (expenses, commitments, participants, etc.)."""
+    assert_admin_group(sb, user_id, group_id)
+    sb.table("group_moments").delete().eq("group_id", group_id).execute()
 
 
 def add_participant(sb: Client, user_id: str, group_id: str, body: GroupParticipantCreate) -> dict[str, Any]:

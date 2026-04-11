@@ -2,11 +2,13 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import {
   createGroupExpense,
   deleteGroupCommitment,
+  deleteGroupMoment,
   fetchGroupActivity,
   fetchGroupCommitments,
   fetchGroupDetail,
@@ -57,6 +59,9 @@ const btnGhost =
 
 const btnPrimary =
   "inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br from-ctx-accent to-ctx-accent-end px-m-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white shadow-[0_0_20px_-10px_var(--ctx-accent)] transition-[opacity,transform] duration-fast ease-standard hover:opacity-95 active:scale-[0.99]";
+
+const btnDanger =
+  "inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-m-chip border border-urgency-high/50 bg-urgency-high/[0.06] px-m-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-urgency-high transition-colors hover:border-urgency-high hover:bg-urgency-high/10 disabled:opacity-45";
 
 function SectionRule({ title }: { title: string }) {
   return (
@@ -139,6 +144,7 @@ function statusTone(status: string) {
 type Tab = "overview" | "commitments" | "expenses" | "activity" | "positions";
 
 export function GroupDetailLayout({ groupId }: { groupId: string }) {
+  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [detail, setDetail] = useState<GroupMomentDetail | null>(null);
   const [commitments, setCommitments] = useState<GroupCommitment[]>([]);
@@ -169,6 +175,7 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
   const [editCommitted, setEditCommitted] = useState("");
   const [editDue, setEditDue] = useState("");
   const [commitmentActionBusy, setCommitmentActionBusy] = useState(false);
+  const [deleteGroupBusy, setDeleteGroupBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -365,6 +372,26 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
       setErr(e instanceof Error ? e.message : "Could not delete commitment");
     } finally {
       setCommitmentActionBusy(false);
+    }
+  };
+
+  const onDeleteGroup = async () => {
+    if (!user || !detail) return;
+    const title = detail.title.trim() || "this group";
+    const msg =
+      `Permanently delete «${title}»?\n\n` +
+      "This removes the group and all related data from the database (participants, expenses, commitments, splits, cycles, activity). This cannot be undone.";
+    if (!window.confirm(msg)) return;
+    setDeleteGroupBusy(true);
+    setErr(null);
+    try {
+      const token = await user.getIdToken();
+      await deleteGroupMoment(token, groupId);
+      router.push("/group");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not delete group");
+    } finally {
+      setDeleteGroupBusy(false);
     }
   };
 
@@ -659,6 +686,16 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                 <button type="button" className={btnGhost} onClick={() => void load()}>
                   Refresh
                 </button>
+                {isGroupAdmin ? (
+                  <button
+                    type="button"
+                    className={btnDanger}
+                    disabled={deleteGroupBusy}
+                    onClick={() => void onDeleteGroup()}
+                  >
+                    {deleteGroupBusy ? "Deleting…" : "Delete group"}
+                  </button>
+                ) : null}
               </div>
             </div>
 

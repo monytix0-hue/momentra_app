@@ -353,7 +353,7 @@ def delete_group_moment(
 ) -> None:
     sb = _sb()
     try:
-        group_service.archive_group(sb, user_id, str(group_id))
+        group_service.delete_group(sb, user_id, str(group_id))
     except (PermissionError, ValueError) as e:
         raise _http_from_service_err(e) from e
     except APIError as e:

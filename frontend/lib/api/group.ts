@@ -225,6 +225,18 @@ export async function fetchGroupDetail(token: string, groupId: string): Promise<
   return parseJson<GroupMomentDetail>(res);
 }
 
+/** Permanently deletes the group and all related data (DB cascade). Admin only. */
+export async function deleteGroupMoment(token: string, groupId: string): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/group/moments/${groupId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(t || `${res.status}`);
+  }
+}
+
 export async function createGroupMoment(
   token: string,
   body: {
