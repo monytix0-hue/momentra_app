@@ -69,7 +69,7 @@ export function computeMonthlyPace(
   txMonth: string,
 ): PaceInsight | null {
   if (!summary) return null;
-  const allocated = n(summary.total_allocated);
+  const allocated = n(summary.planned_monthly_envelope ?? summary.total_allocated);
   if (allocated <= 0) return null;
   const now = new Date();
   const effectiveMonth = txMonth.trim() || currentMonthStr();
@@ -96,12 +96,12 @@ export function computeMonthlyPace(
 }
 
 export function moneyLeftStory(spendPct: number, moneyLeft: number): string {
-  if (moneyLeft < 0) return "You’re past budget — pause discretionary spend and rebalance.";
-  if (spendPct < 25) return "Plenty of room — you’ve only used a small slice of the budget.";
-  if (spendPct < 55) return "Steady pace — you’re using budget in a healthy range.";
-  if (spendPct < 80) return "Half to three-quarters in — keep an eye on discretionary categories.";
-  if (spendPct < 95) return "Careful — spending pace is high relative to the month.";
-  return "Budget almost full — slow down unless this was planned.";
+  if (moneyLeft < 0) return "Plan exceeded — tighten spending or adjust your monthly intent.";
+  if (spendPct < 25) return "You’re well within your monthly plan.";
+  if (spendPct < 55) return "Smooth pace so far — healthy plan utilization.";
+  if (spendPct < 80) return "Past halfway — keep discretionary categories in check.";
+  if (spendPct < 95) return "Plan usage is high for this point in the month.";
+  return "Close to full plan usage — spend intentionally for the rest of this cycle.";
 }
 
 export function weekSpendComparison(transactions: PersonalTransaction[], monthFilter: string): {

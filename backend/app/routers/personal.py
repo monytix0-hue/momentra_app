@@ -749,8 +749,14 @@ async def get_summary(user_id: str = Depends(get_current_user_id)) -> PersonalSu
     signals = [SignalOut.model_validate(s) for s in raw["recent_signals"]]
     return PersonalSummaryOut(
         money_left=raw["money_left"],
+        lifestyle_budget=raw["lifestyle_budget"],
+        savings_target=raw["savings_target"],
+        planned_monthly_envelope=raw["planned_monthly_envelope"],
+        plan_remaining=raw["plan_remaining"],
+        potential_savings=raw["potential_savings"],
         total_allocated=raw["total_allocated"],
         total_spent_period=raw["total_spent_period"],
+        total_income_period=raw["total_income_period"],
         period_label=raw["period_label"],
         insights=raw["insights"],
         top_category=raw["top_category"],

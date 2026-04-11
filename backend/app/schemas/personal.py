@@ -190,6 +190,11 @@ class SignalOut(BaseModel):
 
 class PersonalSummaryOut(BaseModel):
     money_left: Decimal
+    lifestyle_budget: Decimal = Decimal("0")
+    savings_target: Decimal = Decimal("0")
+    planned_monthly_envelope: Decimal = Decimal("0")
+    plan_remaining: Decimal = Decimal("0")
+    potential_savings: Decimal = Decimal("0")
     total_allocated: Decimal
     total_spent_period: Decimal
     total_income_period: Decimal = Decimal("0")

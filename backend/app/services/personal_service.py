@@ -15,6 +15,32 @@ def _f(x: Any) -> float:
     return float(x) if x is not None else 0.0
 
 
+def _safe_date(value: Any) -> date | None:
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        s = value.strip()
+        if not s:
+            return None
+        try:
+            return date.fromisoformat(s[:10])
+        except ValueError:
+            return None
+    return None
+
+
+def _is_active_on(row: dict[str, Any], today: date) -> bool:
+    if str(row.get("status") or "").strip().lower() not in {"", "active"}:
+        return False
+    start_d = _safe_date(row.get("start_date"))
+    end_d = _safe_date(row.get("end_date"))
+    if start_d is not None and today < start_d:
+        return False
+    if end_d is not None and today > end_d:
+        return False
+    return True
+
+
 def recompute_cycle_spent(sb: Client, cycle_id: str) -> Decimal:
     r = sb.table("personal_transactions").select("amount").eq("cycle_id", cycle_id).execute()
     rows = as_dict_rows(r.data)
@@ -269,10 +295,22 @@ def build_summary(sb: Client, user_id: str) -> dict[str, Any]:
         end_m = date(today.year, today.month + 1, 1) - timedelta(days=1)
 
     total_allocated = Decimal("0")
-    total_spent_cycles = Decimal("0")
+    savings_target = Decimal("0")
     try:
-        moments = sb.table("personal_moments").select("moment_id").eq("user_id", user_id).execute()
-        mids = [str(m["moment_id"]) for m in as_dict_rows(moments.data)]
+        moments = (
+            sb.table("personal_moments")
+            .select("moment_id,moment_type,target_amount,status,start_date,end_date")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        moment_rows = as_dict_rows(moments.data)
+        mids = [str(m["moment_id"]) for m in moment_rows if m.get("moment_id")]
+        for m in moment_rows:
+            if str(m.get("moment_type") or "").strip().lower() != "budget":
+                continue
+            if not _is_active_on(m, today):
+                continue
+            savings_target += Decimal(str(_f(m.get("target_amount"))))
         if mids:
             cycles = (
                 sb.table("personal_cycles")
@@ -284,7 +322,6 @@ def build_summary(sb: Client, user_id: str) -> dict[str, Any]:
             )
             for c in as_dict_rows(cycles.data):
                 total_allocated += Decimal(str(_f(c.get("allocated_budget"))))
-                total_spent_cycles += Decimal(str(_f(c.get("spent_amount"))))
     except APIError:
         pass
 
@@ -308,13 +345,13 @@ def build_summary(sb: Client, user_id: str) -> dict[str, Any]:
     total_income_period = Decimal(str(round(sum(_f(t.get("amount")) for t in income_rows), 2)))
     total_spent_period = Decimal(str(round(sum(_f(t.get("amount")) for t in expense_rows), 2)))
 
-    # Money left: income-based if the user recorded income this month, else budget-based
-    if total_income_period > 0:
-        money_left = total_income_period - total_spent_period
-    else:
-        money_left = calculate_money_left(total_allocated, total_spent_cycles)
-        if total_allocated == 0 and total_spent_period > 0:
-            money_left = -total_spent_period
+    # Financial Intent Model
+    lifestyle_budget = total_allocated
+    planned_envelope = lifestyle_budget + savings_target
+    plan_remaining = planned_envelope - total_spent_period
+    potential_savings = planned_envelope - total_spent_period
+    # Compatibility field for older clients; mirrors plan_remaining now.
+    money_left = plan_remaining
 
     top_category = None
     if expense_rows:
@@ -341,6 +378,11 @@ def build_summary(sb: Client, user_id: str) -> dict[str, Any]:
 
     return {
         "money_left": money_left,
+        "lifestyle_budget": lifestyle_budget,
+        "savings_target": savings_target,
+        "planned_monthly_envelope": planned_envelope,
+        "plan_remaining": plan_remaining,
+        "potential_savings": potential_savings,
         "total_allocated": total_allocated,
         "total_spent_period": total_spent_period,
         "total_income_period": total_income_period,

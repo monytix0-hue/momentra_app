@@ -9,6 +9,10 @@ import {
   BUDGET_TEMPLATE_CUSTOM,
   BUDGET_TEMPLATES,
   defaultCycleLabelForNow,
+  SAVINGS_STYLE_CUSTOM,
+  SAVINGS_STYLES,
+  savingsStyleHint,
+  suggestSavingsTarget,
 } from "@/lib/personal/budget-templates";
 import {
   applyGoalTemplate,
@@ -166,9 +170,11 @@ export function PersonalDashboard() {
   const [txnFeedback, setTxnFeedback] = useState<string | null>(null);
 
   const [budgetTemplateId, setBudgetTemplateId] = useState(BUDGET_TEMPLATE_CUSTOM);
-  const [momentTitle, setMomentTitle] = useState("My budget");
+  const [momentTitle, setMomentTitle] = useState("My financial plan");
   const [cycleLabel, setCycleLabel] = useState(defaultCycleLabelForNow);
-  const [allocated, setAllocated] = useState("50000");
+  const [allocated, setAllocated] = useState("35000");
+  const [savingsStyleId, setSavingsStyleId] = useState("balanced");
+  const [savingsTarget, setSavingsTarget] = useState("4375");
 
   const activeBudgetTemplate = useMemo(
     () => BUDGET_TEMPLATES.find((b) => b.id === budgetTemplateId),
@@ -181,10 +187,26 @@ export function PersonalDashboard() {
     const t = BUDGET_TEMPLATES.find((b) => b.id === id);
     if (!t) return;
     const a = applyBudgetTemplate(t);
+    const activeStyle = SAVINGS_STYLES.find((x) => x.id === savingsStyleId) ?? SAVINGS_STYLES[1];
     setMomentTitle(a.momentTitle);
     setCycleLabel(a.cycleLabel);
-    setAllocated(a.allocated);
+    setAllocated(a.lifestyleBudget);
+    setSavingsTarget(String(suggestSavingsTarget(Number(a.lifestyleBudget), activeStyle)));
     logAnalyticsEvent("personal_budget_template_selected", { template_id: id });
+  }
+
+  const activeSavingsStyle = useMemo(
+    () => SAVINGS_STYLES.find((s) => s.id === savingsStyleId),
+    [savingsStyleId],
+  );
+
+  function selectSavingsStyle(id: string) {
+    setSavingsStyleId(id);
+    if (id === SAVINGS_STYLE_CUSTOM) return;
+    const style = SAVINGS_STYLES.find((x) => x.id === id);
+    if (!style) return;
+    setSavingsTarget(String(suggestSavingsTarget(parseFloat(allocated) || 0, style)));
+    logAnalyticsEvent("personal_savings_style_selected", { style_id: id });
   }
 
   const [goalTemplateId, setGoalTemplateId] = useState(GOAL_TEMPLATE_CUSTOM);
@@ -319,17 +341,36 @@ export function PersonalDashboard() {
     }
   }, [user?.uid, txnCategories]);
 
-  const spendPct = useMemo(() => {
+  const planUsedPct = useMemo(() => {
     if (!summary) return 0;
-    const alloc = Number(summary.total_allocated);
+    const envelope = Number(summary.planned_monthly_envelope ?? (Number(summary.total_allocated) + Number(summary.savings_target ?? 0)));
     const spent = Number(summary.total_spent_period);
-    if (alloc <= 0) return spent > 0 ? 100 : 0;
-    return Math.min(100, Math.round((spent / alloc) * 100));
+    if (envelope <= 0) return spent > 0 ? 100 : 0;
+    return Math.min(100, Math.round((spent / envelope) * 100));
   }, [summary]);
 
-  const ml = useMemo(() => (summary ? Number(summary.money_left) : 0), [summary]);
-  const incomeBased = useMemo(() => summary ? Number(summary.total_income_period ?? 0) > 0 : false, [summary]);
-  const moneyStory = useMemo(() => moneyLeftStory(spendPct, ml), [spendPct, ml]);
+  const lifestyleBudget = useMemo(
+    () => (summary ? Number(summary.lifestyle_budget ?? summary.total_allocated) : 0),
+    [summary],
+  );
+  const savingsMonthlyTarget = useMemo(
+    () => (summary ? Number(summary.savings_target ?? 0) : 0),
+    [summary],
+  );
+  const plannedEnvelope = useMemo(
+    () => (summary ? Number(summary.planned_monthly_envelope ?? lifestyleBudget + savingsMonthlyTarget) : 0),
+    [summary, lifestyleBudget, savingsMonthlyTarget],
+  );
+  const spentThisPeriod = useMemo(() => (summary ? Number(summary.total_spent_period) : 0), [summary]);
+  const planRemaining = useMemo(
+    () => (summary ? Number(summary.plan_remaining ?? summary.money_left ?? (plannedEnvelope - spentThisPeriod)) : 0),
+    [summary, plannedEnvelope, spentThisPeriod],
+  );
+  const potentialSavings = useMemo(
+    () => (summary ? Number(summary.potential_savings ?? (plannedEnvelope - spentThisPeriod)) : 0),
+    [summary, plannedEnvelope, spentThisPeriod],
+  );
+  const moneyStory = useMemo(() => moneyLeftStory(planUsedPct, planRemaining), [planUsedPct, planRemaining]);
   const todaySnapshot = useMemo(() => computeTodaySnapshot(transactions), [transactions]);
   const pace = useMemo(
     () => computeMonthlyPace(summary, txMonth || currentMonthStr()),
@@ -450,7 +491,10 @@ export function PersonalDashboard() {
       cancelTransactionEdit();
       const snap = await refresh();
       if (snap.summary) {
-        const alloc = Number(snap.summary.total_allocated);
+        const alloc = Number(
+          snap.summary.planned_monthly_envelope ??
+            (Number(snap.summary.total_allocated) + Number(snap.summary.savings_target ?? 0)),
+        );
         const spent = Number(snap.summary.total_spent_period);
         const pct = alloc <= 0 ? (spent > 0 ? 100 : 0) : Math.min(100, Math.round((spent / alloc) * 100));
         if (!wasEdit) {
@@ -463,7 +507,7 @@ export function PersonalDashboard() {
           } else if (fbFree) {
             catLabel = fbFree;
           }
-          setTxnFeedback(txnAddFeedback(pct, catLabel, snap.budgets, fbCatId || null, fbSubId || null));
+              setTxnFeedback(txnAddFeedback(pct, catLabel, snap.budgets, fbCatId || null, fbSubId || null));
         } else {
           setTxnFeedback("Changes saved.");
         }
@@ -580,11 +624,13 @@ export function PersonalDashboard() {
     setBusy(true);
     try {
       const token = await user.getIdToken();
+      const lifestyle = parseFloat(allocated) || 0;
+      const savings = parseFloat(savingsTarget) || 0;
       const m = await createMoment(token, {
         title: momentTitle,
         moment_type: "budget",
         duration_type: "ongoing",
-        target_amount: parseFloat(allocated) || null,
+        target_amount: savings > 0 ? savings : null,
         status: "active",
       });
       const start = new Date();
@@ -595,10 +641,15 @@ export function PersonalDashboard() {
         label: cycleLabel,
         start_date: start.toISOString().slice(0, 10),
         end_date: end.toISOString().slice(0, 10),
-        allocated_budget: parseFloat(allocated) || 0,
+        allocated_budget: lifestyle,
       });
       await refresh();
-      logAnalyticsEvent("personal_moment_created", { type: "budget" });
+      logAnalyticsEvent("personal_moment_created", {
+        type: "budget",
+        lifestyle_budget: lifestyle,
+        savings_target: savings,
+        savings_style: savingsStyleId,
+      });
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Setup failed");
     } finally {
@@ -658,7 +709,7 @@ export function PersonalDashboard() {
           <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-ink/35">Personal</p>
           <h1 className="mt-m-3 text-[22px] font-bold tracking-[-0.3px] text-ink">Your financial cockpit</h1>
           <p className="mt-2 text-[13px] leading-relaxed text-ink/65">
-            Sign in to track Money Left, cycles, and insights.
+            Sign in to track Plan Remaining, cycles, and insights.
           </p>
           <Link
             href="/login?next=/personal"
@@ -753,36 +804,38 @@ export function PersonalDashboard() {
               </span>
             ) : null}
             <PersonalMoneyHero
-              moneyLeftLabel={inr(ml)}
+              planRemainingLabel={inr(planRemaining)}
               story={moneyStory}
-              spendPct={incomeBased
-                ? Math.min(100, Math.round((Number(summary?.total_spent_period ?? 0) / Math.max(Number(summary?.total_income_period ?? 1), 1)) * 100))
-                : spendPct}
+              planUsedPct={planUsedPct}
+              spendingLabel={inr(spentThisPeriod)}
+              spendingTargetLabel={inr(lifestyleBudget)}
+              savingsLabel={inr(potentialSavings)}
+              savingsTargetLabel={inr(savingsMonthlyTarget)}
               expectedSoFar={pace?.expectedSoFar ?? null}
               actualSoFar={pace?.actualSoFar ?? null}
-              showPaceCompare={!incomeBased && Boolean(summary && Number(summary.total_allocated) > 0 && pace)}
+              showPaceCompare={Boolean(summary && plannedEnvelope > 0 && pace)}
               formatInr={formatInrInsight}
-              incomeBased={incomeBased}
-              incomeLabel={incomeBased ? inr(Number(summary?.total_income_period ?? 0)) : undefined}
-              spentLabel={incomeBased ? inr(Number(summary?.total_spent_period ?? 0)) : undefined}
             />
             <div className="grid gap-m-4 sm:grid-cols-2">
               <div className="rounded-m-card border border-ctx-border/40 bg-ctx-hero/50 p-m-4">
                 <p className="text-[9px] font-semibold uppercase tracking-wider text-ink/35">
-                  Allocated · active cycles
+                  Lifestyle budget
                 </p>
                 <p className="mt-2 text-[22px] font-bold tabular-nums text-ink">
-                  {summary ? inr(summary.total_allocated) : "—"}
+                  {summary ? inr(lifestyleBudget) : "—"}
                 </p>
               </div>
               <div className="rounded-m-card border border-ctx-border/40 bg-ctx-hero/50 p-m-4">
                 <p className="text-[9px] font-semibold uppercase tracking-wider text-ink/35">
-                  Spent · {summary?.period_label ?? "—"}
+                  Savings target
                 </p>
                 <p className="mt-2 text-[22px] font-bold tabular-nums text-ink">
-                  {summary ? inr(summary.total_spent_period) : "—"}
+                  {summary ? inr(savingsMonthlyTarget) : "—"}
                 </p>
               </div>
+            </div>
+            <div className="rounded-m-card border border-ctx-border/35 bg-ctx-hero/35 px-m-4 py-m-3 text-[12px] text-ink-3">
+              Planned monthly envelope: <span className="font-semibold text-ink">{summary ? inr(plannedEnvelope) : "—"}</span>
             </div>
           </div>
 
@@ -1023,32 +1076,62 @@ export function PersonalDashboard() {
             </div>
 
             <div className={`${cardCls} p-m-6 lg:col-span-7`}>
-              <SectionRule title="Budget Plans" />
+              <SectionRule title="Financial intent setup" />
               <p className="mb-m-4 text-[12px] leading-relaxed text-ink-4">
-                Choose a template to pre-fill amounts, or enter your own — then create a budget period (moment + cycle).
+                Step 1 sets your lifestyle budget. Step 2 sets your savings discipline. Together they create your monthly
+                plan envelope.
               </p>
               <form onSubmit={(e) => void onQuickSetup(e)} className="grid gap-m-3">
                 <div>
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-ink-4">
-                    Budget template
+                    Step 1 · Primary budget (lifestyle)
                   </label>
                   <select
                     value={budgetTemplateId}
                     onChange={(e) => selectBudgetTemplate(e.target.value)}
                     className={inputCls}
                   >
-                    <option value={BUDGET_TEMPLATE_CUSTOM}>Custom — use my own values below</option>
+                    <option value={BUDGET_TEMPLATE_CUSTOM}>Use my own lifestyle budget</option>
                     {BUDGET_TEMPLATES.map((t) => (
                       <option key={t.id} value={t.id}>
-                        {t.name} ({inr(t.allocatedBudget)}/mo suggested)
+                        {t.label} ({inr(t.lifestyleBudget)}/mo)
                       </option>
                     ))}
                   </select>
                   {activeBudgetTemplate ? (
-                    <p className="mt-m-2 text-[11px] leading-relaxed text-ink-3">{activeBudgetTemplate.blurb}</p>
+                    <p className="mt-m-2 text-[11px] leading-relaxed text-ink-3">
+                      Typical monthly spend for this lifestyle: {inr(activeBudgetTemplate.lifestyleBudget)} ·{" "}
+                      {activeBudgetTemplate.positioning}
+                    </p>
                   ) : (
                     <p className="mt-m-2 text-[11px] leading-relaxed text-ink-4">
-                      All fields stay editable—adjust the title, cycle name, or monthly cap anytime.
+                      All fields stay editable — set your own lifestyle budget and naming.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-ink-4">
+                    Step 2 · Savings style (discipline layer)
+                  </label>
+                  <select
+                    value={savingsStyleId}
+                    onChange={(e) => selectSavingsStyle(e.target.value)}
+                    className={inputCls}
+                  >
+                    {SAVINGS_STYLES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                    <option value={SAVINGS_STYLE_CUSTOM}>Set my own target</option>
+                  </select>
+                  {activeSavingsStyle ? (
+                    <p className="mt-m-2 text-[11px] leading-relaxed text-ink-3">
+                      {savingsStyleHint(activeSavingsStyle)} {activeSavingsStyle.behavior}.
+                    </p>
+                  ) : (
+                    <p className="mt-m-2 text-[11px] leading-relaxed text-ink-4">
+                      Set your own savings target in ₹.
                     </p>
                   )}
                 </div>
@@ -1076,15 +1159,40 @@ export function PersonalDashboard() {
                     onChange={(e) => {
                       setBudgetTemplateId(BUDGET_TEMPLATE_CUSTOM);
                       setAllocated(e.target.value);
+                      if (savingsStyleId !== SAVINGS_STYLE_CUSTOM) {
+                        const style = SAVINGS_STYLES.find((x) => x.id === savingsStyleId);
+                        if (style) {
+                          setSavingsTarget(String(suggestSavingsTarget(parseFloat(e.target.value) || 0, style)));
+                        }
+                      }
                     }}
                     className={inputCls}
-                    placeholder="Monthly budget (₹)"
+                    placeholder="Lifestyle budget (₹)"
                     type="number"
                     min={0}
                   />
                 </div>
+                <div className="grid gap-m-3 sm:grid-cols-2">
+                  <input
+                    value={savingsTarget}
+                    onChange={(e) => {
+                      setSavingsStyleId(SAVINGS_STYLE_CUSTOM);
+                      setSavingsTarget(e.target.value);
+                    }}
+                    className={inputCls}
+                    placeholder="Savings target (₹)"
+                    type="number"
+                    min={0}
+                  />
+                  <div className="rounded-m-chip border border-surface-300 bg-bg2 px-m-3 py-2.5 text-[12px] text-ink-3">
+                    Planned envelope:{" "}
+                    <span className="font-semibold text-ink">
+                      {inr((parseFloat(allocated) || 0) + (parseFloat(savingsTarget) || 0))}
+                    </span>
+                  </div>
+                </div>
                 <button type="submit" disabled={busy} className={btnPrimaryCls}>
-                  Create moment + cycle
+                  Create financial plan
                 </button>
               </form>
               {moments.length > 0 ? (

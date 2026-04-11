@@ -26,6 +26,11 @@ async function parseJson<T>(res: Response): Promise<T> {
 
 export type PersonalSummary = {
   money_left: string | number;
+  lifestyle_budget?: string | number;
+  savings_target?: string | number;
+  planned_monthly_envelope?: string | number;
+  plan_remaining?: string | number;
+  potential_savings?: string | number;
   total_allocated: string | number;
   total_spent_period: string | number;
   total_income_period?: string | number;
