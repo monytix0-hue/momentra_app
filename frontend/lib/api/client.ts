@@ -13,6 +13,20 @@ export type ProfileDto = {
   updated_at?: string | null;
 };
 
+/** Extract a human-readable message from a FastAPI/JSON error response body. */
+async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
+  const text = await res.text().catch(() => "");
+  if (!text) return fallback;
+  try {
+    const json = JSON.parse(text) as Record<string, unknown>;
+    if (typeof json.detail === "string") return json.detail;
+    if (typeof json.message === "string") return json.message;
+  } catch {
+    // not JSON — return raw text
+  }
+  return text;
+}
+
 export async function syncUserProfile(
   idToken: string,
   body?: { display_name?: string | null; photo_url?: string | null },
@@ -29,8 +43,8 @@ export async function syncUserProfile(
     }),
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `Sync failed (${res.status})`);
+    const msg = await extractErrorMessage(res, `Sync failed (${res.status})`);
+    throw new Error(msg);
   }
 }
 
@@ -39,8 +53,8 @@ export async function fetchUserProfile(idToken: string): Promise<ProfileDto> {
     headers: { Authorization: `Bearer ${idToken}` },
   });
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `Profile fetch failed (${res.status})`);
+    const msg = await extractErrorMessage(res, `Profile fetch failed (${res.status})`);
+    throw new Error(msg);
   }
   return res.json() as Promise<ProfileDto>;
 }

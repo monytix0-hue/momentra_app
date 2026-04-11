@@ -1,7 +1,23 @@
 "use client";
 
+import QRCode from "react-qr-code";
 import type { BusinessMember, BusinessMemberInvite, BusinessUnit } from "@/lib/api/business";
 import { shortUserId } from "@/lib/business/format";
+
+/** Rewrite the backend-origin URL to the browser origin so it works in dev too. */
+function normalizeBusinessJoinUrl(joinUrlFromApi: string): string {
+  if (typeof window === "undefined") return joinUrlFromApi;
+  let token: string | null = null;
+  try {
+    const u = new URL(joinUrlFromApi);
+    token = u.searchParams.get("token");
+  } catch {
+    const m = joinUrlFromApi.match(/[?&]token=([^&]+)/);
+    token = m ? decodeURIComponent(m[1]) : null;
+  }
+  if (!token) return joinUrlFromApi;
+  return `${window.location.origin}/business/join?token=${encodeURIComponent(token)}`;
+}
 
 const memberRoleOptions = ["admin", "manager", "approver", "member", "viewer"] as const;
 
@@ -153,21 +169,36 @@ export function TeamMembersSection({
           </button>
         </form>
         {emailInviteNotice ? (
-          <div
-            className={`mt-m-3 rounded-m-chip border px-m-3 py-m-2 text-[12px] ${
-              emailInviteNotice.sent
-                ? "border-urgency-clear-value/35 text-ink"
-                : "border-status-pending-fg/40 text-ink-2"
-            }`}
-          >
-            <p>
+          <div className="mt-m-3 rounded-m-chip border border-ctx-border/40 bg-ctx-hero/30 px-m-3 py-m-3 text-[12px]">
+            <p className="text-ink-2">
               {emailInviteNotice.sent
                 ? "Invitation emailed."
                 : emailInviteNotice.message?.trim() || "Invite ready — share the link."}
             </p>
-            <button type="button" className="mt-2 text-[10px] font-bold uppercase tracking-[0.1em] text-ctx-accent" onClick={onCopyInviteLink}>
-              Copy invite link
-            </button>
+            <div className="mt-m-3 flex flex-col gap-m-3 sm:flex-row sm:items-start">
+              <div className="shrink-0 rounded-m-chip border border-surface-300 bg-bg2 p-m-2">
+                <QRCode value={normalizeBusinessJoinUrl(emailInviteNotice.join_url)} size={112} />
+              </div>
+              <div className="min-w-0 flex-1 space-y-m-2">
+                <p className="break-all font-mono text-[10px] leading-relaxed text-ink-3">
+                  {normalizeBusinessJoinUrl(emailInviteNotice.join_url)}
+                </p>
+                <button
+                  type="button"
+                  className="rounded-m-chip border border-ctx-border/60 px-m-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-ctx-accent hover:border-ctx-accent"
+                  onClick={() => {
+                    const url = normalizeBusinessJoinUrl(emailInviteNotice.join_url);
+                    if (typeof navigator !== "undefined" && navigator.clipboard) {
+                      void navigator.clipboard.writeText(url).catch(() => onCopyInviteLink());
+                    } else {
+                      onCopyInviteLink();
+                    }
+                  }}
+                >
+                  Copy link
+                </button>
+              </div>
+            </div>
           </div>
         ) : null}
 

@@ -7,7 +7,7 @@ import { BusinessDashboard } from "@/components/business/business-dashboard";
 
 export function BusinessWorkspacePage({ workspaceId }: { workspaceId: string }) {
   const { user, loading } = useAuth();
-  const [workspaces, setWorkspaces] = useState<BusinessWorkspace[]>([]);
+  const [workspaces, setWorkspaces] = useState<BusinessWorkspace[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,6 +27,16 @@ export function BusinessWorkspacePage({ workspaceId }: { workspaceId: string }) 
       <p className="rounded-m-chip border border-urgency-high/40 bg-bg2 px-m-3 py-m-2 text-[12px] text-urgency-high">
         {err}
       </p>
+    );
+  }
+
+  // Don't render the dashboard until the workspace list is ready — prevents the
+  // header from flashing "Workspace" and the switcher from showing an empty list.
+  if (loading || workspaces === null) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-ctx-accent/30 border-t-ctx-accent" />
+      </div>
     );
   }
 
