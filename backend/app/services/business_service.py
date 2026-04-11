@@ -45,7 +45,7 @@ def _fetch_workspace(sb: Client, workspace_id: str) -> dict[str, Any] | None:
         .maybe_single()
         .execute()
     )
-    return r.data
+    return r.data if r is not None else None
 
 
 def _assert_workspace(sb: Client, workspace_id: str) -> dict[str, Any]:
@@ -64,7 +64,7 @@ def _fetch_member(sb: Client, user_id: str, workspace_id: str) -> dict[str, Any]
         .maybe_single()
         .execute()
     )
-    if not r.data:
+    if r is None or not r.data:
         raise PermissionError("not_a_member")
     return r.data
 
@@ -358,15 +358,15 @@ def preview_member_invite(sb: Client, token: str) -> dict[str, Any]:
     t = token.strip()
     if len(t) < 8:
         raise ValueError("invalid_token")
-    inv = (
+    _inv_r = (
         sb.table("business_member_invites")
         .select("*")
         .eq("invite_token", t)
         .is_("accepted_at", None)
         .maybe_single()
         .execute()
-        .data
     )
+    inv = _inv_r.data if _inv_r is not None else None
     if not inv:
         raise ValueError("invite_not_found")
     exp = inv.get("expires_at")
@@ -378,7 +378,8 @@ def preview_member_invite(sb: Client, token: str) -> dict[str, Any]:
     unit_name = None
     uid = inv.get("unit_id")
     if uid:
-        unit = sb.table("business_units").select("name").eq("unit_id", str(uid)).maybe_single().execute().data
+        _unit_r = sb.table("business_units").select("name").eq("unit_id", str(uid)).maybe_single().execute()
+        unit = _unit_r.data if _unit_r is not None else None
         unit_name = str(unit.get("name")) if unit else None
     return {
         "workspace_id": inv["workspace_id"],
@@ -394,15 +395,15 @@ def accept_member_invite(sb: Client, user_id: str, user_email: str | None, token
     t = token.strip()
     if len(t) < 8:
         raise ValueError("invalid_token")
-    inv = (
+    _inv_r2 = (
         sb.table("business_member_invites")
         .select("*")
         .eq("invite_token", t)
         .is_("accepted_at", None)
         .maybe_single()
         .execute()
-        .data
     )
+    inv = _inv_r2.data if _inv_r2 is not None else None
     if not inv:
         raise ValueError("invite_not_found")
     exp = inv.get("expires_at")
@@ -454,7 +455,7 @@ def update_member(
         patch["unit_id"] = str(patch["unit_id"])
     if not patch:
         cur = sb.table("business_members").select("*").eq("member_id", member_id).maybe_single().execute()
-        if not cur.data:
+        if cur is None or not cur.data:
             raise ValueError("member_not_found")
         return cur.data
     r = sb.table("business_members").update(patch).eq("member_id", member_id).eq("workspace_id", workspace_id).execute()
@@ -533,7 +534,7 @@ def _assert_ref_in_workspace(
         .maybe_single()
         .execute()
     )
-    if not r.data:
+    if r is None or not r.data:
         raise ValueError(err)
 
 
@@ -628,7 +629,7 @@ def list_spends(sb: Client, user_id: str, workspace_id: str) -> list[dict[str, A
 
 def _get_spend_for_action(sb: Client, spend_id: str) -> dict[str, Any]:
     r = sb.table("business_spends").select("*").eq("spend_id", spend_id).maybe_single().execute()
-    if not r.data:
+    if r is None or not r.data:
         raise ValueError("spend_not_found")
     return r.data
 

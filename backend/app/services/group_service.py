@@ -104,7 +104,7 @@ def _merge_create_fields(body: GroupMomentCreate) -> dict[str, Any]:
 def _fetch_group(sb: Client, group_id: str) -> dict[str, Any] | None:
     try:
         r = sb.table("group_moments").select("*").eq("group_id", group_id).maybe_single().execute()
-        return r.data
+        return r.data if r is not None else None
     except APIError:
         return None
 
@@ -136,7 +136,7 @@ def assert_member(sb: Client, user_id: str, group_id: str) -> dict[str, Any]:
         .maybe_single()
         .execute()
     )
-    if not r.data:
+    if r is None or not r.data:
         raise PermissionError("not_a_member")
     return r.data
 
@@ -316,7 +316,7 @@ def create_group_moment(sb: Client, creator_id: str, body: GroupMomentCreate) ->
             .maybe_single()
             .execute()
         )
-        if prof.data and prof.data.get("display_name"):
+        if prof is not None and prof.data and prof.data.get("display_name"):
             creator_name = str(prof.data["display_name"])
     except APIError:
         pass
@@ -510,7 +510,7 @@ def update_participant(
             .maybe_single()
             .execute()
         )
-        if not r.data:
+        if r is None or not r.data:
             raise ValueError("participant_not_found")
         return r.data
     sb.table("group_participants").update(raw).eq("participant_id", participant_id).eq("group_id", group_id).execute()
@@ -521,7 +521,7 @@ def update_participant(
         .maybe_single()
         .execute()
     )
-    if not r2.data:
+    if r2 is None or not r2.data:
         raise ValueError("participant_not_found")
     return r2.data
 
@@ -536,7 +536,7 @@ def remove_participant(sb: Client, user_id: str, group_id: str, participant_id: 
         .maybe_single()
         .execute()
     )
-    if not target.data:
+    if target is None or not target.data:
         raise ValueError("participant_not_found")
     if str(target.data.get("role")) == "admin":
         others = (
@@ -573,7 +573,7 @@ def send_participant_invite(
         .maybe_single()
         .execute()
     )
-    if not r.data:
+    if r is None or not r.data:
         raise ValueError("participant_not_found")
     p = r.data
     if str(p.get("status")) != "invited" or p.get("user_id"):
@@ -598,7 +598,7 @@ def send_participant_invite(
         .maybe_single()
         .execute()
     )
-    if not r2.data:
+    if r2 is None or not r2.data:
         raise ValueError("participant_not_found")
     p2 = r2.data
     final_email = (str(p2.get("invite_email") or "").strip() or None)
@@ -686,7 +686,7 @@ def accept_group_invite(sb: Client, user_id: str, user_email: str | None, token:
         .maybe_single()
         .execute()
     )
-    if dup.data and str(dup.data.get("participant_id")) != pid:
+    if dup is not None and dup.data and str(dup.data.get("participant_id")) != pid:
         raise ValueError("already_member")
 
     sb.table("group_participants").update(
@@ -900,7 +900,7 @@ def update_commitment(
         .maybe_single()
         .execute()
     )
-    if not cur.data:
+    if cur is None or not cur.data:
         raise ValueError("not_found")
     row = dict(cur.data)
     if "committed_amount" in patch and patch["committed_amount"] is not None:
@@ -924,10 +924,11 @@ def update_commitment(
     }
     sb.table("group_commitments").update(up).eq("commitment_id", commitment_id).execute()
     r2 = sb.table("group_commitments").select("*").eq("commitment_id", commitment_id).maybe_single().execute()
-    if r2.data and r2.data.get("cycle_id"):
-        sync_cycle_collected(sb, str(r2.data["cycle_id"]))
+    r2_data = r2.data if r2 is not None else None
+    if r2_data and r2_data.get("cycle_id"):
+        sync_cycle_collected(sb, str(r2_data["cycle_id"]))
     refresh_group_signals(sb, group_id)
-    return r2.data or {}
+    return r2_data or {}
 
 
 def delete_commitment(sb: Client, user_id: str, group_id: str, commitment_id: str) -> None:
@@ -940,7 +941,7 @@ def delete_commitment(sb: Client, user_id: str, group_id: str, commitment_id: st
         .maybe_single()
         .execute()
     )
-    if not cur.data:
+    if cur is None or not cur.data:
         raise ValueError("not_found")
     cycle_id = cur.data.get("cycle_id")
     sb.table("group_commitments").delete().eq("commitment_id", commitment_id).eq("group_id", group_id).execute()
@@ -969,7 +970,7 @@ def record_commitment_payment(
         .maybe_single()
         .execute()
     )
-    if not cur.data:
+    if cur is None or not cur.data:
         raise ValueError("not_found")
     paid = _d(cur.data.get("paid_amount")) + body.amount
     committed = _d(cur.data.get("committed_amount"))
@@ -991,7 +992,7 @@ def record_commitment_payment(
         sync_cycle_collected(sb, str(cur.data["cycle_id"]))
     refresh_group_signals(sb, group_id)
     r2 = sb.table("group_commitments").select("*").eq("commitment_id", commitment_id).maybe_single().execute()
-    return r2.data or {}
+    return (r2.data if r2 is not None else None) or {}
 
 
 def list_expenses(sb: Client, user_id: str, group_id: str) -> list[dict[str, Any]]:
@@ -1116,7 +1117,7 @@ def _insert_expense_row(
     )
     refresh_group_signals(sb, group_id)
     r = sb.table("group_expenses").select("*").eq("expense_id", eid).maybe_single().execute()
-    out = dict(r.data or ins.data[0])
+    out = dict((r.data if r is not None else None) or ins.data[0])
     sh2 = sb.table("group_expense_shares").select("*").eq("expense_id", eid).execute().data or []
     out["shares"] = sh2
     return out
@@ -1243,7 +1244,7 @@ def update_recurring_expense(
         .maybe_single()
         .execute()
     )
-    if not cur.data:
+    if cur is None or not cur.data:
         raise ValueError("not_found")
     row = cur.data
     raw = body.model_dump(exclude_unset=True)
@@ -1304,7 +1305,7 @@ def update_recurring_expense(
         .maybe_single()
         .execute()
     )
-    if not r2.data:
+    if r2 is None or not r2.data:
         raise ValueError("not_found")
     d = dict(r2.data)
     sj = d.pop("shares_json", []) or []
@@ -1324,7 +1325,7 @@ def delete_recurring_expense(sb: Client, user_id: str, group_id: str, recurring_
         .maybe_single()
         .execute()
     )
-    if not r.data:
+    if r is None or not r.data:
         raise ValueError("not_found")
     sb.table("group_recurring_expenses").delete().eq("recurring_id", recurring_id).execute()
 
@@ -1341,7 +1342,7 @@ def apply_recurring_templates_to_cycle(
         .maybe_single()
         .execute()
     )
-    if not cyc.data:
+    if cyc is None or not cyc.data:
         raise ValueError("not_found")
     start = date.fromisoformat(str(cyc.data["start_date"]))
     templates = (
@@ -1365,7 +1366,7 @@ def apply_recurring_templates_to_cycle(
             .maybe_single()
             .execute()
         )
-        if exists.data:
+        if exists is not None and exists.data:
             skipped += 1
             continue
         body = _recurring_template_to_expense_create(tmpl, cycle_id, start)
