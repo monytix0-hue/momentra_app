@@ -28,6 +28,7 @@ export type PersonalSummary = {
   money_left: string | number;
   total_allocated: string | number;
   total_spent_period: string | number;
+  total_income_period?: string | number;
   period_label: string;
   insights: string[];
   top_category: string | null;
@@ -309,6 +310,16 @@ export async function createMoment(
     body: JSON.stringify(body),
   });
   return parseJson<PersonalMoment>(res);
+}
+
+export async function deleteMoment(token: string, momentId: string): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/moments/${momentId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    return parseJson<void>(res);
+  }
 }
 
 export async function fetchGoals(token: string): Promise<PersonalGoal[]> {

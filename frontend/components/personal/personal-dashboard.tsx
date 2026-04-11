@@ -37,6 +37,7 @@ import {
   createGoal,
   createMoment,
   createTransaction,
+  deleteMoment,
   deleteTransaction,
   evaluateSignals,
   fetchBudgets,
@@ -327,6 +328,7 @@ export function PersonalDashboard() {
   }, [summary]);
 
   const ml = useMemo(() => (summary ? Number(summary.money_left) : 0), [summary]);
+  const incomeBased = useMemo(() => summary ? Number(summary.total_income_period ?? 0) > 0 : false, [summary]);
   const moneyStory = useMemo(() => moneyLeftStory(spendPct, ml), [spendPct, ml]);
   const todaySnapshot = useMemo(() => computeTodaySnapshot(transactions), [transactions]);
   const pace = useMemo(
@@ -370,7 +372,13 @@ export function PersonalDashboard() {
       setCategoryId("");
       setSubcategoryId("");
     }
-    txnFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Scroll to form — use both scrollIntoView and window.scrollTo for mobile reliability
+    const el = txnFormRef.current;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      const top = el.getBoundingClientRect().top + window.scrollY - 16;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
   }
 
   function cancelTransactionEdit() {
@@ -598,6 +606,21 @@ export function PersonalDashboard() {
     }
   }
 
+  async function onDeleteMoment(momentId: string) {
+    if (!user) return;
+    if (!confirm("Delete this moment and all its cycles? This cannot be undone.")) return;
+    setBusy(true);
+    try {
+      const token = await user.getIdToken();
+      await deleteMoment(token, momentId);
+      await refresh();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onEvaluate() {
     if (!user) return;
     setBusy(true);
@@ -732,11 +755,16 @@ export function PersonalDashboard() {
             <PersonalMoneyHero
               moneyLeftLabel={inr(ml)}
               story={moneyStory}
-              spendPct={spendPct}
+              spendPct={incomeBased
+                ? Math.min(100, Math.round((Number(summary?.total_spent_period ?? 0) / Math.max(Number(summary?.total_income_period ?? 1), 1)) * 100))
+                : spendPct}
               expectedSoFar={pace?.expectedSoFar ?? null}
               actualSoFar={pace?.actualSoFar ?? null}
-              showPaceCompare={Boolean(summary && Number(summary.total_allocated) > 0 && pace)}
+              showPaceCompare={!incomeBased && Boolean(summary && Number(summary.total_allocated) > 0 && pace)}
               formatInr={formatInrInsight}
+              incomeBased={incomeBased}
+              incomeLabel={incomeBased ? inr(Number(summary?.total_income_period ?? 0)) : undefined}
+              spentLabel={incomeBased ? inr(Number(summary?.total_spent_period ?? 0)) : undefined}
             />
             <div className="grid gap-m-4 sm:grid-cols-2">
               <div className="rounded-m-card border border-ctx-border/40 bg-ctx-hero/50 p-m-4">
@@ -995,10 +1023,9 @@ export function PersonalDashboard() {
             </div>
 
             <div className={`${cardCls} p-m-6 lg:col-span-7`}>
-              <SectionRule title="Quick setup" />
+              <SectionRule title="Budget Plans" />
               <p className="mb-m-4 text-[12px] leading-relaxed text-ink-4">
-                Choose a budget template to pre-fill amounts, then tweak any field before you create your
-                moment and cycle.
+                Choose a template to pre-fill amounts, or enter your own — then create a budget period (moment + cycle).
               </p>
               <form onSubmit={(e) => void onQuickSetup(e)} className="grid gap-m-3">
                 <div>
@@ -1060,81 +1087,45 @@ export function PersonalDashboard() {
                   Create moment + cycle
                 </button>
               </form>
+              {moments.length > 0 ? (
+                <div className="mt-m-6 border-t border-rule pt-m-4">
+                  <p className="mb-m-3 text-[10px] font-semibold uppercase tracking-wider text-ink/35">
+                    Existing moments
+                  </p>
+                  <ul className="flex flex-col gap-m-2">
+                    {moments.map((m) => {
+                      const mCycles = cycles.filter((c) => c.moment_id === m.moment_id);
+                      return (
+                        <li
+                          key={m.moment_id}
+                          className="flex items-center justify-between gap-m-3 rounded-m-chip border border-surface-300/60 bg-bg2/60 px-m-3 py-2.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-[13px] text-ink/80">{m.title}</p>
+                            <p className="text-[10px] text-ink/35">
+                              {mCycles.length} cycle{mCycles.length !== 1 ? "s" : ""}
+                              {mCycles.length > 0
+                                ? ` · ${inr(mCycles.reduce((s, c) => s + c.allocated_budget, 0))}/period`
+                                : ""}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void onDeleteMoment(m.moment_id)}
+                            className="shrink-0 rounded-m-chip border border-urgency-high/30 px-m-3 py-1.5 text-[10px] font-medium text-urgency-high/70 transition-colors duration-fast hover:border-urgency-high/60 hover:text-urgency-high disabled:opacity-40"
+                          >
+                            Delete
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           </section>
 
-          <section className={`${cardCls} p-m-6 md:p-m-8 lg:col-span-12`}>
-            <SectionRule title="Ledger filters" />
-            <div className="mt-m-2 grid gap-m-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-ink-4">
-                  Month
-                </label>
-                <input
-                  type="month"
-                  value={txMonth}
-                  onChange={(e) => setTxMonth(e.target.value)}
-                  className={inputCls}
-                />
-                <button
-                  type="button"
-                  className="mt-1.5 text-[10px] font-medium uppercase tracking-wider text-ink/65 hover:text-ink hover:underline"
-                  onClick={() => setTxMonth("")}
-                >
-                  Clear month (all dates)
-                </button>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-ink-4">
-                  Cycle
-                </label>
-                <select
-                  value={txCycleFilter}
-                  onChange={(e) => setTxCycleFilter(e.target.value)}
-                  className={inputCls}
-                >
-                  <option value="">All cycles</option>
-                  {cycles.map((c) => (
-                    <option key={c.cycle_id} value={c.cycle_id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-ink-4">
-                  Category
-                </label>
-                <select
-                  value={txCategoryFilter}
-                  onChange={(e) => setTxCategoryFilter(e.target.value)}
-                  className={inputCls}
-                  disabled={txnCategories.length === 0}
-                >
-                  <option value="">All categories</option>
-                  {txnCategories.map((c) => (
-                    <option key={c.category_id} value={c.category_id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-ink-4">
-                  Merchant
-                </label>
-                <input
-                  value={txMerchantFilter}
-                  onChange={(e) => setTxMerchantFilter(e.target.value)}
-                  className={inputCls}
-                  placeholder="Contains…"
-                />
-              </div>
-            </div>
-            <p className="mt-m-3 text-[11px] text-ink-4">
-              List, export, and category insights above refresh when filters change.
-            </p>
-          </section>
 
           <section className={`${cardCls} p-m-6 md:p-m-8 lg:col-span-12`}>
             <SectionRule title="Category budgets" />
@@ -1281,8 +1272,16 @@ export function PersonalDashboard() {
 
           {/* Bottom row: form + ledger */}
           <div className="grid grid-cols-1 gap-[28px] lg:col-span-12 lg:grid-cols-12 lg:gap-[28px]">
-            <div ref={txnFormRef} className={`${cardCls} p-m-6 md:p-m-8 lg:col-span-5`}>
+            <div
+              ref={txnFormRef}
+              className={`${cardCls} p-m-6 md:p-m-8 lg:col-span-5 transition-shadow duration-300 ${editingTransaction ? "ring-2 ring-ctx-accent/50 shadow-[0_0_32px_-8px_var(--ctx-accent)]" : ""}`}
+            >
               <SectionRule title={editingTransaction ? "Edit transaction" : "Add transaction"} />
+              {editingTransaction ? (
+                <p className="mb-m-2 rounded-m-chip bg-ctx-accent/10 px-m-3 py-1.5 text-[11px] font-medium text-ctx-accent">
+                  Editing: {editingTransaction.merchant || editingTransaction.category || "transaction"} · {inr(editingTransaction.amount)}
+                </p>
+              ) : null}
               <form onSubmit={(e) => void onAddTransaction(e)} className="mt-m-2 grid gap-m-3">
                 <div className="grid gap-m-3 sm:grid-cols-2">
                   <input
@@ -1299,7 +1298,7 @@ export function PersonalDashboard() {
                     value={txDate}
                     onChange={(e) => setTxDate(e.target.value)}
                     type="date"
-                    className={inputCls}
+                    className={`${inputCls} [color-scheme:dark]`}
                   />
                 </div>
                 <div className="grid gap-m-3 sm:grid-cols-2">

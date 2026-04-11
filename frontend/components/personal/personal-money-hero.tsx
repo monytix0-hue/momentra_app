@@ -11,6 +11,9 @@ export function PersonalMoneyHero({
   actualSoFar,
   showPaceCompare,
   formatInr,
+  incomeBased,
+  incomeLabel,
+  spentLabel,
 }: {
   moneyLeftLabel: string;
   story: string;
@@ -19,6 +22,9 @@ export function PersonalMoneyHero({
   actualSoFar: number | null;
   showPaceCompare: boolean;
   formatInr: (n: number) => string;
+  incomeBased?: boolean;
+  incomeLabel?: string;
+  spentLabel?: string;
 }) {
   return (
     <section className={`${cardCls} p-m-6 md:p-m-8`}>
@@ -28,15 +34,22 @@ export function PersonalMoneyHero({
           background: "linear-gradient(90deg, transparent, var(--ctx-accent), transparent)",
         }}
       />
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/35">Money left</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink/35">
+        {incomeBased ? "Money left after expenses" : "Money left"}
+      </p>
       <p className="mt-m-3 text-[36px] font-bold leading-none tracking-[-0.8px] text-ctx-accent">
         {moneyLeftLabel}
       </p>
+      {incomeBased && incomeLabel && spentLabel ? (
+        <p className="mt-m-2 text-[12px] text-ink/50">
+          <span className="text-ctx-accent/80">{incomeLabel}</span> income · <span>{spentLabel}</span> spent
+        </p>
+      ) : null}
       <p className="mt-m-3 max-w-xl text-[14px] leading-relaxed text-ink/65">{story}</p>
 
       <div className="mt-m-6">
         <div className="mb-1.5 flex justify-between text-[10px] uppercase tracking-wider text-ink/35">
-          <span>Budget used this period</span>
+          <span>{incomeBased ? "Spent of income" : "Budget used this period"}</span>
           <span className="tabular-nums text-ink">{spendPct}%</span>
         </div>
         <div

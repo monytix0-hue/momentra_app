@@ -958,6 +958,48 @@ def delete_commitment(sb: Client, user_id: str, group_id: str, commitment_id: st
     refresh_group_signals(sb, group_id)
 
 
+def get_positions(sb: Client, user_id: str, group_id: str) -> list[dict[str, Any]]:
+    """Return per-participant position summary for a group moment."""
+    assert_member(sb, user_id, group_id)
+
+    # Load participants
+    p_r = sb.table("group_participants").select("participant_id,display_name,status").eq("group_id", group_id).execute()
+    participants = [p for p in (p_r.data or []) if p.get("status") != "removed"]
+
+    # Load all commitments for this group
+    c_r = sb.table("group_commitments").select("participant_id,committed_amount,paid_amount").eq("group_id", group_id).execute()
+    commitments = c_r.data or []
+
+    # Aggregate per participant
+    agg: dict[str, dict[str, Decimal]] = {}
+    for c in commitments:
+        pid = str(c.get("participant_id") or "")
+        if not pid:
+            continue
+        if pid not in agg:
+            agg[pid] = {"planned": Decimal("0"), "paid": Decimal("0")}
+        agg[pid]["planned"] += _d(c.get("committed_amount"))
+        agg[pid]["paid"] += _d(c.get("paid_amount"))
+
+    rows = []
+    for p in participants:
+        pid = str(p.get("participant_id") or "")
+        bucket = agg.get(pid, {"planned": Decimal("0"), "paid": Decimal("0")})
+        planned = bucket["planned"]
+        paid = bucket["paid"]
+        rows.append({
+            "participant_id": pid,
+            "display_name": p.get("display_name") or "Member",
+            "planned_commitment": planned,
+            "paid_contribution": paid,
+            "net_position": paid - planned,
+        })
+
+    # Sort: most negative (owes most) first
+    rows.sort(key=lambda r: r["net_position"])
+    return rows
+
+
 def record_commitment_payment(
     sb: Client, user_id: str, group_id: str, commitment_id: str, body: PayCommitmentBody
 ) -> dict[str, Any]:

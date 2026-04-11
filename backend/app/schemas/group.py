@@ -405,5 +405,16 @@ class GroupHomeOut(BaseModel):
     top_signals: list[GroupSignalOut]
 
 
+# --- Positions ---
+
+
+class GroupPositionOut(BaseModel):
+    participant_id: UUID
+    display_name: str
+    planned_commitment: Decimal
+    paid_contribution: Decimal
+    net_position: Decimal
+
+
 # Resolve forward refs
 GroupMomentDetailOut.model_rebuild()

@@ -301,15 +301,25 @@ def build_summary(sb: Client, user_id: str) -> dict[str, Any]:
     except APIError:
         month_rows = []
 
-    total_spent_period = sum(_f(t.get("amount")) for t in month_rows)
-    money_left = calculate_money_left(total_allocated, total_spent_cycles)
-    if total_allocated == 0 and total_spent_period > 0:
-        money_left = -Decimal(str(total_spent_period))
+    # Separate income from expenses — "Income" category (slug: income, label contains Income)
+    income_rows = [t for t in month_rows if (t.get("category") or "").strip().lower() in ("income",)]
+    expense_rows = [t for t in month_rows if (t.get("category") or "").strip().lower() not in ("income",)]
+
+    total_income_period = Decimal(str(round(sum(_f(t.get("amount")) for t in income_rows), 2)))
+    total_spent_period = Decimal(str(round(sum(_f(t.get("amount")) for t in expense_rows), 2)))
+
+    # Money left: income-based if the user recorded income this month, else budget-based
+    if total_income_period > 0:
+        money_left = total_income_period - total_spent_period
+    else:
+        money_left = calculate_money_left(total_allocated, total_spent_cycles)
+        if total_allocated == 0 and total_spent_period > 0:
+            money_left = -total_spent_period
 
     top_category = None
-    if month_rows:
+    if expense_rows:
         by_cat: dict[str, float] = {}
-        for t in month_rows:
+        for t in expense_rows:
             c = (t.get("category") or "uncategorized").strip() or "uncategorized"
             by_cat[c] = by_cat.get(c, 0) + _f(t.get("amount"))
         top_category = max(by_cat, key=lambda k: by_cat[k])
@@ -332,7 +342,8 @@ def build_summary(sb: Client, user_id: str) -> dict[str, Any]:
     return {
         "money_left": money_left,
         "total_allocated": total_allocated,
-        "total_spent_period": Decimal(str(round(total_spent_period, 2))),
+        "total_spent_period": total_spent_period,
+        "total_income_period": total_income_period,
         "period_label": f"{calendar.month_name[today.month]} {today.year}",
         "insights": insights,
         "top_category": top_category,

@@ -11,6 +11,7 @@ import {
   fetchGroupCommitments,
   fetchGroupDetail,
   fetchGroupExpenses,
+  fetchGroupPositions,
   fetchGroupRecurringExpenses,
   generateNextGroupCycle,
   payCommitment,
@@ -18,6 +19,7 @@ import {
   updateGroupCommitment,
   type GroupCommitment,
   type GroupMomentDetail,
+  type GroupPosition,
   type GroupRecurringExpense,
 } from "@/lib/api/group";
 import {
@@ -133,7 +135,7 @@ function statusTone(status: string) {
   return "text-status-pending-fg border-status-pending-fg/30 bg-status-pending-fg/10";
 }
 
-type Tab = "overview" | "commitments" | "expenses" | "activity";
+type Tab = "overview" | "commitments" | "expenses" | "activity" | "positions";
 
 export function GroupDetailLayout({ groupId }: { groupId: string }) {
   const { user, loading: authLoading } = useAuth();
@@ -142,6 +144,7 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
   const [expenses, setExpenses] = useState<Awaited<ReturnType<typeof fetchGroupExpenses>>>([]);
   const [recurring, setRecurring] = useState<GroupRecurringExpense[]>([]);
   const [activity, setActivity] = useState<Awaited<ReturnType<typeof fetchGroupActivity>>>([]);
+  const [positions, setPositions] = useState<GroupPosition[]>([]);
   const [tab, setTab] = useState<Tab>("overview");
   const [err, setErr] = useState<string | null>(null);
   const [payFor, setPayFor] = useState<GroupCommitment | null>(null);
@@ -171,18 +174,20 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
     const token = await user.getIdToken();
     setErr(null);
     try {
-      const [d, c, e, a, rec] = await Promise.all([
+      const [d, c, e, a, rec, pos] = await Promise.all([
         fetchGroupDetail(token, groupId),
         fetchGroupCommitments(token, groupId),
         fetchGroupExpenses(token, groupId),
         fetchGroupActivity(token, groupId),
         fetchGroupRecurringExpenses(token, groupId),
+        fetchGroupPositions(token, groupId),
       ]);
       setDetail(d);
       setCommitments(c);
       setExpenses(e);
       setActivity(a);
       setRecurring(rec);
+      setPositions(pos);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load");
     }
@@ -602,7 +607,8 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
 
   const tabDefs = [
     ["overview", "Overview"],
-    ["commitments", "Commitments"],
+    ["commitments", "Commitments & Contributions"],
+    ["positions", "Positions"],
     ["expenses", "Expenses"],
     ["activity", "Activity"],
   ] as const;
@@ -711,19 +717,19 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                 ) : null}
                 <div className="grid gap-m-3 border-t border-ctx-border/25 pt-m-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-ctx-text/62">Moment Budget</p>
+                    <p className="mt-1 text-[17px] font-semibold tabular-nums text-ctx-text">
+                      {detail.summary.target_amount != null ? money(num(detail.summary.target_amount)) : "—"}
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-[10px] uppercase tracking-[0.12em] text-ctx-text/62">Collected</p>
                     <p className="mt-1 text-[17px] font-semibold tabular-nums text-ctx-text">
                       {money(num(detail.summary.collected_amount))}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-ctx-text/62">Target</p>
-                    <p className="mt-1 text-[17px] font-semibold tabular-nums text-ctx-text">
-                      {detail.summary.target_amount != null ? money(num(detail.summary.target_amount)) : "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-ctx-text/62">Pending</p>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-ctx-text/62">Pending commitment</p>
                     <p className="mt-1 text-[17px] font-semibold tabular-nums text-status-pending-fg">
                       {detail.summary.pending_commitment_count}
                     </p>
@@ -833,15 +839,16 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                 <>
                   {isGroupAdmin ? (
                     <p className="mb-m-4 max-w-2xl text-[12px] leading-relaxed text-ink-3">
-                      As admin you can correct <span className="text-ink2">committed amount</span> and{" "}
-                      <span className="text-ink2">due date</span>, or delete a stray line (for example a duplicate row).
+                      <span className="font-semibold text-ink">Planned commitment</span> = each member&apos;s expected share. As expenses happen,{" "}
+                      <span className="font-semibold text-ink">paid contribution</span> tracks what has actually been paid.
+                      Admins can adjust the planned amount or due date below.
                     </p>
                   ) : null}
                   {!commitments.length ? (
                     <p className="text-[14px] leading-relaxed text-ink-2">
                       {detail.funding_model === "pooled"
-                        ? "No commitments yet. With a pooled target, each member gets a share to pay toward the pot — they show up here once created."
-                        : "No commitments. Commitments appear when you pool funds with a target across members."}
+                        ? "No planned commitments yet. Once created, each member's share and paid contribution appear here."
+                        : "No commitments. They appear when members split the moment budget across participants."}
                     </p>
                   ) : (
                     <ul className="space-y-m-2">
@@ -890,7 +897,9 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                                 <>
                                   <span className="text-ink-3"> · </span>
                                   <span className="text-ink-2">
-                                    {money(num(c.paid_amount))} / {money(num(c.committed_amount))}
+                                    <span className="text-ink-4 text-[10px]">paid </span>{money(num(c.paid_amount))}
+                                    <span className="text-ink-4"> / </span>
+                                    <span className="text-ink-4 text-[10px]">planned </span>{money(num(c.committed_amount))}
                                   </span>
                                   <span className="text-ink-3"> · </span>
                                   <span
@@ -1336,6 +1345,64 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
 
               {tab === "activity" && (
                 <ActivityTimeline items={activity} emptyLabel="No activity in this group yet." />
+              )}
+
+              {tab === "positions" && (
+                <div>
+                  <p className="mb-m-4 text-[12px] leading-relaxed text-ink-3">
+                    Per-member financial position across all cycles. Planned commitment is the total amount committed; paid contribution is what has actually been recorded as paid.
+                  </p>
+                  {positions.length === 0 ? (
+                    <p className="text-[13px] text-ink-3">No commitments recorded yet.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[540px] border-separate border-spacing-0 text-[12px]">
+                        <thead>
+                          <tr>
+                            <th className="border-b border-rule pb-m-2 text-left text-[10px] font-semibold uppercase tracking-wider text-ink/35">Member</th>
+                            <th className="border-b border-rule pb-m-2 text-right text-[10px] font-semibold uppercase tracking-wider text-ink/35">Planned</th>
+                            <th className="border-b border-rule pb-m-2 text-right text-[10px] font-semibold uppercase tracking-wider text-ink/35">Paid</th>
+                            <th className="border-b border-rule pb-m-2 text-right text-[10px] font-semibold uppercase tracking-wider text-ink/35">Net position</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {positions.map((p) => {
+                            const net = num(p.net_position);
+                            const netCls = net >= 0 ? "text-status-ok-fg" : "text-urgency-high";
+                            return (
+                              <tr key={p.participant_id} className="group/row">
+                                <td className="py-m-3 pr-m-4 align-top font-medium text-ink/80">
+                                  {p.display_name}
+                                </td>
+                                <td className="py-m-3 pr-m-4 text-right tabular-nums text-ink/65">
+                                  {money(num(p.planned_commitment))}
+                                </td>
+                                <td className="py-m-3 pr-m-4 text-right tabular-nums text-ink/65">
+                                  {money(num(p.paid_contribution))}
+                                </td>
+                                <td className={`py-m-3 text-right tabular-nums font-semibold ${netCls}`}>
+                                  {net >= 0 ? "+" : ""}{money(net)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr>
+                            <td className="border-t border-rule pt-m-3 text-[10px] font-semibold uppercase tracking-wider text-ink/35">Total</td>
+                            <td className="border-t border-rule pt-m-3 text-right tabular-nums font-semibold text-ink">
+                              {money(positions.reduce((s, p) => s + num(p.planned_commitment), 0))}
+                            </td>
+                            <td className="border-t border-rule pt-m-3 text-right tabular-nums font-semibold text-ink">
+                              {money(positions.reduce((s, p) => s + num(p.paid_contribution), 0))}
+                            </td>
+                            <td className="border-t border-rule pt-m-3 text-right tabular-nums font-semibold text-ink/35">—</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </GroupSurfaceCard>

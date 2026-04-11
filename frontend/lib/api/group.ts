@@ -493,6 +493,21 @@ export async function generateNextGroupCycle(token: string, groupId: string): Pr
   return parseJson<GroupCycle>(res);
 }
 
+export type GroupPosition = {
+  participant_id: string;
+  display_name: string;
+  planned_commitment: number;
+  paid_contribution: number;
+  net_position: number;
+};
+
+export async function fetchGroupPositions(token: string, groupId: string): Promise<GroupPosition[]> {
+  const res = await fetch(`${getApiBaseUrl()}/group/moments/${groupId}/positions`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return parseJson(res);
+}
+
 export async function postGroupReminder(
   token: string,
   groupId: string,

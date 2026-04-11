@@ -183,6 +183,22 @@ async def list_moments(user_id: str = Depends(get_current_user_id)) -> list[Mome
         raise HTTPException(status_code=502, detail=str(e)) from e
 
 
+@router.delete("/moments/{moment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_moment(
+    moment_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+) -> Response:
+    sb = _sb()
+    existing = sb.table("personal_moments").select("moment_id").eq("moment_id", str(moment_id)).eq("user_id", user_id).maybe_single().execute()
+    if existing is None or not existing.data:
+        raise HTTPException(status_code=404, detail="Moment not found")
+    try:
+        sb.table("personal_moments").delete().eq("moment_id", str(moment_id)).eq("user_id", user_id).execute()
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post("/cycles", response_model=CycleOut)
 async def create_cycle(
     body: CycleCreate,

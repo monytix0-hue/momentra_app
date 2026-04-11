@@ -192,6 +192,7 @@ class PersonalSummaryOut(BaseModel):
     money_left: Decimal
     total_allocated: Decimal
     total_spent_period: Decimal
+    total_income_period: Decimal = Decimal("0")
     period_label: str
     insights: list[str]
     top_category: str | None

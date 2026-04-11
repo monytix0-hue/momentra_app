@@ -48,6 +48,7 @@ from app.schemas.group import (
     GroupInviteSendOut,
     GroupReminderCreate,
     GroupReminderOut,
+    GroupPositionOut,
     GroupSettlementCreate,
     GroupSettlementOut,
     GroupSignalOut,
@@ -511,6 +512,21 @@ def get_commitments(
     except APIError as e:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e)) from e
     return [GroupCommitmentOut.model_validate(r) for r in rows]
+
+
+@router.get("/moments/{group_id}/positions", response_model=list[GroupPositionOut])
+def get_positions(
+    group_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+) -> list[GroupPositionOut]:
+    sb = _sb()
+    try:
+        rows = group_service.get_positions(sb, user_id, str(group_id))
+    except PermissionError as e:
+        raise _http_from_service_err(e) from e
+    except APIError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e)) from e
+    return [GroupPositionOut.model_validate(r) for r in rows]
 
 
 @router.post("/moments/{group_id}/commitments", response_model=list[GroupCommitmentOut])
