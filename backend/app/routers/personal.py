@@ -15,10 +15,12 @@ from app.postgrest_rows import as_dict_row, as_dict_rows
 from app.schemas.personal import (
     BudgetCreate,
     BudgetOut,
+    BudgetUpdate,
     CycleCreate,
     CycleOut,
     GoalCreate,
     GoalOut,
+    GoalUpdate,
     MomentCreate,
     MomentOut,
     PersonalSummaryOut,
@@ -691,6 +693,100 @@ async def list_goals(user_id: str = Depends(get_current_user_id)) -> list[GoalOu
     try:
         res = sb.table("personal_goals").select("*").eq("user_id", user_id).order("target_date").execute()
         return [GoalOut.model_validate(r) for r in as_dict_rows(res.data)]
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.patch("/goals/{goal_id}", response_model=GoalOut)
+async def update_goal(
+    goal_id: UUID,
+    body: GoalUpdate,
+    user_id: str = Depends(get_current_user_id),
+) -> GoalOut:
+    sb = _sb()
+    payload = body.model_dump(exclude_unset=True)
+    if not payload:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    if "target_date" in payload and payload["target_date"] is not None:
+        payload["target_date"] = str(payload["target_date"])
+    for field in ("target_amount", "saved_amount"):
+        if field in payload:
+            payload[field] = float(payload[field])
+    try:
+        existing = _exec(
+            sb.table("personal_goals")
+            .select("goal_id")
+            .eq("goal_id", str(goal_id))
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        if existing.data is None:
+            raise HTTPException(status_code=404, detail="Goal not found")
+        res = _exec(
+            sb.table("personal_goals")
+            .update(payload)
+            .eq("goal_id", str(goal_id))
+            .eq("user_id", user_id)
+            .execute()
+        )
+        return GoalOut.model_validate(_one(res.data))
+    except HTTPException:
+        raise
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.patch("/budgets/{budget_id}", response_model=BudgetOut)
+async def update_budget(
+    budget_id: UUID,
+    body: BudgetUpdate,
+    user_id: str = Depends(get_current_user_id),
+) -> BudgetOut:
+    sb = _sb()
+    try:
+        # Verify ownership via cycle → moment → user_id chain
+        bud = _exec(
+            sb.table("personal_budgets")
+            .select("budget_id,cycle_id")
+            .eq("budget_id", str(budget_id))
+            .maybe_single()
+            .execute()
+        )
+        bud_row = as_dict_row(bud.data)
+        if bud_row is None:
+            raise HTTPException(status_code=404, detail="Budget not found")
+        cyc = _exec(
+            sb.table("personal_cycles")
+            .select("cycle_id,moment_id")
+            .eq("cycle_id", str(bud_row["cycle_id"]))
+            .maybe_single()
+            .execute()
+        )
+        cyc_row = as_dict_row(cyc.data)
+        if cyc_row is None:
+            raise HTTPException(status_code=404, detail="Cycle not found")
+        own = _exec(
+            sb.table("personal_moments")
+            .select("moment_id")
+            .eq("moment_id", str(cyc_row["moment_id"]))
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        if own.data is None:
+            raise HTTPException(status_code=404, detail="Budget not found")
+        res = _exec(
+            sb.table("personal_budgets")
+            .update({"allocated_amount": float(body.allocated_amount)})
+            .eq("budget_id", str(budget_id))
+            .execute()
+        )
+        out = BudgetOut.model_validate(_one(res.data))
+        personal_service.recompute_budget_spent_for_cycle(sb, str(bud_row["cycle_id"]))
+        return out
+    except HTTPException:
+        raise
     except APIError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
 

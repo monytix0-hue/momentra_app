@@ -357,6 +357,37 @@ export async function createGoal(
   return parseJson<PersonalGoal>(res);
 }
 
+export async function updateGoal(
+  token: string,
+  goalId: string,
+  body: {
+    title?: string;
+    target_amount?: number;
+    saved_amount?: number;
+    target_date?: string | null;
+  },
+): Promise<PersonalGoal> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/goals/${goalId}`, {
+    method: "PATCH",
+    headers: await headersJson(token),
+    body: JSON.stringify(body),
+  });
+  return parseJson<PersonalGoal>(res);
+}
+
+export async function updateBudget(
+  token: string,
+  budgetId: string,
+  allocated_amount: number,
+): Promise<PersonalBudget> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/budgets/${budgetId}`, {
+    method: "PATCH",
+    headers: await headersJson(token),
+    body: JSON.stringify({ allocated_amount }),
+  });
+  return parseJson<PersonalBudget>(res);
+}
+
 export async function evaluateSignals(token: string): Promise<{ insights: number }> {
   const res = await fetch(`${getApiBaseUrl()}/personal/signals/evaluate`, {
     method: "POST",

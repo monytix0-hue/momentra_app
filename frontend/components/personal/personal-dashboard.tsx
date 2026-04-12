@@ -53,6 +53,8 @@ import {
   fetchTransactionCategories,
   fetchTransactions,
   transactionsToCsv,
+  updateBudget,
+  updateGoal,
   updateTransaction,
   type PersonalBudget,
   type PersonalCycle,
@@ -168,6 +170,17 @@ export function PersonalDashboard() {
   const addGoalRef = useRef<HTMLDivElement>(null);
 
   const [txnFeedback, setTxnFeedback] = useState<string | null>(null);
+
+  // Goal editing state
+  const [editingGoal, setEditingGoal] = useState<PersonalGoal | null>(null);
+  const [editGoalTitle, setEditGoalTitle] = useState("");
+  const [editGoalTarget, setEditGoalTarget] = useState("");
+  const [editGoalSaved, setEditGoalSaved] = useState("");
+  const [editGoalDate, setEditGoalDate] = useState("");
+
+  // Budget editing state
+  const [editingBudget, setEditingBudget] = useState<PersonalBudget | null>(null);
+  const [editBudgetAmount, setEditBudgetAmount] = useState("");
 
   const [budgetTemplateId, setBudgetTemplateId] = useState(BUDGET_TEMPLATE_CUSTOM);
   const [momentTitle, setMomentTitle] = useState("My financial plan");
@@ -636,6 +649,66 @@ export function PersonalDashboard() {
     }
   }
 
+  function startEditGoal(g: PersonalGoal) {
+    setEditingGoal(g);
+    setEditGoalTitle(g.title);
+    setEditGoalTarget(String(g.target_amount));
+    setEditGoalSaved(String(g.saved_amount));
+    setEditGoalDate(g.target_date ?? "");
+  }
+
+  function cancelEditGoal() {
+    setEditingGoal(null);
+  }
+
+  async function onSaveGoal(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !editingGoal) return;
+    setBusy(true);
+    try {
+      const token = await user.getIdToken();
+      await updateGoal(token, editingGoal.goal_id, {
+        title: editGoalTitle.trim() || undefined,
+        target_amount: parseFloat(editGoalTarget) || undefined,
+        saved_amount: parseFloat(editGoalSaved),
+        target_date: editGoalDate || null,
+      });
+      setEditingGoal(null);
+      await refresh();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Update failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEditBudget(b: PersonalBudget) {
+    setEditingBudget(b);
+    setEditBudgetAmount(String(b.allocated_amount));
+  }
+
+  function cancelEditBudget() {
+    setEditingBudget(null);
+  }
+
+  async function onSaveBudget(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !editingBudget) return;
+    const amt = parseFloat(editBudgetAmount);
+    if (!Number.isFinite(amt) || amt < 0) return;
+    setBusy(true);
+    try {
+      const token = await user.getIdToken();
+      await updateBudget(token, editingBudget.budget_id, amt);
+      setEditingBudget(null);
+      await refresh();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Update failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onQuickSetup(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
@@ -910,42 +983,98 @@ export function PersonalDashboard() {
                     const paceHint = goalPaceHint(g);
                     const cheer = goalEncouragement(sv, tgt, g.target_date);
                     const timeLeft = goalTimeLeftLabel(g.target_date);
+                    const isEditing = editingGoal?.goal_id === g.goal_id;
                     return (
                       <li
                         key={g.goal_id}
                         className="rounded-m-card border border-ctx-border/35 bg-ctx-hero/40 p-m-4"
                       >
-                        <div className="flex items-start justify-between gap-m-3">
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-ink/65">{g.title}</p>
-                            <div className="mt-0.5 flex flex-wrap items-center gap-x-m-2 gap-y-0.5 text-[10px] uppercase tracking-wider text-ink/35">
-                              {g.target_date ? <span>Target {g.target_date}</span> : null}
-                              {timeLeft ? (
-                                <span className="normal-case tracking-normal text-ink/65">
-                                  · {timeLeft}
-                                </span>
-                              ) : null}
+                        {isEditing ? (
+                          <form onSubmit={(e) => void onSaveGoal(e)} className="grid gap-m-2">
+                            <input
+                              autoFocus
+                              value={editGoalTitle}
+                              onChange={(e) => setEditGoalTitle(e.target.value)}
+                              className={`${inputCls} py-2 text-[12px]`}
+                              placeholder="Goal title"
+                            />
+                            <div className="grid grid-cols-2 gap-m-2">
+                              <div>
+                                <label className="mb-1 block text-[9px] uppercase tracking-wider text-ink/35">Target (₹)</label>
+                                <input
+                                  value={editGoalTarget}
+                                  onChange={(e) => setEditGoalTarget(e.target.value)}
+                                  type="number"
+                                  min={0}
+                                  className={`${inputCls} py-2 text-[12px]`}
+                                  placeholder="Target amount"
+                                />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-[9px] uppercase tracking-wider text-ink/35">Saved so far (₹)</label>
+                                <input
+                                  value={editGoalSaved}
+                                  onChange={(e) => setEditGoalSaved(e.target.value)}
+                                  type="number"
+                                  min={0}
+                                  className={`${inputCls} py-2 text-[12px]`}
+                                  placeholder="0"
+                                />
+                              </div>
                             </div>
-                          </div>
-                          <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">
-                            {pct}%
-                          </span>
-                        </div>
-                        <div className="mt-m-3 h-1.5 overflow-hidden rounded-m-cta bg-ctx-surface/90">
-                          <div
-                            className="h-full rounded-m-cta bg-gradient-to-r from-ctx-accent to-ctx-accent-end transition-[width] duration-medium"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <p className="mt-m-2 text-[11px] tabular-nums">
-                          <span className="text-ink">{inr(sv)}</span>
-                          <span className="mx-1 text-ink/35">/</span>
-                          <span className="text-ink">{inr(tgt)}</span>
-                        </p>
-                        <p className="mt-m-2 text-[12px] leading-snug text-ink-3">{cheer}</p>
-                        {paceHint ? (
-                          <p className="mt-m-2 text-[11px] leading-snug text-ink/35">{paceHint}</p>
-                        ) : null}
+                            <input
+                              value={editGoalDate}
+                              onChange={(e) => setEditGoalDate(e.target.value)}
+                              type="date"
+                              className={`${inputCls} py-2 text-[12px] [color-scheme:dark]`}
+                            />
+                            <div className="flex gap-m-2">
+                              <button type="submit" disabled={busy} className="text-[11px] font-semibold text-ctx-accent hover:opacity-80">Save</button>
+                              <button type="button" onClick={cancelEditGoal} className="text-[11px] text-ink/45 hover:text-ink">Cancel</button>
+                            </div>
+                          </form>
+                        ) : (
+                          <>
+                            <div className="flex items-start justify-between gap-m-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-ink/65">{g.title}</p>
+                                <div className="mt-0.5 flex flex-wrap items-center gap-x-m-2 gap-y-0.5 text-[10px] uppercase tracking-wider text-ink/35">
+                                  {g.target_date ? <span>Target {g.target_date}</span> : null}
+                                  {timeLeft ? (
+                                    <span className="normal-case tracking-normal text-ink/65">
+                                      · {timeLeft}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+                              <div className="flex shrink-0 items-center gap-m-3">
+                                <span className="text-sm font-semibold tabular-nums text-ink">{pct}%</span>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditGoal(g)}
+                                  className="text-[10px] font-semibold uppercase tracking-wider text-ink/35 hover:text-ctx-accent"
+                                >
+                                  Edit
+                                </button>
+                              </div>
+                            </div>
+                            <div className="mt-m-3 h-1.5 overflow-hidden rounded-m-cta bg-ctx-surface/90">
+                              <div
+                                className="h-full rounded-m-cta bg-gradient-to-r from-ctx-accent to-ctx-accent-end transition-[width] duration-medium"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <p className="mt-m-2 text-[11px] tabular-nums">
+                              <span className="text-ink">{inr(sv)}</span>
+                              <span className="mx-1 text-ink/35">/</span>
+                              <span className="text-ink">{inr(tgt)}</span>
+                            </p>
+                            <p className="mt-m-2 text-[12px] leading-snug text-ink-3">{cheer}</p>
+                            {paceHint ? (
+                              <p className="mt-m-2 text-[11px] leading-snug text-ink/35">{paceHint}</p>
+                            ) : null}
+                          </>
+                        )}
                       </li>
                     );
                   })
@@ -1374,23 +1503,52 @@ export function PersonalDashboard() {
                   const sp = Number(b.spent_amount);
                   const pct = cap > 0 ? Math.min(100, (sp / cap) * 100) : 0;
                   const label = b.subcategory ? `${b.category} › ${b.subcategory}` : b.category;
+                  const isEditing = editingBudget?.budget_id === b.budget_id;
                   return (
                     <li
                       key={b.budget_id}
-                      className="flex flex-col gap-m-2 border-b border-rule py-m-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"
+                      className="border-b border-rule py-m-3 last:border-0"
                     >
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-ink">{label}</p>
-                        <p className="text-[11px] tabular-nums text-ink-4">
-                          {inr(sp)} of {inr(cap)}
-                        </p>
-                      </div>
-                      <div className="h-2 w-full max-w-xs overflow-hidden rounded-m-cta bg-ctx-surface/90 sm:w-40">
-                        <div
-                          className="h-full rounded-m-cta bg-gradient-to-r from-ctx-accent to-ctx-accent-end"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+                      {isEditing ? (
+                        <form onSubmit={(e) => void onSaveBudget(e)} className="flex items-center gap-m-2">
+                          <p className="shrink-0 truncate text-[12px] font-medium text-ink/65">{label}</p>
+                          <input
+                            autoFocus
+                            value={editBudgetAmount}
+                            onChange={(e) => setEditBudgetAmount(e.target.value)}
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className={`${inputCls} max-w-[120px] py-1.5 text-[12px]`}
+                          />
+                          <button type="submit" disabled={busy} className="shrink-0 text-[11px] font-semibold text-ctx-accent hover:opacity-80">Save</button>
+                          <button type="button" onClick={cancelEditBudget} className="shrink-0 text-[11px] text-ink/45 hover:text-ink">✕</button>
+                        </form>
+                      ) : (
+                        <div className="flex flex-col gap-m-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-ink">{label}</p>
+                            <p className="text-[11px] tabular-nums text-ink-4">
+                              {inr(sp)} of {inr(cap)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-m-3">
+                            <div className="h-2 w-full max-w-xs overflow-hidden rounded-m-cta bg-ctx-surface/90 sm:w-32">
+                              <div
+                                className="h-full rounded-m-cta bg-gradient-to-r from-ctx-accent to-ctx-accent-end"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => startEditBudget(b)}
+                              className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-ink/35 hover:text-ctx-accent"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </li>
                   );
                 })

@@ -232,6 +232,11 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
       (p) => p.user_id === user.uid && p.status === "active" && p.role === "admin",
     );
   }, [user, detail]);
+
+  const myParticipantId = useMemo(() => {
+    if (!user || !detail) return null;
+    return detail.participants.find((p) => p.user_id === user.uid)?.participant_id ?? null;
+  }, [user, detail]);
   const peopleSectionRef = useRef<HTMLDivElement>(null);
   const invitedPendingCount = useMemo(
     () => (detail?.participants ?? []).filter((p) => p.status === "invited" && !p.user_id).length,
@@ -985,21 +990,27 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                                 <>
                                   {left > 0 ? (
                                     <>
-                                      <button
-                                        type="button"
-                                        className={btn}
-                                        onClick={() =>
-                                          void remindParticipant(
-                                            c.participant_id,
-                                            `Reminder: ${money(left)} still open for «${detail.title}».`,
-                                          )
-                                        }
-                                      >
-                                        Remind
-                                      </button>
-                                      <button type="button" className={btn} onClick={() => setPayFor(c)}>
-                                        Record payment
-                                      </button>
+                                      {isGroupAdmin ? (
+                                        <button
+                                          type="button"
+                                          className={btn}
+                                          onClick={() =>
+                                            void remindParticipant(
+                                              c.participant_id,
+                                              `Reminder: ${money(left)} still open for «${detail.title}».`,
+                                            )
+                                          }
+                                        >
+                                          Remind
+                                        </button>
+                                      ) : null}
+                                      {(isGroupAdmin || c.participant_id === myParticipantId) ? (
+                                        <button type="button" className={btn} onClick={() => setPayFor(c)}>
+                                          {isGroupAdmin && c.participant_id !== myParticipantId
+                                            ? "Record payment (admin)"
+                                            : "Record payment"}
+                                        </button>
+                                      ) : null}
                                     </>
                                   ) : null}
                                   {isGroupAdmin ? (

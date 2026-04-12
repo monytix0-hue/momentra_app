@@ -125,6 +125,10 @@ class SpendBreakdownOut(BaseModel):
     total: Decimal
 
 
+class BudgetUpdate(BaseModel):
+    allocated_amount: Decimal
+
+
 class BudgetCreate(BaseModel):
     cycle_id: UUID
     category: str | None = Field(default=None, max_length=50)
@@ -157,6 +161,13 @@ class GoalCreate(BaseModel):
     title: str = Field(max_length=255)
     target_amount: Decimal
     saved_amount: Decimal = Field(default=Decimal("0"))
+    target_date: date | None = None
+
+
+class GoalUpdate(BaseModel):
+    title: str | None = Field(default=None, max_length=255)
+    target_amount: Decimal | None = None
+    saved_amount: Decimal | None = None
     target_date: date | None = None
 
 

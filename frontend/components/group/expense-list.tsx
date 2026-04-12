@@ -73,21 +73,42 @@ export function ExpenseList({
                 ) : null}
               </div>
               {e.shares?.length ? (
-                <ul className="mt-m-2 space-y-1 border-t border-rule pt-m-2 text-[12px] text-ink-2">
-                  {e.shares.map((s) => {
-                    const name = payerNames.get(s.participant_id) ?? s.participant_id;
-                    return (
-                      <li key={s.share_id} className="flex justify-between gap-2">
-                        <span className="min-w-0 truncate" title={name}>
-                          {name}
-                        </span>
-                        <span className="shrink-0 tabular-nums">
-                          Share {money(num(s.owed_amount))}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="mt-m-2 border-t border-rule pt-m-2">
+                  <table className="w-full text-[11px]">
+                    <thead>
+                      <tr className="text-left text-[9px] uppercase tracking-wider text-ink/35">
+                        <th className="pb-1 font-semibold">Member</th>
+                        <th className="pb-1 text-right font-semibold">Paid</th>
+                        <th className="pb-1 text-right font-semibold">Share</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {e.shares.map((s) => {
+                        const name = payerNames.get(s.participant_id) ?? s.participant_id;
+                        const paid = s.participant_id === e.paid_by_participant_id
+                          ? num(e.amount)
+                          : 0;
+                        return (
+                          <tr key={s.share_id} className="text-ink-2">
+                            <td className="max-w-[120px] truncate py-0.5 pr-2" title={name}>
+                              {name}
+                            </td>
+                            <td className="py-0.5 text-right tabular-nums">
+                              {paid > 0 ? (
+                                <span className="text-ctx-accent">{money(paid)}</span>
+                              ) : (
+                                <span className="text-ink/35">—</span>
+                              )}
+                            </td>
+                            <td className="py-0.5 text-right tabular-nums">
+                              {money(num(s.owed_amount))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               ) : null}
             </li>
           );
