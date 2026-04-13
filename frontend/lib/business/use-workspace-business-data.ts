@@ -25,6 +25,7 @@ import {
   type BusinessVendor,
   type BusinessWorkspace,
 } from "@/lib/api/business";
+import { humanizeApiNetworkError } from "@/lib/api/client";
 import { buildWorkspaceBusinessDashboardModel } from "@/lib/business/selectors";
 import type { WorkspaceBusinessDashboardModel } from "@/lib/business/types";
 
@@ -116,7 +117,7 @@ export function useWorkspaceBusinessData(workspaceId: string) {
       setState({
         ...initial,
         loading: false,
-        error: e instanceof Error ? e.message : "Could not load this workspace",
+        error: humanizeApiNetworkError(e),
       });
     }
   }, [user, workspaceId]);

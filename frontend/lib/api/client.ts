@@ -1,7 +1,29 @@
-const defaultBase = "http://127.0.0.1:6000";
+/** Local dev default; production must set NEXT_PUBLIC_API_URL (e.g. Cloudflare Pages env). */
+const defaultBase = "http://127.0.0.1:8002";
 
 export function getApiBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_API_URL ?? defaultBase).replace(/\/$/, "");
+}
+
+/** Turn low-level fetch failures into actionable copy for production misconfig (CORS / API URL). */
+export function humanizeApiNetworkError(e: unknown): string {
+  if (e instanceof Error) {
+    const m = e.message;
+    if (
+      m === "Failed to fetch" ||
+      m.includes("NetworkError") ||
+      m.includes("Load failed") ||
+      m.includes("network")
+    ) {
+      return (
+        "Could not reach the API. On production, set NEXT_PUBLIC_API_URL to your backend HTTPS URL " +
+        "(e.g. Cloudflare Pages environment variables) and add your frontend origin to CORS_ORIGINS on the API. " +
+        "If the site is HTTPS, the API URL must be HTTPS too (mixed content is blocked)."
+      );
+    }
+    return m;
+  }
+  return "Something went wrong";
 }
 
 export type ProfileDto = {
