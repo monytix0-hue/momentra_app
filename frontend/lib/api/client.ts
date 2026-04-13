@@ -16,9 +16,10 @@ export function humanizeApiNetworkError(e: unknown): string {
       m.includes("network")
     ) {
       return (
-        "Could not reach the API. On production, set NEXT_PUBLIC_API_URL to your backend HTTPS URL " +
-        "(e.g. Cloudflare Pages environment variables) and add your frontend origin to CORS_ORIGINS on the API. " +
-        "If the site is HTTPS, the API URL must be HTTPS too (mixed content is blocked)."
+        "Could not reach the API. Set NEXT_PUBLIC_API_URL (not URI) to your backend HTTPS URL, then redeploy — " +
+        "Next.js bakes this in at build time. If you use Vercel but momentra.tech points to Cloudflare (or another host), " +
+        "set the same variable on that project too. On the API server, add this exact site origin to CORS_ORIGINS " +
+        "(e.g. https://momentra.tech). HTTPS page + HTTP API is blocked (mixed content)."
       );
     }
     return m;

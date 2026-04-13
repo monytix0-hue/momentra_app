@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { getApiBaseUrl } from "@/lib/api/client";
 import { approveBusinessSpend, rejectBusinessSpend, submitBusinessSpend } from "@/lib/api/business";
 import { bizMoney, formatBizDateShort, healthToneClasses } from "@/lib/business/format";
 import { useWorkspaceBusinessData } from "@/lib/business/use-workspace-business-data";
@@ -120,10 +121,21 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
   }
 
   if (error || !viewModel || !workspace || !dashboard) {
+    const apiOrigin = getApiBaseUrl();
+    const looksLocal = apiOrigin.includes("127.0.0.1") || apiOrigin.includes("localhost");
     return (
       <div className={`${card} border-urgency-high/30 bg-bg2`}>
         <p className="text-[15px] font-semibold text-urgency-high">Could not open this workspace</p>
         <p className="mt-2 text-[13px] text-ink-2">{error ?? "Something went wrong."}</p>
+        <p className="mt-m-3 rounded-m-chip border border-surface-300/80 bg-bg px-m-3 py-m-2 font-mono text-[11px] leading-relaxed text-ink-3">
+          API base in this build: {apiOrigin}
+          {looksLocal ? (
+            <span className="mt-1 block text-urgency-high">
+              This build is still pointing at localhost — redeploy with NEXT_PUBLIC_API_URL on the host that serves this
+              domain, or fix the domain&apos;s DNS to the deployment that has the variable.
+            </span>
+          ) : null}
+        </p>
         <Link
           href="/workspaces"
           className="mt-m-4 inline-flex min-h-[44px] items-center rounded-m-cta bg-ctx-accent px-m-4 text-[14px] font-semibold text-ctx-hero"
