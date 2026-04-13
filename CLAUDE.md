@@ -87,6 +87,8 @@ npm run build       # production build
 
 **Deploy:** Cloudflare Pages via `wrangler.toml` (`name = "momentra-v1"`). Build output: `.vercel/output/static`.
 
+**Production API:** Set `NEXT_PUBLIC_API_URL` to the deployed FastAPI origin (e.g. `https://backend.mallaapp.org`) in the Pages project environment so the browser never calls `localhost`. The API’s `CORS_ORIGINS` must list every frontend origin that uses it (e.g. `https://momentra.tech`).
+
 **Route structure:**
 ```
 frontend/app/
