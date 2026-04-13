@@ -16,6 +16,7 @@ import {
   type GroupExpense,
   type GroupMomentDetail,
 } from "@/lib/api/group";
+import { fetchTransactionCategories, type PersonalTxnCategory } from "@/lib/api/personal";
 import { mapGroupDetailFromApi, type MapViewModelInput } from "@/lib/group/map-group-to-view-model";
 import { formatInr } from "@/lib/group/selectors";
 import type { GroupDetailViewModel, GroupMemberCardModel } from "@/lib/group/types";
@@ -28,7 +29,10 @@ import { GroupDetailSkeleton } from "@/components/group/GroupDetailSkeleton";
 import { GroupHubError } from "@/components/group/GroupHubError";
 import { GroupSummaryHero } from "@/components/group/GroupSummaryHero";
 import { ExpenseList } from "@/components/group/expense-list";
-import { GROUP_EXPENSE_CATEGORY_OPTIONS } from "@/lib/group/expense-categories";
+import {
+  categoryOptionsFromTree,
+  resolveTxnSubcategoryLabel,
+} from "@/lib/group/expense-categories";
 import { groupBackChip, groupBtnPrimary, groupPanelElevated, groupSectionTitle } from "@/lib/group/group-ui";
 
 const field =
@@ -58,6 +62,38 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
 
   const [payAmount, setPayAmount] = useState("");
   const [payMember, setPayMember] = useState<GroupMemberCardModel | null>(null);
+  /** `undefined` = loading, `null` = fetch failed, array = taxonomy from SQL */
+  const [txnCategoryTree, setTxnCategoryTree] = useState<PersonalTxnCategory[] | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!user || authLoading) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await user.getIdToken();
+        const tree = await fetchTransactionCategories(token);
+        if (!cancelled) setTxnCategoryTree(tree);
+      } catch {
+        if (!cancelled) setTxnCategoryTree(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authLoading]);
+
+  const expenseCategoryOptions = useMemo(() => categoryOptionsFromTree(txnCategoryTree), [txnCategoryTree]);
+
+  const taxonomyLoading = txnCategoryTree === undefined;
+  const taxonomyOk = Array.isArray(txnCategoryTree) && txnCategoryTree.length > 0;
+
+  const expenseSubcategoryOptions = useMemo(() => {
+    if (!expenseCategory.trim()) return [];
+    const cat = txnCategoryTree?.find((c) => c.slug === expenseCategory);
+    return cat?.subcategories ?? [];
+  }, [txnCategoryTree, expenseCategory]);
+
+  const subcategoryUseSqlDropdown = taxonomyOk && expenseSubcategoryOptions.length > 0;
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -197,12 +233,18 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
     try {
       const token = await user.getIdToken();
       const d = detail ?? (await fetchGroupDetail(token, groupId));
+      const subRaw = expenseSubcategory.trim();
+      const subLabel =
+        taxonomyOk && expenseCategory && subRaw
+          ? resolveTxnSubcategoryLabel(txnCategoryTree, expenseCategory, subRaw) ?? subRaw
+          : subRaw || null;
+
       await createGroupExpense(token, groupId, {
         title: expenseTitle.trim(),
         amount,
         paid_by_participant_id: expensePaidBy,
         category: expenseCategory.trim() || null,
-        subcategory: expenseSubcategory.trim() || null,
+        subcategory: subLabel,
         expense_date: expenseDate,
         cycle_id: d.active_cycle?.cycle_id ?? null,
         split_rule: "equal",
@@ -446,9 +488,12 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
                   id="exp-cat"
                   className={field}
                   value={expenseCategory}
-                  onChange={(e) => setExpenseCategory(e.target.value)}
+                  onChange={(e) => {
+                    setExpenseCategory(e.target.value);
+                    setExpenseSubcategory("");
+                  }}
                 >
-                  {GROUP_EXPENSE_CATEGORY_OPTIONS.map((opt) => (
+                  {expenseCategoryOptions.map((opt) => (
                     <option key={opt.value || "general"} value={opt.value}>
                       {opt.label}
                     </option>
@@ -459,14 +504,40 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-ink-3" htmlFor="exp-subcat">
                   Subcategory <span className="font-normal normal-case text-ink-4">(optional)</span>
                 </label>
-                <input
-                  id="exp-subcat"
-                  className={field}
-                  value={expenseSubcategory}
-                  onChange={(e) => setExpenseSubcategory(e.target.value)}
-                  placeholder="e.g. Movies, Uber, Hotel"
-                  maxLength={80}
-                />
+                {taxonomyLoading ? (
+                  <select id="exp-subcat" className={field} disabled value="">
+                    <option value="">Loading subcategories…</option>
+                  </select>
+                ) : subcategoryUseSqlDropdown ? (
+                  <select
+                    id="exp-subcat"
+                    className={field}
+                    value={expenseSubcategory}
+                    onChange={(e) => setExpenseSubcategory(e.target.value)}
+                    disabled={!expenseCategory}
+                  >
+                    <option value="">{!expenseCategory ? "Pick a category first" : "— None —"}</option>
+                    {expenseSubcategoryOptions.map((s) => (
+                      <option key={s.subcategory_id} value={s.slug}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id="exp-subcat"
+                    className={field}
+                    value={expenseSubcategory}
+                    onChange={(e) => setExpenseSubcategory(e.target.value)}
+                    placeholder={
+                      taxonomyOk
+                        ? "No preset subcategories — add a short label if you want"
+                        : "e.g. Movies, Uber (taxonomy unavailable)"
+                    }
+                    maxLength={80}
+                    disabled={!expenseCategory}
+                  />
+                )}
               </div>
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-ink-3" htmlFor="exp-amt">
