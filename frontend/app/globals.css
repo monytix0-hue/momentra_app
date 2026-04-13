@@ -242,3 +242,32 @@ body {
   color: var(--ink);
   font-family: var(--font-sans-family);
 }
+
+/* Group module — soft skeleton shimmer (no extra deps) */
+@keyframes group-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.group-skeleton-bar {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--s200) 55%, var(--s100));
+}
+
+.group-skeleton-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--ink) 7%, transparent),
+    transparent
+  );
+  animation: group-shimmer 1.35s ease-in-out infinite;
+}

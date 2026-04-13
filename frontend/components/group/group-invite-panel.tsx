@@ -87,9 +87,9 @@ export function GroupInvitePanel({
   return (
     <div className="rounded-m-hero border border-ctx-border/40 bg-ctx-hero/45 px-m-4 py-m-5 shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--ctx-accent)_14%,transparent)]">
       <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-ctx-accent">Invite someone</p>
-      <p className="mt-2 max-w-xl text-[12px] leading-relaxed text-ink-3">
-        Add a placeholder member, then we mint a join link that opens this app (same origin as your browser — fixes
-        dev links pointing at the API host).
+      <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-ink-3">
+        Add someone by name (and email if you like). We’ll create a private link they can use to join — it always opens
+        in this app, so it works the same on your phone and on the web.
       </p>
 
       <form onSubmit={(e) => void onSubmit(e)} className="mt-m-4 grid gap-m-3 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">

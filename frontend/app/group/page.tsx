@@ -1,16 +1,23 @@
 import { Suspense } from "react";
-import { GroupHomeDashboard } from "@/components/group/group-home-dashboard";
+import { GroupHubExperience } from "@/components/group/group-hub-experience";
+import { GroupHubSkeleton } from "@/components/group/GroupHubSkeleton";
 
 export default function GroupPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[50vh] items-center justify-center bg-bg">
-          <div className="h-8 w-8 animate-pulse rounded-full border-2 border-ctx-accent/30 border-t-ctx-accent" />
+        <div className="min-h-screen bg-bg">
+          <div className="mx-auto max-w-6xl px-m-4 py-m-6 pb-m-16 lg:px-m-8 lg:py-m-10">
+            <GroupHubSkeleton />
+          </div>
         </div>
       }
     >
-      <GroupHomeDashboard />
+      <div className="min-h-screen bg-bg">
+        <div className="mx-auto max-w-6xl px-m-4 py-m-6 pb-m-16 lg:px-m-8 lg:py-m-10">
+          <GroupHubExperience />
+        </div>
+      </div>
     </Suspense>
   );
 }

@@ -251,7 +251,12 @@ export async function createGroupMoment(
     end_date?: string | null;
     description?: string | null;
     status?: string;
-    participants?: { display_name: string; user_id?: string | null; role?: string }[];
+    participants?: {
+      display_name: string;
+      user_id?: string | null;
+      role?: string;
+      invite_email?: string | null;
+    }[];
   },
 ): Promise<GroupMomentDetail> {
   const res = await fetch(`${getApiBaseUrl()}/group/moments`, {

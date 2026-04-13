@@ -1,5 +1,6 @@
 import type { GroupExpense, GroupExpenseShare } from "@/lib/api/group";
 import { formatDisplayDate } from "@/lib/format/display-date";
+import { groupEmptyPanel } from "@/lib/group/group-ui";
 
 function num(v: string | number) {
   const n = typeof v === "string" ? parseFloat(v) : v;
@@ -37,7 +38,14 @@ export function ExpenseList({
   hideIntro?: boolean;
 }) {
   if (!expenses.length) {
-    return <p className="text-[14px] text-ink-2">No expenses yet.</p>;
+    return (
+      <div className={groupEmptyPanel}>
+        <p className="text-[15px] font-medium text-ink">No expenses logged</p>
+        <p className="mx-auto mt-m-2 max-w-md text-[14px] leading-relaxed text-ink-3">
+          Add shared costs as you go — everyone will see who paid and how the split works.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -54,7 +62,7 @@ export function ExpenseList({
           return (
             <li
               key={e.expense_id}
-              className="rounded-m-chip border border-surface-300 bg-bg2 px-m-3 py-m-2.5 text-[12px]"
+              className="rounded-m-card border border-surface-300/85 bg-bg2/50 px-m-4 py-m-3 text-[12px] shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--ctx-accent)_5%,transparent)] transition-[border-color] duration-fast hover:border-ctx-accent/22"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-medium text-ink">{e.title}</span>

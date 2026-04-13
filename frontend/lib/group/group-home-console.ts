@@ -169,8 +169,8 @@ export function buildTodayItems(data: GroupHome, openTotal: number, nudges: Nudg
       id: "overdue",
       headline:
         data.overdue_commitment_count === 1
-          ? `${nudges[0]?.displayName ?? "Someone"} is overdue on a commitment`
-          : `${data.overdue_commitment_count} commitments are overdue — people are waiting`,
+          ? `${nudges[0]?.displayName ?? "Someone"} has a contribution that’s past due`
+          : `${data.overdue_commitment_count} contributions are past due — worth a kind check-in`,
       severity: "high",
       ctaLabel: "Review now",
       href,
@@ -183,9 +183,9 @@ export function buildTodayItems(data: GroupHome, openTotal: number, nudges: Nudg
     const gid = nudges[0]?.groupId ?? data.groups[0]?.group_id;
     items.push({
       id: "open-balance",
-      headline: `${formatInr(openTotal)} is still open across ${groupCount === 1 ? "1 group" : `${groupCount} groups`}`,
+      headline: `${formatInr(openTotal)} still open across ${groupCount === 1 ? "1 group" : `${groupCount} groups`}`,
       severity: data.overdue_commitment_count > 0 ? "medium" : "medium",
-      ctaLabel: "See who owes",
+      ctaLabel: "See details",
       href: gid ? `/group/${gid}` : "/group/new",
     });
   }
@@ -212,9 +212,9 @@ export function buildTodayItems(data: GroupHome, openTotal: number, nudges: Nudg
     if (p) {
       items.push({
         id: "one-pending-person",
-        headline: `One person still hasn’t paid into ${p.groupTitle}`,
+        headline: `One person still has a contribution open in ${p.groupTitle}`,
         severity: "medium",
-        ctaLabel: "Nudge or record",
+        ctaLabel: "Open group",
         href: `/group/${p.groupId}`,
       });
     }
@@ -255,10 +255,10 @@ export function buildRecommendedActions(data: GroupHome, nudges: NudgeParticipan
 
   for (const n of nudges.slice(0, 3)) {
     const overdueBit =
-      n.overdueDays > 0 ? ` · overdue ${n.overdueDays} day${n.overdueDays === 1 ? "" : "s"}` : "";
+      n.overdueDays > 0 ? ` · past due ${n.overdueDays} day${n.overdueDays === 1 ? "" : "s"}` : "";
     actions.push({
       id: nextId(),
-      title: `Remind ${n.displayName} about ${formatInr(n.amountLeft)} pending`,
+      title: `Gentle check-in: ${n.displayName} — ${formatInr(n.amountLeft)} still open`,
       detail: `${n.groupTitle}${overdueBit}`,
       priority: n.overdueDays > 0 ? 1 : 2,
       ctaLabel: "Open group",
@@ -283,8 +283,8 @@ export function buildRecommendedActions(data: GroupHome, nudges: NudgeParticipan
   if (open > 0 && !actions.some((a) => a.title.includes("Settle"))) {
     actions.push({
       id: nextId(),
-      title: `Track ${formatInr(open)} still open`,
-      detail: "Record payments or settle up inside each group.",
+      title: `${formatInr(open)} still on the radar`,
+      detail: "Record a payment or settle up inside each group when you’re ready.",
       priority: 2,
       ctaLabel: "View commitments",
       href: `/group/${nudges[0]?.groupId ?? data.groups[0]?.group_id ?? ""}`,
