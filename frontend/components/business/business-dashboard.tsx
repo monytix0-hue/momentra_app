@@ -129,7 +129,7 @@ export function BusinessDashboard({
 
   useEffect(() => {
     if (!loading && !user) {
-      void router.replace(`/login?next=${encodeURIComponent(`/business/${workspaceId}`)}`);
+      void router.replace(`/login?next=${encodeURIComponent(`/workspaces/${workspaceId}/business`)}`);
       return;
     }
     if (user) void loadAll();

@@ -25,7 +25,7 @@ function getRecommendedHref(state: HomeState): string {
     state.business?.[0] ??
     null;
 
-  if (activeWorkspace) return `/business/${activeWorkspace.workspace_id}`;
+  if (activeWorkspace) return `/workspaces/${activeWorkspace.workspace_id}/business`;
   if ((state.group?.active_group_count ?? 0) > 0) return "/group";
   return "/personal";
 }

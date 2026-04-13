@@ -46,7 +46,7 @@ function JoinContent() {
     try {
       const authToken = await user.getIdToken();
       const { workspace_id: wid } = await acceptBusinessInvite(authToken, token);
-      await router.push(`/business/${wid}`);
+      await router.push(`/workspaces/${wid}/business`);
     } catch (e) {
       setAcceptErr(e instanceof Error ? e.message : "Could not join");
     } finally {

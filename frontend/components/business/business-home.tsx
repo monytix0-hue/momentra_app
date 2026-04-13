@@ -101,7 +101,7 @@ export function BusinessHome() {
               setBudget("");
               setBusinessType("company");
               await load();
-              void router.push(`/business/${row.workspace_id}`);
+              void router.push(`/workspaces/${row.workspace_id}/business`);
             }}
           >
             <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Workspace title" />
@@ -163,7 +163,7 @@ export function BusinessHome() {
             {items.map((w) => (
               <li key={w.workspace_id}>
                 <Link
-                  href={`/business/${w.workspace_id}`}
+                  href={`/workspaces/${w.workspace_id}/business`}
                   className="block rounded-m-card border border-surface-300 bg-bg2 p-m-3 transition-colors hover:border-ctx-border/50 hover:bg-surface-200"
                 >
                   <div className="flex items-center justify-between gap-2">
