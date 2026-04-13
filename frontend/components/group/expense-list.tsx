@@ -1,5 +1,6 @@
 import type { GroupExpense, GroupExpenseShare } from "@/lib/api/group";
 import { formatDisplayDate } from "@/lib/format/display-date";
+import { labelGroupExpenseCategory } from "@/lib/group/expense-categories";
 import { groupEmptyPanel } from "@/lib/group/group-ui";
 
 function num(v: string | number) {
@@ -59,6 +60,8 @@ export function ExpenseList({
       <ul className="space-y-m-2">
         {expenses.map((e) => {
           const splitKind = e.shares?.length ? inferSplitKind(e.shares) : null;
+          const cat = labelGroupExpenseCategory(e.category);
+          const catLine = [cat, e.subcategory?.trim() || null].filter(Boolean).join(" › ");
           return (
             <li
               key={e.expense_id}
@@ -71,6 +74,12 @@ export function ExpenseList({
               <div className="mt-1 flex flex-wrap items-center gap-m-2 text-[12px] text-ink-3">
                 <span>
                   Paid by {payerNames.get(e.paid_by_participant_id) ?? "member"} · {formatDisplayDate(e.expense_date)}
+                  {catLine ? (
+                    <>
+                      {" "}
+                      · <span className="text-ink-2">{catLine}</span>
+                    </>
+                  ) : null}
                 </span>
                 {splitKind === "equal" ? (
                   <span className={`${badgeCls} border-ctx-accent/35 bg-ctx-accent/10 text-ctx-accent`}>

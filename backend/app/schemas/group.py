@@ -220,6 +220,7 @@ class GroupExpenseCreate(BaseModel):
     amount: Decimal
     paid_by_participant_id: UUID
     category: str | None = Field(default=None, max_length=80)
+    subcategory: str | None = Field(default=None, max_length=80)
     description: str | None = None
     expense_date: date
     cycle_id: UUID | None = None
@@ -249,6 +250,7 @@ class GroupExpenseOut(BaseModel):
     amount: Decimal
     paid_by_participant_id: UUID
     category: str | None
+    subcategory: str | None = None
     description: str | None
     expense_date: date
     created_at: str | None = None
@@ -261,6 +263,7 @@ class GroupRecurringExpenseCreate(BaseModel):
     amount: Decimal
     paid_by_participant_id: UUID
     category: str | None = Field(default=None, max_length=80)
+    subcategory: str | None = Field(default=None, max_length=80)
     description: str | None = None
     split_rule: str = Field(default="equal", max_length=24)
     shares: list[ExpenseShareLine] = Field(default_factory=list)
@@ -272,6 +275,7 @@ class GroupRecurringExpenseUpdate(BaseModel):
     amount: Decimal | None = None
     paid_by_participant_id: UUID | None = None
     category: str | None = Field(default=None, max_length=80)
+    subcategory: str | None = Field(default=None, max_length=80)
     description: str | None = None
     split_rule: str | None = Field(default=None, max_length=24)
     shares: list[ExpenseShareLine] | None = None
@@ -287,6 +291,7 @@ class GroupRecurringExpenseOut(BaseModel):
     amount: Decimal
     paid_by_participant_id: UUID
     category: str | None
+    subcategory: str | None = None
     description: str | None
     split_rule: str
     shares: list[ExpenseShareLine] = Field(default_factory=list)

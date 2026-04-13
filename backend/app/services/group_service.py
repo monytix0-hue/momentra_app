@@ -1359,6 +1359,7 @@ def _insert_expense_row(
         "amount": _f(body.amount),
         "paid_by_participant_id": payer,
         "category": body.category,
+        "subcategory": body.subcategory,
         "description": body.description,
         "expense_date": str(body.expense_date),
     }
@@ -1413,6 +1414,7 @@ def _validate_recurring_template(sb: Client, group_id: str, body: GroupRecurring
         amount=body.amount,
         paid_by_participant_id=body.paid_by_participant_id,
         category=body.category,
+        subcategory=body.subcategory,
         description=body.description,
         expense_date=date.today(),
         cycle_id=None,
@@ -1439,6 +1441,7 @@ def _recurring_template_to_expense_create(
         amount=Decimal(str(tmpl["amount"])),
         paid_by_participant_id=UUID(str(tmpl["paid_by_participant_id"])),
         category=tmpl.get("category"),
+        subcategory=tmpl.get("subcategory"),
         description=tmpl.get("description"),
         expense_date=expense_date,
         cycle_id=UUID(cycle_id),
@@ -1480,6 +1483,7 @@ def create_recurring_expense(
         "amount": _f(body.amount),
         "paid_by_participant_id": str(body.paid_by_participant_id),
         "category": body.category,
+        "subcategory": body.subcategory,
         "description": body.description,
         "split_rule": body.split_rule,
         "shares_json": _recurring_shares_json(body),
@@ -1529,6 +1533,8 @@ def update_recurring_expense(
         patch["paid_by_participant_id"] = str(raw["paid_by_participant_id"])
     if "category" in raw:
         patch["category"] = raw["category"]
+    if "subcategory" in raw:
+        patch["subcategory"] = raw["subcategory"]
     if "description" in raw:
         patch["description"] = raw["description"]
     if "split_rule" in raw and raw["split_rule"] is not None:
@@ -1538,7 +1544,16 @@ def update_recurring_expense(
 
     need_validate = any(
         k in raw
-        for k in ("title", "amount", "paid_by_participant_id", "category", "description", "split_rule", "shares")
+        for k in (
+            "title",
+            "amount",
+            "paid_by_participant_id",
+            "category",
+            "subcategory",
+            "description",
+            "split_rule",
+            "shares",
+        )
     )
     if need_validate:
         from app.schemas.group import ExpenseShareLine
@@ -1559,6 +1574,7 @@ def update_recurring_expense(
             amount=Decimal(str(patch.get("amount", row["amount"]))),
             paid_by_participant_id=UUID(str(patch.get("paid_by_participant_id", row["paid_by_participant_id"]))),
             category=raw["category"] if "category" in raw else row.get("category"),
+            subcategory=raw["subcategory"] if "subcategory" in raw else row.get("subcategory"),
             description=raw["description"] if "description" in raw else row.get("description"),
             split_rule=str(patch.get("split_rule", row.get("split_rule") or "equal")),
             shares=share_lines,

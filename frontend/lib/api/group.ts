@@ -166,6 +166,7 @@ export type GroupExpense = {
   amount: string | number;
   paid_by_participant_id: string;
   category: string | null;
+  subcategory?: string | null;
   description: string | null;
   expense_date: string;
   source_recurring_id?: string | null;
@@ -179,6 +180,7 @@ export type GroupRecurringExpense = {
   amount: string | number;
   paid_by_participant_id: string;
   category: string | null;
+  subcategory?: string | null;
   description: string | null;
   split_rule: string;
   shares: { participant_id: string; owed_amount: string | number }[];
@@ -197,6 +199,7 @@ export type GroupExpenseCreateBody = {
   amount: number;
   paid_by_participant_id: string;
   category?: string | null;
+  subcategory?: string | null;
   description?: string | null;
   expense_date: string;
   cycle_id?: string | null;

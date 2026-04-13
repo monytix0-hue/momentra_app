@@ -66,6 +66,7 @@ export interface GroupExpenseSnapshotItem {
   paidByName: string;
   expenseDate: string;
   category: string | null;
+  subcategory: string | null;
   emoji: string;
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import type { GroupExpenseSnapshotItem } from "@/lib/group/types";
+import { labelGroupExpenseCategory } from "@/lib/group/expense-categories";
 import { formatInr } from "@/lib/group/selectors";
 import { groupEmptyPanel, groupSectionTitle } from "@/lib/group/group-ui";
 
@@ -55,7 +56,10 @@ export function GroupExpensesSnapshot({
         </div>
       ) : (
         <ul className="space-y-m-2">
-          {items.map((e) => (
+          {items.map((e) => {
+            const cat = labelGroupExpenseCategory(e.category);
+            const catLine = [cat, e.subcategory?.trim() || null].filter(Boolean).join(" › ");
+            return (
             <li key={e.expenseId}>
               <div className="flex items-center gap-m-3 rounded-m-card border border-surface-300/85 bg-bg2/35 px-m-4 py-m-3 transition-[border-color,box-shadow,transform] duration-fast ease-standard hover:border-ctx-accent/25 hover:shadow-[0_8px_28px_-20px_rgba(0,0,0,0.45)] active:scale-[0.998]">
                 <span className="text-xl leading-none" aria-hidden>
@@ -65,12 +69,19 @@ export function GroupExpensesSnapshot({
                   <p className="truncate font-medium text-ink">{e.title}</p>
                   <p className="text-[12px] text-ink-3">
                     Paid by {e.paidByName} · {formatDay(e.expenseDate)}
+                    {catLine ? (
+                      <>
+                        {" "}
+                        · <span className="text-ink-2">{catLine}</span>
+                      </>
+                    ) : null}
                   </p>
                 </div>
                 <span className="shrink-0 tabular-nums text-[15px] font-semibold text-ink">{formatInr(e.amount)}</span>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </section>

@@ -363,15 +363,19 @@ export function buildGroupDetailViewModel(input: MapViewModelInput): GroupDetail
   const recentExpenses: GroupExpenseSnapshotItem[] = [...expenses]
     .sort((a, b) => (a.expense_date < b.expense_date ? 1 : -1))
     .slice(0, 4)
-    .map((e) => ({
-      expenseId: e.expense_id,
-      title: e.title,
-      amount: n(e.amount),
-      paidByName: participantById.get(e.paid_by_participant_id)?.display_name ?? "Someone",
-      expenseDate: e.expense_date,
-      category: e.category,
-      emoji: emojiForExpenseCategory(e.category, e.title),
-    }));
+    .map((e) => {
+      const catHint = [e.category, e.subcategory].filter(Boolean).join(" ") || null;
+      return {
+        expenseId: e.expense_id,
+        title: e.title,
+        amount: n(e.amount),
+        paidByName: participantById.get(e.paid_by_participant_id)?.display_name ?? "Someone",
+        expenseDate: e.expense_date,
+        category: e.category ?? null,
+        subcategory: e.subcategory ?? null,
+        emoji: emojiForExpenseCategory(catHint, e.title),
+      };
+    });
 
   const activityFeed: GroupActivityFeedItem[] = activity.slice(0, 12).map((a) => ({
     activityId: a.activity_id,

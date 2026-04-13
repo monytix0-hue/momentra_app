@@ -28,6 +28,7 @@ import { GroupDetailSkeleton } from "@/components/group/GroupDetailSkeleton";
 import { GroupHubError } from "@/components/group/GroupHubError";
 import { GroupSummaryHero } from "@/components/group/GroupSummaryHero";
 import { ExpenseList } from "@/components/group/expense-list";
+import { GROUP_EXPENSE_CATEGORY_OPTIONS } from "@/lib/group/expense-categories";
 import { groupBackChip, groupBtnPrimary, groupPanelElevated, groupSectionTitle } from "@/lib/group/group-ui";
 
 const field =
@@ -49,6 +50,8 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
   const [busy, setBusy] = useState(false);
 
   const [expenseTitle, setExpenseTitle] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState("");
+  const [expenseSubcategory, setExpenseSubcategory] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expensePaidBy, setExpensePaidBy] = useState("");
   const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -198,11 +201,15 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
         title: expenseTitle.trim(),
         amount,
         paid_by_participant_id: expensePaidBy,
+        category: expenseCategory.trim() || null,
+        subcategory: expenseSubcategory.trim() || null,
         expense_date: expenseDate,
         cycle_id: d.active_cycle?.cycle_id ?? null,
         split_rule: "equal",
       });
       setExpenseTitle("");
+      setExpenseCategory("");
+      setExpenseSubcategory("");
       setExpenseAmount("");
       setSheet(null);
       await load();
@@ -287,6 +294,8 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
   const openExpense = () => {
     const first = participantOptions[0]?.participant_id ?? "";
     if (!expensePaidBy && first) setExpensePaidBy(first);
+    setExpenseCategory("");
+    setExpenseSubcategory("");
     setSheet("expense");
   };
 
@@ -427,6 +436,36 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
                   value={expenseTitle}
                   onChange={(e) => setExpenseTitle(e.target.value)}
                   placeholder="Dinner, cab, tickets…"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-ink-3" htmlFor="exp-cat">
+                  Category
+                </label>
+                <select
+                  id="exp-cat"
+                  className={field}
+                  value={expenseCategory}
+                  onChange={(e) => setExpenseCategory(e.target.value)}
+                >
+                  {GROUP_EXPENSE_CATEGORY_OPTIONS.map((opt) => (
+                    <option key={opt.value || "general"} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-ink-3" htmlFor="exp-subcat">
+                  Subcategory <span className="font-normal normal-case text-ink-4">(optional)</span>
+                </label>
+                <input
+                  id="exp-subcat"
+                  className={field}
+                  value={expenseSubcategory}
+                  onChange={(e) => setExpenseSubcategory(e.target.value)}
+                  placeholder="e.g. Movies, Uber, Hotel"
+                  maxLength={80}
                 />
               </div>
               <div>
