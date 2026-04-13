@@ -1408,7 +1408,9 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                   <p className="mb-m-4 text-[12px] leading-relaxed text-ink-3">
                     Per-member financial position across all cycles. Planned commitment is the expected share (pool lines +
                     any split-derived rows); paid contribution is what was recorded; net position is paid − planned (positive
-                    means ahead / owed back).
+                    means ahead / owed back). These figures come from{" "}
+                    <span className="font-medium text-ink">pool commitments</span> only — not from who paid on shared expenses
+                    in the Expenses tab (that is tracked separately).
                   </p>
                   {positions.length === 0 ? (
                     <p className="text-[13px] text-ink-3">No commitments recorded yet.</p>

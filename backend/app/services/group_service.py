@@ -467,7 +467,7 @@ def delete_group(sb: Client, user_id: str, group_id: str) -> None:
 
 
 def add_participant(sb: Client, user_id: str, group_id: str, body: GroupParticipantCreate) -> dict[str, Any]:
-    assert_member(sb, user_id, group_id)
+    assert_admin_group(sb, user_id, group_id)
     uid = (body.user_id or "").strip() or None
     inv_em = (body.invite_email or "").strip() or None
     row = {

@@ -84,6 +84,7 @@ export function GroupCoordinationPeople({
   const ids = participants.map((p) => p.participant_id);
   const rollups = rollupsByParticipant(commitments, ids);
   const activeAdminCount = participants.filter((p) => p.role === "admin" && p.status === "active").length;
+  const myParticipantId = participants.find((p) => p.user_id === user?.uid)?.participant_id ?? null;
 
   const sendOrResend = useCallback(
     async (participantId: string) => {
@@ -306,17 +307,21 @@ export function GroupCoordinationPeople({
 
                   {p.status === "active" && open && r?.primaryCommitment ? (
                     <div className="mt-m-3 flex flex-wrap gap-m-2">
-                      <button
-                        type="button"
-                        className={btnCoord}
-                        disabled={remindBusy === p.participant_id}
-                        onClick={() => void onRemind(p.participant_id)}
-                      >
-                        {remindBusy === p.participant_id ? "Sending…" : "Remind"}
-                      </button>
-                      <button type="button" className={btnCoord} onClick={() => onMarkPaid(r.primaryCommitment!)}>
-                        Mark paid
-                      </button>
+                      {isAdmin ? (
+                        <button
+                          type="button"
+                          className={btnCoord}
+                          disabled={remindBusy === p.participant_id}
+                          onClick={() => void onRemind(p.participant_id)}
+                        >
+                          {remindBusy === p.participant_id ? "Sending…" : "Remind"}
+                        </button>
+                      ) : null}
+                      {isAdmin || p.participant_id === myParticipantId ? (
+                        <button type="button" className={btnCoord} onClick={() => onMarkPaid(r.primaryCommitment!)}>
+                          Mark paid
+                        </button>
+                      ) : null}
                       <button type="button" className={btnCoord} onClick={onViewCommitments}>
                         Details
                       </button>
