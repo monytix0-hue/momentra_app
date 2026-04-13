@@ -16,7 +16,8 @@ import {
   type BusinessWorkspace,
 } from "@/lib/api/business";
 import { bizMoney, bizNum } from "@/lib/business/format";
-import { WorkspaceBusinessPageHeader } from "@/components/business/workspace-business-page-header";
+import { isPurchaseSpendType, spendTypeDetailLabel } from "@/lib/business/transaction-kinds";
+import { WorkspaceBusinessWorkspaceTop } from "@/components/business/workspace-business-page-header";
 
 const card = "rounded-m-card border border-surface-300/80 bg-surface-100/95 p-m-4 shadow-sm";
 
@@ -105,20 +106,21 @@ export function WorkspaceBusinessPayablesPage({ workspaceId }: { workspaceId: st
 
   return (
     <div className="space-y-m-5">
-      <WorkspaceBusinessPageHeader
+      <WorkspaceBusinessWorkspaceTop
         workspaceId={workspaceId}
         workspaceTitle={workspace.title}
         workspaces={workspaces}
-        subtitle="Approve or reject supplier payments waiting in queue."
-        onQuickAdd={() => router.push(`/workspaces/${workspaceId}/business`)}
+        subtitle="Approve purchase and expense requests before they are final."
+        onAddPurchase={() => router.push(`/workspaces/${workspaceId}/business`)}
+        onAddExpense={() => router.push(`/workspaces/${workspaceId}/business`)}
       />
       <section className={card}>
         <h1 className="text-[18px] font-semibold text-ink">To pay</h1>
-        <p className="mt-1 text-[13px] text-ink-3">These spends need your approval before money is treated as final.</p>
+        <p className="mt-1 text-[13px] text-ink-3">Purchases and expenses stay separate — approve once you are sure.</p>
         <ul className="mt-m-4 space-y-m-3">
           {pending.length === 0 ? (
             <li className="rounded-m-chip border border-dashed border-surface-300 bg-bg2/60 px-m-3 py-m-4 text-[13px] text-ink-3">
-              No supplier payments due in this workspace.
+              Nothing waiting to approve. Add a purchase or expense from the main Business screen.
             </li>
           ) : (
             pending.map((s) => (
@@ -127,9 +129,12 @@ export function WorkspaceBusinessPayablesPage({ workspaceId }: { workspaceId: st
                 className="flex flex-col gap-m-2 rounded-m-chip border border-surface-300/90 bg-bg2/70 p-m-3 lg:flex-row lg:items-center lg:justify-between"
               >
                 <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-3">
+                    {isPurchaseSpendType(s.spend_type) ? "Purchase" : "Expense"}
+                  </p>
                   <p className="text-[15px] font-semibold text-ink">{s.title}</p>
                   <p className="text-[12px] text-ink-3">
-                    {s.vendor_id ? vmap.get(s.vendor_id) ?? "Vendor" : "No vendor"} · {s.spend_type}
+                    {s.vendor_id ? vmap.get(s.vendor_id) ?? "Vendor" : "No vendor"} · {spendTypeDetailLabel(s.spend_type)}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -241,12 +246,13 @@ export function WorkspaceBusinessReceivablesPage({ workspaceId }: { workspaceId:
 
   return (
     <div className="space-y-m-5">
-      <WorkspaceBusinessPageHeader
+      <WorkspaceBusinessWorkspaceTop
         workspaceId={workspaceId}
         workspaceTitle={workspace.title}
         workspaces={workspaces}
         subtitle="Money customers owe you — connect billing to populate this list."
-        onQuickAdd={() => router.push(`/workspaces/${workspaceId}/business`)}
+        onAddPurchase={() => router.push(`/workspaces/${workspaceId}/business`)}
+        onAddExpense={() => router.push(`/workspaces/${workspaceId}/business`)}
       />
       <section className={card}>
         <h1 className="text-[18px] font-semibold text-ink">To collect</h1>
@@ -315,24 +321,34 @@ export function WorkspaceBusinessTransactionsPage({ workspaceId }: { workspaceId
 
   return (
     <div className="space-y-m-5">
-      <WorkspaceBusinessPageHeader
+      <WorkspaceBusinessWorkspaceTop
         workspaceId={workspaceId}
         workspaceTitle={workspace.title}
         workspaces={workspaces}
-        subtitle="Sales and expenses recorded for this workspace."
-        onQuickAdd={() => router.push(`/workspaces/${workspaceId}/business`)}
+        subtitle="Purchases, expenses, and approvals for this workspace."
+        onAddPurchase={() => router.push(`/workspaces/${workspaceId}/business`)}
+        onAddExpense={() => router.push(`/workspaces/${workspaceId}/business`)}
       />
       <section className={card}>
         <h1 className="text-[18px] font-semibold text-ink">Transactions</h1>
-        <p className="mt-1 text-[13px] text-ink-3">Spend requests and approvals for this workspace.</p>
+        <p className="mt-1 text-[13px] text-ink-3">Purchase and expense requests for this workspace.</p>
         <ul className="mt-m-4 divide-y divide-surface-300/60">
           {rows.length === 0 ? (
             <li className="py-m-4 text-[13px] text-ink-3">No transactions yet in this workspace.</li>
           ) : (
             rows.map((s) => (
               <li key={s.spend_id} className="flex items-start justify-between gap-m-3 py-m-3">
-                <div>
-                  <p className="font-medium text-ink">{s.title}</p>
+                <div className="min-w-0">
+                  <span
+                    className={`inline-block rounded-m-badge px-m-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] ${
+                      isPurchaseSpendType(s.spend_type)
+                        ? "bg-teal-500/15 text-teal-900"
+                        : "bg-rose-500/12 text-rose-900"
+                    }`}
+                  >
+                    {isPurchaseSpendType(s.spend_type) ? "Purchase" : "Expense"}
+                  </span>
+                  <p className="mt-1 font-medium text-ink">{s.title}</p>
                   <p className="text-[12px] text-ink-3">
                     {s.status} · {s.vendor_id ? vmap.get(s.vendor_id) ?? "Vendor" : "—"}
                   </p>
@@ -389,12 +405,13 @@ export function WorkspaceBusinessInventoryPage({ workspaceId }: { workspaceId: s
 
   return (
     <div className="space-y-m-5">
-      <WorkspaceBusinessPageHeader
+      <WorkspaceBusinessWorkspaceTop
         workspaceId={workspaceId}
         workspaceTitle={workspace.title}
         workspaces={workspaces}
-        subtitle="Stock and unit pressure — full inventory counts connect later."
-        onQuickAdd={() => router.push(`/workspaces/${workspaceId}/business`)}
+        subtitle="Stock and unit pressure — purchases add to inventory intent."
+        onAddPurchase={() => router.push(`/workspaces/${workspaceId}/business`)}
+        onAddExpense={() => router.push(`/workspaces/${workspaceId}/business`)}
       />
       <section className={card}>
         <h1 className="text-[18px] font-semibold text-ink">Stock & units</h1>

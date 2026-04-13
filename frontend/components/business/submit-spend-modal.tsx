@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import type { BusinessCostCenter, BusinessUnit, BusinessVendor } from "@/lib/api/business";
+import { PURCHASE_SPEND_TYPE, spendTypeDetailLabel } from "@/lib/business/transaction-kinds";
 
 const inputCls =
   "w-full rounded-m-chip border border-surface-300 bg-surface-100 px-m-3 py-2 text-[13px] text-ink";
 
-const SPEND_TYPE_OPTIONS = [
+/** Expense flows only — purchase uses inventory separately so it is never mixed in this list. */
+const EXPENSE_SPEND_TYPE_OPTIONS = [
   "operational",
-  "inventory",
   "utilities",
   "marketing",
   "logistics",
@@ -25,11 +26,14 @@ export function SubmitSpendModal({
   vendors,
   onClose,
   onSubmit,
+  variant = "expense",
 }: {
   open: boolean;
   units: BusinessUnit[];
   costCenters: BusinessCostCenter[];
   vendors: BusinessVendor[];
+  /** Purchase defaults to inventory (stock/raw). Expense defaults to operational. */
+  variant?: "purchase" | "expense";
   onClose: () => void;
   onSubmit: (body: {
     unit_id: string;
@@ -48,11 +52,17 @@ export function SubmitSpendModal({
   const [quantity, setQuantity] = useState("");
   const [measurementUnit, setMeasurementUnit] = useState("kg");
   const [unitId, setUnitId] = useState("");
-  const [spendType, setSpendType] = useState("operational");
+  const [spendType, setSpendType] = useState(variant === "purchase" ? "inventory" : "operational");
   const [costCenterId, setCostCenterId] = useState("");
   const [vendorId, setVendorId] = useState("");
 
   if (!open) return null;
+
+  const heading = variant === "purchase" ? "Add purchase" : "Add expense";
+  const sub =
+    variant === "purchase"
+      ? "Stock, raw material, or goods for resale — counts as purchase, not expense"
+      : "Rent, transport, bills, and other running costs";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-m-4">
@@ -70,7 +80,7 @@ export function SubmitSpendModal({
             price_per_unit: ppu,
             quantity: qty,
             measurement_unit: measurementUnit,
-            spend_type: spendType,
+            spend_type: variant === "purchase" ? PURCHASE_SPEND_TYPE : spendType,
             cost_center_id: costCenterId || null,
             vendor_id: vendorId || null,
           });
@@ -80,13 +90,19 @@ export function SubmitSpendModal({
           setQuantity("");
           setMeasurementUnit("kg");
           setUnitId("");
-          setSpendType("operational");
+          setSpendType(variant === "purchase" ? "inventory" : "operational");
           setCostCenterId("");
           setVendorId("");
         }}
       >
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ctx-accent">Submit purchase</p>
-        <input className={inputCls} placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ctx-accent">{heading}</p>
+        <p className="text-[12px] text-ink-3">{sub}</p>
+        <input
+          className={inputCls}
+          placeholder={variant === "purchase" ? "What are you buying?" : "What was this for?"}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
         <div className="grid grid-cols-2 gap-m-2">
           <input
             className={inputCls}
@@ -109,22 +125,38 @@ export function SubmitSpendModal({
             onChange={(e) => setQuantity(e.target.value)}
           />
         </div>
-        <div className="grid grid-cols-2 gap-m-2">
-          <select className={inputCls} value={measurementUnit} onChange={(e) => setMeasurementUnit(e.target.value)}>
-            {MEASUREMENT_UNIT_OPTIONS.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </select>
-          <select className={inputCls} value={spendType} onChange={(e) => setSpendType(e.target.value)}>
-            {SPEND_TYPE_OPTIONS.map((st) => (
-              <option key={st} value={st}>
-                {st}
-              </option>
-            ))}
-          </select>
-        </div>
+        {variant === "purchase" ? (
+          <div className="space-y-m-2">
+            <select className={inputCls} value={measurementUnit} onChange={(e) => setMeasurementUnit(e.target.value)}>
+              {MEASUREMENT_UNIT_OPTIONS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+            <p className="text-[12px] text-ink-3">
+              Recorded as <span className="font-semibold text-teal-900/90">Purchase</span> — adds to stock, not as a
+              running expense.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-m-2">
+            <select className={inputCls} value={measurementUnit} onChange={(e) => setMeasurementUnit(e.target.value)}>
+              {MEASUREMENT_UNIT_OPTIONS.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+            <select className={inputCls} value={spendType} onChange={(e) => setSpendType(e.target.value)}>
+              {EXPENSE_SPEND_TYPE_OPTIONS.map((st) => (
+                <option key={st} value={st}>
+                  {spendTypeDetailLabel(st)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <select className={inputCls} value={unitId} onChange={(e) => setUnitId(e.target.value)}>
           <option value="">Store</option>
           {units.map((u) => (

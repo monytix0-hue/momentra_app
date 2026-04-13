@@ -1,6 +1,8 @@
 "use client";
 
+import type { ComponentProps } from "react";
 import Link from "next/link";
+import { WorkspaceBusinessSubnav } from "@/components/business/workspace-business-subnav";
 import { WorkspaceSwitcher } from "@/components/business/workspace-switcher";
 import type { BusinessWorkspace } from "@/lib/api/business";
 
@@ -9,13 +11,15 @@ export function WorkspaceBusinessPageHeader({
   workspaceTitle,
   workspaces,
   subtitle,
-  onQuickAdd,
+  onAddPurchase,
+  onAddExpense,
 }: {
   workspaceId: string;
   workspaceTitle: string;
   workspaces: BusinessWorkspace[];
   subtitle: string;
-  onQuickAdd: () => void;
+  onAddPurchase: () => void;
+  onAddExpense: () => void;
 }) {
   return (
     <header className="relative overflow-hidden rounded-m-hero border border-surface-300/80 bg-surface-100 p-m-4 shadow-[0_16px_48px_-32px_rgba(15,23,42,0.18)]">
@@ -25,29 +29,47 @@ export function WorkspaceBusinessPageHeader({
       />
       <div className="relative flex flex-col gap-m-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink/40">Workspace · {workspaceTitle}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-ctx-accent/90">{workspaceTitle}</p>
           <h1 className="mt-1 text-[clamp(1.35rem,4vw,1.75rem)] font-semibold leading-tight text-ink">Business</h1>
-          <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-ink-2">{subtitle}</p>
+          <p className="mt-2 max-w-xl text-[14px] leading-snug text-ink-2">{subtitle}</p>
           <div className="mt-m-3">
             <WorkspaceSwitcher workspaces={workspaces} currentWorkspaceId={workspaceId} />
           </div>
         </div>
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <button
             type="button"
-            onClick={onQuickAdd}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-m-cta bg-ctx-accent px-m-4 text-[14px] font-semibold text-ctx-hero shadow-sm transition hover:opacity-95"
+            onClick={onAddPurchase}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-m-cta border border-emerald-700/40 bg-emerald-800/90 px-m-3 text-[13px] font-semibold text-white shadow-sm transition hover:opacity-95"
           >
-            Add expense
+            Add Purchase
+          </button>
+          <button
+            type="button"
+            onClick={onAddExpense}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-m-cta bg-ctx-accent px-m-3 text-[13px] font-semibold text-ctx-hero shadow-sm transition hover:opacity-95"
+          >
+            Add Expense
           </button>
           <Link
             href={`/workspaces/${workspaceId}/business/transactions`}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-m-chip border border-surface-300 bg-bg2 px-m-4 text-[14px] font-medium text-ink hover:border-ctx-accent/40"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-m-chip border border-surface-300 bg-bg2 px-m-3 text-[13px] font-medium text-ink hover:border-ctx-accent/40"
           >
-            All activity
+            Transactions
           </Link>
         </div>
       </div>
     </header>
+  );
+}
+
+/** Workspace header first, then section chips — use on all `/workspaces/.../business` screens */
+export function WorkspaceBusinessWorkspaceTop(props: ComponentProps<typeof WorkspaceBusinessPageHeader>) {
+  const { workspaceId } = props;
+  return (
+    <div className="space-y-m-3">
+      <WorkspaceBusinessPageHeader {...props} />
+      <WorkspaceBusinessSubnav workspaceId={workspaceId} />
+    </div>
   );
 }

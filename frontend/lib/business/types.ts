@@ -3,15 +3,23 @@
  * Built from API responses in selectors — not raw DTOs.
  */
 
+import type { UiTransactionKind } from "@/lib/business/transaction-kinds";
+
 export type BusinessHealthTone = "safe" | "watch" | "risk";
 
+/** First screen: cash, sales, purchases, expenses — all visible at a glance */
 export type TodayHeroModel = {
   cashInHandLabel: string;
   cashInHandSub: string;
-  incomingLabel: string;
-  incomingSub: string;
-  outgoingLabel: string;
-  outgoingSub: string;
+  salesLabel: string;
+  salesSub: string;
+  /** Purchase pressure: queue + today (stock / material) */
+  purchasesLabel: string;
+  purchasesSub: string;
+  /** Expense pressure: queue + today (running costs) */
+  expensesLabel: string;
+  expensesSub: string;
+  /** Plain-language line for the business owner */
   statusLine: string;
   health: BusinessHealthTone;
   healthLabel: string;
@@ -26,9 +34,18 @@ export type NextStepModel = {
 };
 
 export type DailySummaryModel = {
-  salesApproxLabel: string;
+  salesLabel: string;
+  salesSub: string;
+  purchasesLabel: string;
+  purchasesSub: string;
   expensesLabel: string;
+  expensesSub: string;
+  collectionsLabel: string;
+  collectionsSub: string;
+  paymentsLabel: string;
+  paymentsSub: string;
   netLabel: string;
+  netSub: string;
   netPositive: boolean;
 };
 
@@ -38,12 +55,14 @@ export type RelationshipDueModel = {
   amount: number;
   urgency: "today" | "soon" | "normal";
   dueLine: string;
+  /** Purchase vs expense row label */
+  flowLabel: string;
   kind: "payable" | "receivable";
 };
 
 export type TransactionRowModel = {
   id: string;
-  type: "sale" | "expense" | "payment" | "collection" | "other";
+  type: UiTransactionKind;
   title: string;
   amount: number;
   when: string;
@@ -55,6 +74,16 @@ export type OutlookDayModel = {
   incoming: string;
   outgoing: string;
   gapLine: string;
+};
+
+/** Scannable cash outlook before any detailed rows */
+export type CashOutlookSummaryModel = {
+  incomingLabel: string;
+  incomingSub: string;
+  outgoingLabel: string;
+  outgoingSub: string;
+  cushionLabel: string;
+  cushionTone: "ok" | "tight";
 };
 
 export type InventorySnapshotModel = {
@@ -71,7 +100,11 @@ export type WorkspaceBusinessDashboardModel = {
   daily: DailySummaryModel;
   payables: RelationshipDueModel[];
   receivables: RelationshipDueModel[];
-  recent: TransactionRowModel[];
+  /** Purchase / expense rows from spends only */
+  recentTransactions: TransactionRowModel[];
+  /** Lower priority: system / admin activity */
+  recentUpdates: TransactionRowModel[];
+  outlookSummary: CashOutlookSummaryModel;
   outlook: OutlookDayModel[];
   inventory: InventorySnapshotModel | null;
 };

@@ -7,6 +7,7 @@ import type {
   BusinessVendor,
 } from "@/lib/api/business";
 import { bizMoney, bizNum } from "@/lib/business/format";
+import { spendTypeDetailLabel } from "@/lib/business/transaction-kinds";
 
 const spendTypeOptions = [
   "operational",
@@ -133,7 +134,7 @@ export function SubmitSpendActionCard({
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ctx-accent">Smart action</p>
           <h2 className="mt-1 text-[18px] font-semibold text-ink">Submit spend</h2>
-          <p className="mt-1 text-[13px] text-ink-3">Purchase-style capture with live control hints.</p>
+          <p className="mt-1 text-[13px] text-ink-3">Record a purchase (stock) or expense — live budget hints below.</p>
         </div>
         {onOpenModal ? (
           <button
@@ -241,7 +242,7 @@ export function SubmitSpendActionCard({
             <select className={selectCls} value={spendType} onChange={(e) => setSpendType(e.target.value)}>
               {spendTypeOptions.map((st) => (
                 <option key={st} value={st}>
-                  {st}
+                  {spendTypeDetailLabel(st)}
                 </option>
               ))}
             </select>

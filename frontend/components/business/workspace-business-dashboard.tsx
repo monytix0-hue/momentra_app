@@ -8,10 +8,12 @@ import { getApiBaseUrl } from "@/lib/api/client";
 import { approveBusinessSpend, rejectBusinessSpend, submitBusinessSpend } from "@/lib/api/business";
 import { bizMoney, formatBizDateShort, healthToneClasses } from "@/lib/business/format";
 import { useWorkspaceBusinessData } from "@/lib/business/use-workspace-business-data";
-import { WorkspaceBusinessPageHeader } from "@/components/business/workspace-business-page-header";
+import { WorkspaceBusinessWorkspaceTop } from "@/components/business/workspace-business-page-header";
 import { SubmitSpendModal } from "@/components/business/submit-spend-modal";
+import { transactionKindLabel } from "@/lib/business/transaction-kinds";
 
 const card = "rounded-m-card border border-surface-300/80 bg-surface-100/95 p-m-4 shadow-sm";
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-4";
 
 export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: string }) {
   const router = useRouter();
@@ -33,8 +35,17 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
   const [busy, setBusy] = useState(false);
   const [localErr, setLocalErr] = useState<string | null>(null);
   const [showSpend, setShowSpend] = useState(false);
+  const [spendVariant, setSpendVariant] = useState<"purchase" | "expense">("expense");
+  /** Remount modal so form state matches variant without setState-in-effect. */
+  const [spendModalNonce, setSpendModalNonce] = useState(0);
+  const openSpendModal = (v: "purchase" | "expense") => {
+    setSpendVariant(v);
+    setSpendModalNonce((n) => n + 1);
+    setShowSpend(true);
+  };
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [outlookDetailsOpen, setOutlookDetailsOpen] = useState(false);
 
   const onApprove = useCallback(
     async (spendId: string) => {
@@ -85,7 +96,7 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
         setShowSpend(false);
         await reload();
       } catch (e) {
-        setLocalErr(e instanceof Error ? e.message : "Could not add expense");
+        setLocalErr(e instanceof Error ? e.message : "Could not submit");
       } finally {
         setBusy(false);
       }
@@ -148,6 +159,7 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
 
   const vm = viewModel;
   const heroCls = healthToneClasses(vm.hero.health);
+  const payablesTotal = vm.payables.reduce((sum, p) => sum + p.amount, 0);
 
   const scrollToPayables = () => {
     document.getElementById("section-payables")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -158,13 +170,14 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
   };
 
   return (
-    <div className="space-y-m-5 pb-28 lg:pb-m-8">
-      <WorkspaceBusinessPageHeader
+    <div className="space-y-m-6 pb-28 lg:pb-m-8">
+      <WorkspaceBusinessWorkspaceTop
         workspaceId={workspaceId}
         workspaceTitle={workspace.title}
         workspaces={workspaces}
-        subtitle="Track cash, dues, and daily business movement — built for small shops and growing units."
-        onQuickAdd={() => setShowSpend(true)}
+        subtitle="Cash, purchases, and expenses — today in one screen."
+        onAddPurchase={() => openSpendModal("purchase")}
+        onAddExpense={() => openSpendModal("expense")}
       />
 
       {localErr ? (
@@ -173,99 +186,88 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
         </p>
       ) : null}
 
-      {/* Today hero */}
+      {/* Today hero — cash & purchase first for scanning */}
       <section className={`${card} ring-1 ${heroCls.ring}`}>
         <div className="flex flex-wrap items-start justify-between gap-m-3">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-3">Today</p>
-            <h2 className="mt-1 text-[20px] font-semibold text-ink">Where you stand</h2>
-            <p className="mt-2 text-[14px] text-ink-2">{vm.hero.statusLine}</p>
+            <p className={eyebrow}>Today</p>
+            <h2 className="mt-1 text-[20px] font-semibold text-ink">Snapshot</h2>
+            <p className="mt-2 max-w-[28rem] text-[14px] leading-snug text-ink-2">{vm.hero.statusLine}</p>
           </div>
           <span className={`inline-flex items-center rounded-m-badge px-m-3 py-1.5 text-[12px] font-semibold ${heroCls.bg} ${heroCls.text}`}>
             {vm.hero.healthLabel}
           </span>
         </div>
-        <div className="mt-m-4 grid gap-m-3 sm:grid-cols-3">
-          <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-3">
+        <div className="mt-m-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-4 sm:p-m-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Cash in hand</p>
-            <p className="mt-1 text-[22px] font-semibold tabular-nums text-ink">{vm.hero.cashInHandLabel}</p>
-            <p className="mt-1 text-[11px] text-ink-3">{vm.hero.cashInHandSub}</p>
+            <p className="mt-1 text-[clamp(1.35rem,4vw,1.5rem)] font-semibold tabular-nums text-ink">{vm.hero.cashInHandLabel}</p>
+            <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.hero.cashInHandSub}</p>
           </div>
-          <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Incoming</p>
-            <p className="mt-1 text-[22px] font-semibold tabular-nums text-ink">{vm.hero.incomingLabel}</p>
-            <p className="mt-1 text-[11px] text-ink-3">{vm.hero.incomingSub}</p>
+          <div className="rounded-m-chip border border-teal-500/30 bg-teal-500/[0.08] p-m-4 shadow-sm ring-1 ring-teal-500/20 sm:p-m-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-teal-900/90">Purchases</p>
+            <p className="mt-1 text-[clamp(1.35rem,4vw,1.5rem)] font-semibold tabular-nums text-ink">{vm.hero.purchasesLabel}</p>
+            <p className="mt-1 text-[11px] leading-snug text-teal-900/75">{vm.hero.purchasesSub}</p>
           </div>
-          <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Outgoing</p>
-            <p className="mt-1 text-[22px] font-semibold tabular-nums text-ink">{vm.hero.outgoingLabel}</p>
-            <p className="mt-1 text-[11px] text-ink-3">{vm.hero.outgoingSub}</p>
+          <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-4 sm:p-m-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Sales</p>
+            <p className="mt-1 text-[clamp(1.35rem,4vw,1.5rem)] font-semibold tabular-nums text-ink">{vm.hero.salesLabel}</p>
+            <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.hero.salesSub}</p>
+          </div>
+          <div className="rounded-m-chip border border-rose-500/15 bg-rose-500/[0.05] p-m-4 sm:p-m-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-rose-900/80">Expenses</p>
+            <p className="mt-1 text-[clamp(1.35rem,4vw,1.5rem)] font-semibold tabular-nums text-ink">{vm.hero.expensesLabel}</p>
+            <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.hero.expensesSub}</p>
           </div>
         </div>
       </section>
 
       {/* Next step */}
       {vm.nextStep ? (
-        <section className={`${card} border-slate-700/10 bg-gradient-to-br from-slate-900/[0.03] to-sky-900/[0.04]`}>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-3">Recommended next step</p>
+        <section
+          className={`${card} border-ctx-accent/15 bg-gradient-to-br from-ctx-accent/[0.07] to-emerald-950/[0.04]`}
+        >
+          <p className={eyebrow}>Next step</p>
           <h3 className="mt-2 text-[17px] font-semibold leading-snug text-ink">{vm.nextStep.title}</h3>
-          <p className="mt-2 text-[14px] text-ink-2">{vm.nextStep.reason}</p>
+          <p className="mt-2 text-[14px] leading-snug text-ink-2">{vm.nextStep.reason}</p>
           <button
             type="button"
             onClick={onNextStepCta}
-            className="mt-m-4 inline-flex min-h-[44px] items-center rounded-m-cta bg-slate-900 px-m-4 text-[14px] font-semibold text-white hover:bg-slate-800"
+            className="mt-m-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-m-cta bg-ctx-accent px-m-4 text-[14px] font-semibold text-ctx-hero shadow-sm sm:w-auto"
           >
             {vm.nextStep.ctaLabel}
           </button>
         </section>
       ) : null}
 
-      {/* Daily summary */}
-      <section className={card}>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-3">Daily summary</p>
-        <h3 className="mt-1 text-[16px] font-semibold text-ink">Today&apos;s movement</h3>
-        <div className="mt-m-4 grid gap-m-3 sm:grid-cols-3">
-          <div className="rounded-m-chip border border-emerald-500/15 bg-emerald-500/[0.06] p-m-3">
-            <p className="text-[11px] font-medium text-emerald-900/80">Sales (cleared)</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.salesApproxLabel}</p>
-            <p className="mt-1 text-[11px] text-ink-3">Approved spends recorded today</p>
-          </div>
-          <div className="rounded-m-chip border border-rose-500/15 bg-rose-500/[0.05] p-m-3">
-            <p className="text-[11px] font-medium text-rose-900/80">Expense requests</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.expensesLabel}</p>
-            <p className="mt-1 text-[11px] text-ink-3">Submitted today</p>
-          </div>
-          <div
-            className={`rounded-m-chip border p-m-3 ${
-              vm.daily.netPositive
-                ? "border-emerald-500/20 bg-emerald-500/[0.04]"
-                : "border-amber-500/25 bg-amber-500/[0.06]"
-            }`}
-          >
-            <p className="text-[11px] font-medium text-ink-2">Net (simple view)</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.netLabel}</p>
-            <p className="mt-1 text-[11px] text-ink-3">Cleared − today&apos;s requests</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Pay / Collect */}
-      <div className="grid gap-m-4 lg:grid-cols-2">
+      {/* Money you owe / Money coming in */}
+      <div>
+        <p className={eyebrow}>Money</p>
+        <div className="mt-m-2 grid gap-m-4 lg:grid-cols-2">
         <section id="section-payables" className={card}>
           <div className="flex items-center justify-between gap-m-2">
-            <h3 className="text-[16px] font-semibold text-ink">To pay</h3>
+            <h3 className="text-[16px] font-semibold text-ink">To Pay</h3>
             <Link
               href={`/workspaces/${workspaceId}/business/payables`}
-              className="text-[12px] font-semibold text-ctx-accent hover:underline"
+              className="min-h-[40px] shrink-0 text-[12px] font-semibold text-ctx-accent hover:underline sm:min-h-0"
             >
               View all
             </Link>
           </div>
-          <p className="mt-1 text-[13px] text-ink-3">Supplier payments waiting for your approval</p>
+          <p className="mt-1 text-[13px] leading-snug text-ink-3">
+            Supplier bills — <span className="font-medium text-teal-900/85">Purchase</span> is stock,{" "}
+            <span className="font-medium text-rose-900/80">Expense</span> is running cost.
+          </p>
+          {vm.payables.length > 0 ? (
+            <p className="mt-m-3 rounded-m-chip border border-surface-300/80 bg-bg2/90 px-m-3 py-m-2 text-[13px] text-ink">
+              <span className="text-ink-3">Total waiting: </span>
+              <span className="font-semibold tabular-nums text-ink">{bizMoney(payablesTotal, workspace.currency)}</span>
+            </p>
+          ) : null}
           <ul className="mt-m-4 space-y-m-3">
             {vm.payables.length === 0 ? (
               <li className="rounded-m-chip border border-dashed border-surface-300 bg-bg2/60 px-m-3 py-m-4 text-[13px] text-ink-3">
-                No supplier payments due in this workspace right now.
+                All clear — no bills waiting. Add Purchase or Add Expense when you need to.
               </li>
             ) : (
               vm.payables.map((p) => (
@@ -274,6 +276,13 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
                   className="flex flex-col gap-m-2 rounded-m-chip border border-surface-300/90 bg-bg2/70 p-m-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
+                    <p
+                      className={`text-[11px] font-semibold uppercase tracking-[0.08em] ${
+                        p.flowLabel === "Purchase" ? "text-teal-800/90" : "text-rose-800/90"
+                      }`}
+                    >
+                      {p.flowLabel}
+                    </p>
                     <p className="text-[14px] font-semibold text-ink">{p.name}</p>
                     <p className="text-[12px] text-ink-3">{p.dueLine}</p>
                   </div>
@@ -304,61 +313,113 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
 
         <section className={card}>
           <div className="flex items-center justify-between gap-m-2">
-            <h3 className="text-[16px] font-semibold text-ink">To collect</h3>
+            <h3 className="text-[16px] font-semibold text-ink">To Collect</h3>
             <Link
               href={`/workspaces/${workspaceId}/business/receivables`}
-              className="text-[12px] font-semibold text-ctx-accent hover:underline"
+              className="min-h-[40px] shrink-0 text-[12px] font-semibold text-ctx-accent hover:underline sm:min-h-0"
             >
               View all
             </Link>
           </div>
-          <p className="mt-1 text-[13px] text-ink-3">Money customers owe you</p>
-          <div className="mt-m-4 rounded-m-chip border border-dashed border-surface-300 bg-bg2/60 px-m-3 py-m-4">
-            <p className="text-[14px] font-medium text-ink">Collections are not wired yet</p>
-            <p className="mt-2 text-[13px] leading-relaxed text-ink-3">
-              When your billing feed connects, customer dues will show here. You can still track spends and approvals
-              today.
+          <p className="mt-1 text-[13px] text-ink-3">Customer credit & pending sales</p>
+          <div className="mt-m-3 rounded-m-chip border border-sky-500/20 bg-sky-500/[0.06] p-m-4">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-sky-900/75">Total to collect</p>
+            <p className="mt-1 text-[22px] font-semibold tabular-nums text-ink">—</p>
+            <p className="mt-2 text-[13px] leading-snug text-ink-3">
+              No customer dues here yet. When you connect billing, shop credit and counter dues will list with amounts.
             </p>
             <Link
               href={`/workspaces/${workspaceId}/business/receivables`}
-              className="mt-m-3 inline-flex text-[13px] font-semibold text-ctx-accent hover:underline"
+              className="mt-m-3 inline-flex min-h-[44px] items-center text-[13px] font-semibold text-ctx-accent hover:underline"
             >
-              Learn more
+              To Collect page
             </Link>
           </div>
         </section>
+        </div>
       </div>
 
-      {/* Recent */}
+      {/* Today’s movement */}
       <section className={card}>
-        <div className="flex items-center justify-between gap-m-2">
-          <h3 className="text-[16px] font-semibold text-ink">Recent transactions</h3>
+        <p className={eyebrow}>Breakdown</p>
+        <h3 className="mt-1 text-[16px] font-semibold text-ink">Movement</h3>
+        <p className="mt-1 text-[12px] text-ink-3">Purchase and expense are always separate.</p>
+        <div className="mt-m-4 grid gap-m-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-m-chip border border-emerald-500/15 bg-emerald-500/[0.06] p-m-3">
+            <p className="text-[11px] font-medium text-emerald-900/80">Sales</p>
+            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.salesLabel}</p>
+            <p className="mt-1 text-[11px] text-ink-3">{vm.daily.salesSub}</p>
+          </div>
+          <div className="rounded-m-chip border border-teal-500/20 bg-teal-500/[0.06] p-m-3">
+            <p className="text-[11px] font-medium text-teal-900/85">Purchases</p>
+            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.purchasesLabel}</p>
+            <p className="mt-1 text-[11px] text-ink-3">{vm.daily.purchasesSub}</p>
+          </div>
+          <div className="rounded-m-chip border border-rose-500/15 bg-rose-500/[0.05] p-m-3">
+            <p className="text-[11px] font-medium text-rose-900/80">Expenses</p>
+            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.expensesLabel}</p>
+            <p className="mt-1 text-[11px] text-ink-3">{vm.daily.expensesSub}</p>
+          </div>
+          <div className="rounded-m-chip border border-sky-500/15 bg-sky-500/[0.05] p-m-3">
+            <p className="text-[11px] font-medium text-sky-900/85">Collections</p>
+            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.collectionsLabel}</p>
+            <p className="mt-1 text-[11px] text-ink-3">{vm.daily.collectionsSub}</p>
+          </div>
+          <div className="rounded-m-chip border border-violet-500/15 bg-violet-500/[0.05] p-m-3">
+            <p className="text-[11px] font-medium text-violet-900/85">Payments</p>
+            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.paymentsLabel}</p>
+            <p className="mt-1 text-[11px] text-ink-3">{vm.daily.paymentsSub}</p>
+          </div>
+          <div
+            className={`rounded-m-chip border p-m-3 ${
+              vm.daily.netPositive
+                ? "border-emerald-500/20 bg-emerald-500/[0.04]"
+                : "border-amber-500/25 bg-amber-500/[0.06]"
+            }`}
+          >
+            <p className="text-[11px] font-medium text-ink-2">Net today</p>
+            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.netLabel}</p>
+            <p className="mt-1 text-[11px] text-ink-3">{vm.daily.netSub}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Recent transactions */}
+      <section className={card}>
+        <p className={eyebrow}>Activity</p>
+        <div className="mt-1 flex items-center justify-between gap-m-2">
+          <div>
+            <h3 className="text-[16px] font-semibold text-ink">Recent transactions</h3>
+            <p className="mt-0.5 text-[12px] text-ink-3">Latest purchase & expense entries</p>
+          </div>
           <Link
             href={`/workspaces/${workspaceId}/business/transactions`}
             className="text-[12px] font-semibold text-ctx-accent hover:underline"
           >
-            Open log
+            View all
           </Link>
         </div>
         <ul className="mt-m-3 divide-y divide-surface-300/60">
-          {vm.recent.length === 0 ? (
-            <li className="py-m-4 text-[13px] text-ink-3">No transactions yet in this workspace.</li>
+          {vm.recentTransactions.length === 0 ? (
+            <li className="py-m-4 text-[13px] text-ink-3">No purchases or expenses yet. Use Add Purchase or Add Expense.</li>
           ) : (
-            vm.recent.map((r) => (
+            vm.recentTransactions.map((r) => (
               <li key={r.id} className="flex items-start justify-between gap-m-3 py-m-3">
-                <div>
-                  <p className="text-[14px] font-medium text-ink">{r.title}</p>
+                <div className="min-w-0">
+                  <span
+                    className={`inline-block rounded-m-badge px-m-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] ${
+                      r.type === "purchase"
+                        ? "bg-teal-500/15 text-teal-900"
+                        : r.type === "expense"
+                          ? "bg-rose-500/12 text-rose-900"
+                          : "bg-surface-300/40 text-ink-3"
+                    }`}
+                  >
+                    {transactionKindLabel(r.type)}
+                  </span>
+                  <p className="mt-1 text-[14px] font-medium text-ink">{r.title}</p>
                   <p className="text-[12px] text-ink-3">
-                    {r.type === "expense"
-                      ? "Expense"
-                      : r.type === "payment"
-                        ? "Payment"
-                        : r.type === "collection"
-                          ? "Collection"
-                          : r.type === "sale"
-                            ? "Sale"
-                            : "Update"}{" "}
-                    · {formatBizDateShort(r.when)}
+                    {formatBizDateShort(r.when)}
                   </p>
                   {r.meta ? <p className="text-[11px] text-ink-4">{r.meta}</p> : null}
                 </div>
@@ -371,43 +432,79 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
         </ul>
       </section>
 
-      {/* Outlook */}
+      {/* Cash outlook */}
       <section className={card}>
-        <h3 className="text-[16px] font-semibold text-ink">Short cash outlook</h3>
-        <p className="mt-1 text-[13px] text-ink-3">Next three days — based on today&apos;s queue and plan headroom</p>
-        <div className="mt-m-4 overflow-x-auto">
-          <table className="w-full min-w-[520px] text-left text-[13px]">
-            <thead>
-              <tr className="border-b border-surface-300 text-[11px] uppercase tracking-[0.08em] text-ink-3">
-                <th className="pb-2 pr-m-2 font-medium">Day</th>
-                <th className="pb-2 pr-m-2 font-medium">Incoming</th>
-                <th className="pb-2 pr-m-2 font-medium">Outgoing</th>
-                <th className="pb-2 font-medium">Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vm.outlook.map((row) => (
-                <tr key={row.label} className="border-b border-surface-300/50">
-                  <td className="py-m-2 pr-m-2 font-medium text-ink">{row.label}</td>
-                  <td className="py-m-2 pr-m-2 text-ink-2">{row.incoming}</td>
-                  <td className="py-m-2 pr-m-2 tabular-nums text-ink">{row.outgoing}</td>
-                  <td className="py-m-2 text-ink-3">{row.gapLine}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <p className={eyebrow}>Cash</p>
+        <h3 className="mt-1 text-[16px] font-semibold text-ink">Next few days</h3>
+        <p className="mt-1 text-[13px] text-ink-3">Rough picture — tap below for day-by-day</p>
+        <div className="mt-m-4 grid gap-m-3 sm:grid-cols-3">
+          <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Incoming</p>
+            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.outlookSummary.incomingLabel}</p>
+            <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.outlookSummary.incomingSub}</p>
+          </div>
+          <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Outgoing</p>
+            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.outlookSummary.outgoingLabel}</p>
+            <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.outlookSummary.outgoingSub}</p>
+          </div>
+          <div
+            className={`rounded-m-chip border p-m-3 ${
+              vm.outlookSummary.cushionTone === "ok"
+                ? "border-emerald-500/20 bg-emerald-500/[0.05]"
+                : "border-amber-500/25 bg-amber-500/[0.07]"
+            }`}
+          >
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">After queue</p>
+            <p className="mt-1 text-[14px] font-semibold leading-snug text-ink">{vm.outlookSummary.cushionLabel}</p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={() => setOutlookDetailsOpen((o) => !o)}
+          className="mt-m-4 inline-flex min-h-[44px] items-center rounded-m-chip border border-surface-300 bg-bg2 px-m-3 text-[13px] font-semibold text-ink"
+        >
+          {outlookDetailsOpen ? "Hide day-by-day" : "View day-by-day"}
+        </button>
+        {outlookDetailsOpen ? (
+          <div className="mt-m-3 overflow-x-auto rounded-m-chip border border-surface-300/60 bg-bg2/40 p-m-2">
+            <table className="w-full min-w-[520px] text-left text-[13px]">
+              <thead>
+                <tr className="border-b border-surface-300 text-[11px] uppercase tracking-[0.08em] text-ink-3">
+                  <th className="pb-2 pr-m-2 font-medium">Day</th>
+                  <th className="pb-2 pr-m-2 font-medium">Incoming</th>
+                  <th className="pb-2 pr-m-2 font-medium">Outgoing</th>
+                  <th className="pb-2 font-medium">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vm.outlook.map((row) => (
+                  <tr key={row.label} className="border-b border-surface-300/50">
+                    <td className="py-m-2 pr-m-2 font-medium text-ink">{row.label}</td>
+                    <td className="py-m-2 pr-m-2 text-ink-2">{row.incoming}</td>
+                    <td className="py-m-2 pr-m-2 tabular-nums text-ink">{row.outgoing}</td>
+                    <td className="py-m-2 text-ink-3">{row.gapLine}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </section>
 
-      {/* Inventory snapshot */}
+      {/* Stock */}
       <section className={card}>
-        <div className="flex items-center justify-between gap-m-2">
-          <h3 className="text-[16px] font-semibold text-ink">Stock & units</h3>
+        <p className={eyebrow}>Inventory</p>
+        <div className="mt-1 flex items-center justify-between gap-m-2">
+          <div>
+            <h3 className="text-[16px] font-semibold text-ink">Stock</h3>
+            <p className="mt-0.5 text-[12px] text-ink-3">Low stock & last purchase hints</p>
+          </div>
           <Link
             href={`/workspaces/${workspaceId}/business/inventory`}
             className="text-[12px] font-semibold text-ctx-accent hover:underline"
           >
-            Details
+            View stock
           </Link>
         </div>
         {vm.inventory ? (
@@ -424,15 +521,37 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
           </div>
         ) : (
           <p className="mt-m-3 text-[13px] text-ink-3">
-            Stock counts will show here when inventory is connected. Unit budgets help you spot pressure early.
+            Full stock counts connect here later. Purchases you add today still help you track what you bought for
+            inventory.
           </p>
         )}
       </section>
 
+      {vm.recentUpdates.length > 0 ? (
+        <section className={`${card} border-surface-300/60 bg-bg2/40`}>
+          <p className={eyebrow}>Other</p>
+          <h3 className="mt-1 text-[16px] font-semibold text-ink">Updates</h3>
+          <p className="mt-1 text-[12px] text-ink-3">App & sync — not your main money list</p>
+          <ul className="mt-m-3 divide-y divide-surface-300/50">
+            {vm.recentUpdates.map((r) => (
+              <li key={r.id} className="flex flex-col gap-0.5 py-m-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[13px] text-ink-2">{r.title}</p>
+                  {r.meta ? (
+                    <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-4">{r.meta}</p>
+                  ) : null}
+                </div>
+                <time className="shrink-0 text-[11px] text-ink-4">{formatBizDateShort(r.when)}</time>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {rejectId ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/50 p-m-4">
           <div className="w-full max-w-md rounded-m-card border border-surface-300 bg-bg p-m-4">
-            <p className="text-[15px] font-semibold text-ink">Reject this payment?</p>
+            <p className="text-[15px] font-semibold text-ink">Reject this request?</p>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
@@ -464,7 +583,9 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
       ) : null}
 
       <SubmitSpendModal
+        key={spendModalNonce}
         open={showSpend}
+        variant={spendVariant}
         units={units}
         costCenters={costCenters}
         vendors={vendors}
@@ -473,13 +594,24 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
       />
 
       {/* Sticky quick actions (mobile) */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-surface-300/80 bg-bg/95 px-m-3 py-m-3 backdrop-blur-md lg:hidden">
-        <div className="mx-auto flex max-w-lg items-stretch justify-between gap-1.5">
-          <QuickBtn label="Sale" onClick={() => router.push(`/workspaces/${workspaceId}/business/transactions`)} />
-          <QuickBtn label="Expense" onClick={() => setShowSpend(true)} />
-          <QuickBtn label="Pay" onClick={scrollToPayables} />
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-surface-300/80 bg-bg/95 px-m-2 py-m-2 backdrop-blur-md lg:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
           <QuickBtn
-            label="Collect"
+            highlight
+            label="Stock"
+            title="Add purchase — material & goods"
+            onClick={() => openSpendModal("purchase")}
+          />
+          <QuickBtn label="Bill" title="Add expense — rent, transport" onClick={() => openSpendModal("expense")} />
+          <QuickBtn
+            label="Sale"
+            title="View transactions"
+            onClick={() => router.push(`/workspaces/${workspaceId}/business/transactions`)}
+          />
+          <QuickBtn label="Pay" title="Bills waiting for you" onClick={scrollToPayables} />
+          <QuickBtn
+            label="Get"
+            title="Money to collect"
             onClick={() => router.push(`/workspaces/${workspaceId}/business/receivables`)}
           />
         </div>
@@ -488,12 +620,27 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
   );
 }
 
-function QuickBtn({ label, onClick }: { label: string; onClick: () => void }) {
+function QuickBtn({
+  label,
+  title,
+  onClick,
+  highlight,
+}: {
+  label: string;
+  title?: string;
+  onClick: () => void;
+  highlight?: boolean;
+}) {
   return (
     <button
       type="button"
+      title={title}
       onClick={onClick}
-      className="flex min-h-[48px] flex-1 flex-col items-center justify-center rounded-m-chip border border-surface-300 bg-surface-100 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink active:scale-[0.98]"
+      className={`flex min-h-[48px] flex-col items-center justify-center rounded-m-chip px-0.5 text-[10px] font-semibold uppercase leading-tight tracking-[0.04em] shadow-sm active:scale-[0.98] ${
+        highlight
+          ? "border border-emerald-700/50 bg-emerald-900/90 text-white ring-1 ring-emerald-400/30"
+          : "border border-surface-300 bg-surface-100 text-ink"
+      }`}
     >
       {label}
     </button>

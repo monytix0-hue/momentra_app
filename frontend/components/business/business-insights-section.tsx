@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { BusinessDashboard, BusinessSpend, BusinessUnit, BusinessVendor } from "@/lib/api/business";
 import { bizNum } from "@/lib/business/format";
+import { spendTypeDetailLabel } from "@/lib/business/transaction-kinds";
 
 export function BusinessInsightsSection({
   spends,
@@ -52,7 +53,7 @@ export function BusinessInsightsSection({
     if (types.length >= 2 && types[0][1] > types[1][1] * 1.15) {
       lines.push({
         id: "type-skew",
-        text: `${types[0][0]} spend is dominating the mix — worth a quick pulse check.`,
+        text: `${spendTypeDetailLabel(types[0][0])} is the largest share of spend — worth a quick check.`,
       });
     }
 

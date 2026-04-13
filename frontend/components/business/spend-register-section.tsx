@@ -2,6 +2,7 @@
 
 import type { BusinessSpend } from "@/lib/api/business";
 import { bizMoney, bizNum, formatBizDate } from "@/lib/business/format";
+import { isPurchaseSpendType, spendTypeDetailLabel } from "@/lib/business/transaction-kinds";
 
 function SpendRow({
   spend,
@@ -47,7 +48,13 @@ function SpendRow({
           </div>
           <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{bizMoney(bizNum(spend.amount), currency)}</p>
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink-3">
-            <span className="capitalize text-ink-2">{spend.spend_type}</span>
+            <span
+              className={
+                isPurchaseSpendType(spend.spend_type) ? "font-semibold text-teal-900/85" : "font-semibold text-rose-900/80"
+              }
+            >
+              {spendTypeDetailLabel(spend.spend_type)}
+            </span>
             <span className="text-ink-4">·</span>
             <span>{unitLabel}</span>
             {costCenterLabel !== "—" ? (

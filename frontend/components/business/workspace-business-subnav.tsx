@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 const links = (workspaceId: string) =>
   [
     { href: `/workspaces/${workspaceId}/business`, label: "Today" },
-    { href: `/workspaces/${workspaceId}/business/payables`, label: "To pay" },
-    { href: `/workspaces/${workspaceId}/business/receivables`, label: "To collect" },
+    { href: `/workspaces/${workspaceId}/business/payables`, label: "To Pay" },
+    { href: `/workspaces/${workspaceId}/business/receivables`, label: "To Collect" },
     { href: `/workspaces/${workspaceId}/business/transactions`, label: "Transactions" },
     { href: `/workspaces/${workspaceId}/business/inventory`, label: "Stock" },
   ] as const;

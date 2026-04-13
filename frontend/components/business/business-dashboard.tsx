@@ -63,6 +63,11 @@ export function BusinessDashboard({
   const [vendors, setVendors] = useState<BusinessVendor[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [showSpendModal, setShowSpendModal] = useState(false);
+  const [spendModalKey, setSpendModalKey] = useState(0);
+  const openSpendModal = () => {
+    setSpendModalKey((k) => k + 1);
+    setShowSpendModal(true);
+  };
   const [busy, setBusy] = useState(false);
   const [registerUnitFilter, setRegisterUnitFilter] = useState("");
   const [registerCostCenterFilter, setRegisterCostCenterFilter] = useState("");
@@ -78,7 +83,7 @@ export function BusinessDashboard({
   const [purchaseQuantity, setPurchaseQuantity] = useState("");
   const [purchaseMeasurementUnit, setPurchaseMeasurementUnit] = useState("kg");
   const [purchaseUnitId, setPurchaseUnitId] = useState("");
-  const [purchaseSpendType, setPurchaseSpendType] = useState<string>("operational");
+  const [purchaseSpendType, setPurchaseSpendType] = useState<string>("inventory");
   const [purchaseCostCenterId, setPurchaseCostCenterId] = useState("");
   const [purchaseVendorId, setPurchaseVendorId] = useState("");
   const [inviteUserId, setInviteUserId] = useState("");
@@ -200,7 +205,7 @@ export function BusinessDashboard({
       setPurchaseQuantity("");
       setPurchaseMeasurementUnit("kg");
       setPurchaseUnitId("");
-      setPurchaseSpendType("operational");
+      setPurchaseSpendType("inventory");
       setPurchaseCostCenterId("");
       setPurchaseVendorId("");
       await loadAll();
@@ -351,7 +356,7 @@ export function BusinessDashboard({
             onApprove={onApprove}
             onReject={onReject}
             disabled={busy}
-            onOpenAdvancedModal={() => setShowSpendModal(true)}
+            onOpenAdvancedModal={openSpendModal}
           />
 
           <SubmitSpendActionCardV3
@@ -380,7 +385,7 @@ export function BusinessDashboard({
             vendorId={purchaseVendorId}
             setVendorId={setPurchaseVendorId}
             onSubmit={(e) => void onSubmitPurchaseInline(e)}
-            onOpenModal={() => setShowSpendModal(true)}
+            onOpenModal={openSpendModal}
           />
 
           <div className="grid gap-m-6 lg:grid-cols-2">
@@ -503,6 +508,7 @@ export function BusinessDashboard({
       </div>
 
       <SubmitSpendModal
+        key={spendModalKey}
         open={showSpendModal}
         units={units}
         costCenters={costCenters}
