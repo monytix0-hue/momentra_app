@@ -32,6 +32,7 @@ import {
 } from "@/lib/api/personal";
 import { ActivityTimeline } from "@/components/group/activity-timeline";
 import { ExpenseList } from "@/components/group/expense-list";
+import { GroupSettlementPlanCard } from "@/components/group/GroupSettlementPlanCard";
 import { GroupCoordinationActionStrip } from "@/components/group/group-coordination-action-strip";
 import { GroupCoordinationPeople } from "@/components/group/group-coordination-people";
 import { GroupCycleCoordinationBlock } from "@/components/group/group-cycle-coordination-block";
@@ -1423,61 +1424,12 @@ export function GroupDetailLayout({ groupId }: { groupId: string }) {
                     <span className="font-medium text-ink">pool commitments</span> only — not from who paid on shared expenses
                     in the Expenses tab (that is tracked separately).
                   </p>
-                  {settlementPlan ? (
-                    <div className="mb-m-6 rounded-m-card border border-ctx-accent/25 bg-ctx-accent/[0.06] p-m-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-ink/35">
-                        Shared expenses — who pays whom
-                      </p>
-                      <p className="mt-m-2 text-[13px] leading-relaxed text-ink-2">{settlementPlan.summary_line}</p>
-                      <p className="mt-m-2 text-[12px] leading-relaxed text-ink-3">
-                        Net balance is from expense splits (who fronted bills vs who still owes their share). The list below
-                        is a minimal set of transfers that clears those balances — record real payments in{" "}
-                        <span className="font-medium text-ink">Settlements</span> when you settle outside the app.
-                        {detail?.active_cycle?.cycle_id ? (
-                          <span className="text-ink-4"> Scoped to the active cycle.</span>
-                        ) : (
-                          <span className="text-ink-4"> All shared expenses in this group.</span>
-                        )}
-                      </p>
-                      <div className="mt-m-4 grid gap-m-3 sm:grid-cols-2">
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-ink/35">Net (shared bills)</p>
-                          <ul className="mt-m-2 space-y-1.5 text-[12px] text-ink">
-                            {settlementPlan.balances.map((b) => {
-                              const nb = num(b.net_balance);
-                              const cls = nb >= 0 ? "text-status-ok-fg" : "text-urgency-high";
-                              return (
-                                <li key={b.participant_id} className="flex justify-between gap-2">
-                                  <span className="font-medium text-ink/90">{b.display_name}</span>
-                                  <span className={`tabular-nums font-semibold ${cls}`}>
-                                    {nb >= 0 ? "+" : ""}
-                                    {moneyDetail(nb)}
-                                  </span>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-ink/35">Suggested transfers</p>
-                          {settlementPlan.instructions.length === 0 ? (
-                            <p className="mt-m-2 text-[12px] text-ink-3">No payments needed — balances net to zero.</p>
-                          ) : (
-                            <ol className="mt-m-2 list-decimal space-y-2 pl-m-4 text-[12px] text-ink">
-                              {settlementPlan.instructions.map((ins, idx) => (
-                                <li key={`${ins.from_participant_id}-${ins.to_participant_id}-${idx}`}>
-                                  <span className="font-medium">{ins.from_display_name}</span>
-                                  <span className="text-ink-3"> pays </span>
-                                  <span className="font-medium">{ins.to_display_name}</span>
-                                  <span className="tabular-nums text-ink/90"> {money(num(ins.amount))}</span>
-                                </li>
-                              ))}
-                            </ol>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
+                  <div className="mb-m-6">
+                    <GroupSettlementPlanCard
+                      plan={settlementPlan}
+                      activeCycleId={detail?.active_cycle?.cycle_id}
+                    />
+                  </div>
                   {positions.length === 0 ? (
                     <p className="text-[13px] text-ink-3">No commitments recorded yet.</p>
                   ) : (

@@ -11,10 +11,12 @@ import {
   fetchGroupExpenses,
   fetchGroupMemberMoneySummary,
   fetchGroupPositions,
+  fetchGroupSettlementPlan,
   payCommitment,
   postGroupReminder,
   type GroupExpense,
   type GroupMomentDetail,
+  type GroupSettlementPlan,
 } from "@/lib/api/group";
 import { fetchTransactionCategories, type PersonalTxnCategory } from "@/lib/api/personal";
 import { mapGroupDetailFromApi, type MapViewModelInput } from "@/lib/group/map-group-to-view-model";
@@ -27,6 +29,7 @@ import { GroupInvitePanel } from "@/components/group/group-invite-panel";
 import { GroupMembersSection } from "@/components/group/GroupMembersSection";
 import { GroupDetailSkeleton } from "@/components/group/GroupDetailSkeleton";
 import { GroupHubError } from "@/components/group/GroupHubError";
+import { GroupSettlementPlanCard } from "@/components/group/GroupSettlementPlanCard";
 import { GroupSummaryHero } from "@/components/group/GroupSummaryHero";
 import { ExpenseList } from "@/components/group/expense-list";
 import {
@@ -49,6 +52,8 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
   const [info, setInfo] = useState<string | null>(null);
   const [vm, setVm] = useState<GroupDetailViewModel | null>(null);
   const [memberSummaryErr, setMemberSummaryErr] = useState<string | null>(null);
+  const [settlementPlan, setSettlementPlan] = useState<GroupSettlementPlan | null>(null);
+  const [settlementPlanErr, setSettlementPlanErr] = useState<string | null>(null);
 
   const [sheet, setSheet] = useState<null | "expense" | "payment">(null);
   const [busy, setBusy] = useState(false);
@@ -100,6 +105,7 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
     setLoading(true);
     setErr(null);
     setMemberSummaryErr(null);
+    setSettlementPlanErr(null);
     try {
       const token = await user.getIdToken();
       const [d, c, e, a, pos] = await Promise.all([
@@ -120,6 +126,17 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
         msErr = er instanceof Error ? er.message : "Could not load member money summary";
       }
       setMemberSummaryErr(msErr);
+      let plan: GroupSettlementPlan | null = null;
+      let planErr: string | null = null;
+      try {
+        plan = await fetchGroupSettlementPlan(token, groupId, {
+          cycleId: d.active_cycle?.cycle_id ?? null,
+        });
+      } catch (er) {
+        planErr = er instanceof Error ? er.message : "Could not load settlement plan";
+      }
+      setSettlementPlan(plan);
+      setSettlementPlanErr(planErr);
       const input: MapViewModelInput = {
         detail: d,
         commitments: c,
@@ -133,6 +150,8 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not load this group");
       setVm(null);
+      setSettlementPlan(null);
+      setSettlementPlanErr(null);
     } finally {
       setLoading(false);
     }
@@ -414,6 +433,22 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
         />
       </div>
 
+      <section className="mt-m-8 scroll-mt-24 md:mt-m-10" aria-labelledby="group-settle-heading">
+        <h2 id="group-settle-heading" className={groupSectionTitle}>
+          Settle shared bills
+        </h2>
+        <p className="mt-m-2 max-w-xl text-[14px] leading-relaxed text-ink-3">
+          Net balances from expense splits and the fewest transfers to settle up — separate from pool contributions above.
+        </p>
+        <div className="mt-m-4">
+          <GroupSettlementPlanCard
+            plan={settlementPlan}
+            activeCycleId={detail?.active_cycle?.cycle_id}
+            error={settlementPlanErr}
+          />
+        </div>
+      </section>
+
       <div className="mt-m-8 md:mt-m-10">
         <GroupExpensesSnapshot
           items={vm.recentExpenses}
@@ -448,11 +483,15 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
         onInvite={scrollInvite}
         onSendReminder={sendBulkReminder}
         onSettle={() => {
-          setInfo("Settle informally, then record it here so everyone stays aligned.");
-          document.getElementById("group-people")?.scrollIntoView({ behavior: "smooth" });
+          setInfo(null);
+          document.getElementById("group-settlement-plan")?.scrollIntoView({ behavior: "smooth" });
         }}
         showInvite={vm.isAdmin}
-        showSettle={vm.fundingModel !== "pooled" || vm.openShareDebt > 0.01}
+        showSettle={
+          vm.fundingModel !== "pooled" ||
+          vm.openShareDebt > 0.01 ||
+          (settlementPlan?.payment_count ?? 0) > 0
+        }
       />
 
       {sheet === "expense" ? (
