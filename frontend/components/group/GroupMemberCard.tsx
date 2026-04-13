@@ -64,25 +64,34 @@ export function GroupMemberCard({
             <h3 id={`member-${member.participantId}-name`} className="truncate text-[16px] font-semibold text-ink">
               {member.displayName}
             </h3>
+            {member.role === "admin" ? (
+              <span className="rounded-m-badge border border-surface-300/80 bg-bg2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-3">
+                Organizer
+              </span>
+            ) : null}
             <span className={`rounded-m-badge border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${pillClass}`}>
               {member.statusLabel}
             </span>
           </div>
-          <div className="mt-m-3 grid grid-cols-2 gap-x-m-3 gap-y-m-2 text-[12px] sm:grid-cols-4 sm:gap-x-m-4">
+          <div className="mt-m-3 grid grid-cols-2 gap-x-m-3 gap-y-m-2 text-[12px] sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-m-4">
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink/32">Planned</p>
               <p className="mt-0.5 tabular-nums font-medium text-ink">{formatInr(member.planned)}</p>
             </div>
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink/32">Paid in</p>
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink/32">Contributed</p>
               <p className="mt-0.5 tabular-nums font-medium text-ink">{formatInr(member.paid)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink/32">Shared bills paid</p>
+              <p className="mt-0.5 tabular-nums font-medium text-ink">{formatInr(member.expensesPaid)}</p>
             </div>
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink/32">Still open</p>
               <p className="mt-0.5 tabular-nums font-medium text-status-pending-fg">{formatInr(member.pending)}</p>
             </div>
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink/32">Ahead</p>
+              <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink/32">Extra paid</p>
               <p className="mt-0.5 tabular-nums font-medium text-ctx-accent">{member.extra > 0 ? formatInr(member.extra) : "—"}</p>
             </div>
           </div>

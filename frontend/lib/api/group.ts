@@ -523,6 +523,32 @@ export type GroupPosition = {
   net_position: number;
 };
 
+export type GroupMemberMoneySummaryRow = {
+  participant_id: string;
+  user_id: string | null;
+  role: string;
+  status: string;
+  planned_contribution: string | number;
+  contribution_paid: string | number;
+  pending_contribution: string | number;
+  extra_contribution: string | number;
+  expenses_paid: string | number;
+};
+
+export type GroupMemberMoneySummaryResponse = {
+  members: GroupMemberMoneySummaryRow[];
+};
+
+export async function fetchGroupMemberMoneySummary(
+  token: string,
+  groupId: string,
+): Promise<GroupMemberMoneySummaryResponse> {
+  const res = await fetch(`${getApiBaseUrl()}/group/moments/${groupId}/member-summary`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return parseJson<GroupMemberMoneySummaryResponse>(res);
+}
+
 export async function fetchGroupPositions(token: string, groupId: string): Promise<GroupPosition[]> {
   const res = await fetch(`${getApiBaseUrl()}/group/moments/${groupId}/positions`, {
     headers: { Authorization: `Bearer ${token}` },

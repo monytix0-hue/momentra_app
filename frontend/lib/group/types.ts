@@ -36,6 +36,10 @@ export interface GroupMemberCardModel {
   participantId: string;
   displayName: string;
   initials: string;
+  /** member | admin */
+  role: string;
+  /** Sum of shared expense amounts this person paid (separate from pool contributions) */
+  expensesPaid: number;
   /** Planned (commitments) */
   planned: number;
   /** Paid toward plan */

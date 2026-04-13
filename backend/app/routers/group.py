@@ -37,6 +37,8 @@ from app.schemas.group import (
     GroupMomentCreate,
     GroupMomentDetailOut,
     GroupMomentSummaryOut,
+    GroupMemberMoneySummaryOut,
+    GroupMemberMoneySummaryRow,
     GroupMomentUpdate,
     GroupParticipantCreate,
     GroupParticipantOut,
@@ -527,6 +529,25 @@ def get_positions(
     except APIError as e:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e)) from e
     return [GroupPositionOut.model_validate(r) for r in rows]
+
+
+@router.get("/moments/{group_id}/member-summary", response_model=GroupMemberMoneySummaryOut)
+def get_member_money_summary(
+    group_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+) -> GroupMemberMoneySummaryOut:
+    sb = _sb()
+    try:
+        rows = group_service.build_member_money_summary(sb, user_id, str(group_id))
+    except PermissionError as e:
+        raise _http_from_service_err(e) from e
+    except ValueError as e:
+        raise _http_from_service_err(e) from e
+    except APIError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e)) from e
+    return GroupMemberMoneySummaryOut(
+        members=[GroupMemberMoneySummaryRow.model_validate(r) for r in rows],
+    )
 
 
 @router.post("/moments/{group_id}/commitments", response_model=list[GroupCommitmentOut])

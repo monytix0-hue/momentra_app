@@ -1,6 +1,7 @@
 import type {
   GroupCommitment,
   GroupExpense,
+  GroupMemberMoneySummaryRow,
   GroupMomentDetail,
   GroupPosition,
 } from "@/lib/api/group";
@@ -108,17 +109,29 @@ function lineStatusFrom(
   paid: number,
   worst: string,
   hasCommitmentLine: boolean,
+  expensesPaid: number,
 ): { line: MemberLineStatus; label: string } {
   const pend = Math.max(0, planned - paid);
   const ext = Math.max(0, paid - planned);
   const st = (worst || "").toLowerCase();
+  const poolActive = planned > 0.01 || paid > 0.01;
+
+  if (!hasCommitmentLine && !poolActive && expensesPaid > 0.01) {
+    return { line: "not_started", label: "Shared bills only" };
+  }
   if (!hasCommitmentLine && planned < 0.01 && paid < 0.01) {
     return { line: "not_started", label: "No plan yet" };
   }
+  if (hasCommitmentLine && planned < 0.01 && paid < 0.01 && expensesPaid < 0.01) {
+    return { line: "not_started", label: "No pool target" };
+  }
   if (st === "overdue" && pend > 0.01) return { line: "overdue", label: "Past due" };
-  if (pend > 0.01) return { line: "pending", label: "Still pending" };
-  if (ext > 0.01) return { line: "paid_extra", label: "Paid ahead" };
-  if (planned > 0.01 || paid > 0.01) return { line: "paid", label: "All caught up" };
+  if (pend > 0.01) {
+    if (paid > 0.01) return { line: "pending", label: "Partially paid" };
+    return { line: "pending", label: "Pending" };
+  }
+  if (ext > 0.01) return { line: "paid_extra", label: "Paid extra" };
+  if (planned > 0.01 || paid > 0.01) return { line: "paid", label: "Paid" };
   return { line: "not_started", label: "No plan yet" };
 }
 
@@ -142,6 +155,22 @@ function suggestedActionForMember(args: {
 
 export function totalExpenseAmount(expenses: GroupExpense[]): number {
   return expenses.reduce((s, e) => s + n(e.amount), 0);
+}
+
+/** Matches backend member-summary expense scope: ongoing + active cycle includes null cycle_id rows. */
+export function expensesPaidByParticipantForScope(
+  expenses: GroupExpense[],
+  activeCycleId: string | null,
+): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const e of expenses) {
+    if (activeCycleId) {
+      if (e.cycle_id && e.cycle_id !== activeCycleId) continue;
+    }
+    const pid = e.paid_by_participant_id;
+    m.set(pid, (m.get(pid) || 0) + n(e.amount));
+  }
+  return m;
 }
 
 export function topSpendCategory(expenses: GroupExpense[]): { label: string; amount: number; pct: number } | null {
@@ -225,12 +254,17 @@ export interface MapViewModelInput {
   positions: GroupPosition[];
   activity: { activity_id: string; event_type: string; message: string; created_at?: string | null }[];
   currentUserId: string | null;
+  /** When null, pool amounts use commitment rollups and expenses-paid is derived locally. */
+  memberSummary: GroupMemberMoneySummaryRow[] | null;
 }
 
 export function buildGroupDetailViewModel(input: MapViewModelInput): GroupDetailViewModel {
-  const { detail, commitments, expenses, positions, activity, currentUserId } = input;
+  const { detail, commitments, expenses, positions, activity, currentUserId, memberSummary } = input;
   const fundingModel = (detail.funding_model || "pooled") as GroupFundingModel;
   const scoped = commitmentsForScope(commitments, detail.active_cycle?.cycle_id ?? null);
+  const activeCycleId = detail.active_cycle?.cycle_id ?? null;
+  const summaryByPid = new Map((memberSummary ?? []).map((r) => [r.participant_id, r]));
+  const fallbackExpensePaid = expensesPaidByParticipantForScope(expenses, activeCycleId);
   const coord = coordinationHealth(detail, scoped);
   const health = mapCoordHealthToTone(coord);
 
@@ -268,17 +302,19 @@ export function buildGroupDetailViewModel(input: MapViewModelInput): GroupDetail
     .map((p) => {
       const r = rollups.get(p.participant_id);
       const primary = r?.primaryCommitment ?? null;
-      const planned = r?.committed ?? 0;
-      const paid = r?.paid ?? 0;
-      const pending = Math.max(0, planned - paid);
-      const extra = Math.max(0, paid - planned);
+      const sumRow = summaryByPid.get(p.participant_id);
+      const planned = sumRow ? n(sumRow.planned_contribution) : (r?.committed ?? 0);
+      const paid = sumRow ? n(sumRow.contribution_paid) : (r?.paid ?? 0);
+      const pending = sumRow ? n(sumRow.pending_contribution) : Math.max(0, planned - paid);
+      const extra = sumRow ? n(sumRow.extra_contribution) : Math.max(0, paid - planned);
+      const expensesPaid = sumRow ? n(sumRow.expenses_paid) : (fallbackExpensePaid.get(p.participant_id) ?? 0);
       const pos = positionById.get(p.participant_id);
       const net = pos ? n(pos.net_position) : 0;
       const owes = net < -0.01 ? Math.abs(net) : 0;
 
-      const hasLine = planned > 0.01 || paid > 0.01;
+      const hasCommitmentRow = scoped.some((c) => c.participant_id === p.participant_id);
       const worst = r?.statusWorst ?? "fulfilled";
-      const { line, label } = lineStatusFrom(planned, paid, worst, hasLine);
+      const { line, label } = lineStatusFrom(planned, paid, worst, hasCommitmentRow, expensesPaid);
 
       let lineOut: MemberLineStatus = line;
       let labelOut = label;
@@ -301,6 +337,8 @@ export function buildGroupDetailViewModel(input: MapViewModelInput): GroupDetail
         participantId: p.participant_id,
         displayName: p.display_name || "Member",
         initials: initialsFromName(p.display_name || "?"),
+        role: p.role || "member",
+        expensesPaid,
         planned,
         paid,
         pending,

@@ -26,7 +26,9 @@ export function GroupExpensesSnapshot({
           <h2 id="expenses-snapshot-heading" className={groupSectionTitle}>
             Recent expenses
           </h2>
-          <p className="mt-1.5 max-w-md text-[14px] leading-relaxed text-ink-3">Latest shared costs at a glance.</p>
+          <p className="mt-1.5 max-w-md text-[14px] leading-relaxed text-ink-3">
+            Log of shared bills (who paid and how it was split) — not the same as pool contributions above.
+          </p>
         </div>
         {totalCount > items.length ? (
           <button

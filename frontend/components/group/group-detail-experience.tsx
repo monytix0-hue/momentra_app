@@ -9,6 +9,7 @@ import {
   fetchGroupCommitments,
   fetchGroupDetail,
   fetchGroupExpenses,
+  fetchGroupMemberMoneySummary,
   fetchGroupPositions,
   payCommitment,
   postGroupReminder,
@@ -42,6 +43,7 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [vm, setVm] = useState<GroupDetailViewModel | null>(null);
+  const [memberSummaryErr, setMemberSummaryErr] = useState<string | null>(null);
 
   const [sheet, setSheet] = useState<null | "expense" | "payment">(null);
   const [busy, setBusy] = useState(false);
@@ -58,6 +60,7 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
     if (!user) return;
     setLoading(true);
     setErr(null);
+    setMemberSummaryErr(null);
     try {
       const token = await user.getIdToken();
       const [d, c, e, a, pos] = await Promise.all([
@@ -69,6 +72,15 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
       ]);
       setDetail(d);
       setExpensesList(e);
+      let memberSummary: MapViewModelInput["memberSummary"] = null;
+      let msErr: string | null = null;
+      try {
+        const ms = await fetchGroupMemberMoneySummary(token, groupId);
+        memberSummary = ms.members;
+      } catch (er) {
+        msErr = er instanceof Error ? er.message : "Could not load member money summary";
+      }
+      setMemberSummaryErr(msErr);
       const input: MapViewModelInput = {
         detail: d,
         commitments: c,
@@ -76,6 +88,7 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
         positions: pos,
         activity: a,
         currentUserId: user.uid,
+        memberSummary,
       };
       setVm(mapGroupDetailFromApi(input));
     } catch (e) {
@@ -115,7 +128,9 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
     (member: GroupMemberCardModel, kind: GroupMemberCardModel["suggestedAction"]) => {
       setInfo(null);
       if (kind === "view") {
-        setInfo("Everyone’s planned and paid amounts are on their card — no extra ledger needed.");
+        setInfo(
+          "Each card shows pool contributions separately from shared bills. Recent expenses below are the running bill log.",
+        );
         return;
       }
       if (kind === "settle") {
@@ -341,7 +356,11 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
       )}
 
       <div className="mt-m-8 md:mt-m-10">
-        <GroupMembersSection members={vm.members} onMemberAction={onMemberAction} />
+        <GroupMembersSection
+          members={vm.members}
+          onMemberAction={onMemberAction}
+          summaryError={memberSummaryErr}
+        />
       </div>
 
       <div className="mt-m-8 md:mt-m-10">
@@ -354,7 +373,7 @@ export function GroupDetailExperience({ groupId }: { groupId: string }) {
 
       <div id="group-expenses-full" className="mt-m-8 scroll-mt-24 md:mt-m-10">
         <h2 className={`${groupSectionTitle} mb-m-3`}>All expenses</h2>
-        <p className="mb-m-3 max-w-xl text-[13px] text-ink-3">Full list with splits.</p>
+        <p className="mb-m-3 max-w-xl text-[13px] text-ink-3">Itemized shared expenses and splits — separate from the pool contribution cards.</p>
         <ExpenseList expenses={expensesList} payerNames={payerNames} hideIntro />
       </div>
 

@@ -203,6 +203,243 @@ def commitment_derived_status(
     return "pending"
 
 
+def ensure_pool_commitments_for_active_scope(sb: Client, group_id: str) -> int:
+    """Ensure each active participant has at least one pool commitment row for the current scope.
+
+    Scope: one-time groups use cycle_id NULL; ongoing groups use the active cycle.
+    Only runs for pooled / hybrid funding (split_expenses-only groups are excluded).
+    Missing participants receive a share of (target − sum of existing scoped commitments), split equally
+    with Decimal rounding; when no budget remains, rows are created with zero planned amounts.
+    """
+    g = _fetch_group(sb, group_id)
+    if not g:
+        return 0
+    fm = str(g.get("funding_model") or "")
+    if fm not in ("pooled", "hybrid"):
+        return 0
+
+    dt = str(g.get("duration_type") or "")
+    cycle_id: str | None = None
+    if dt == "one_time":
+        cycle_id = None
+    else:
+        ac = (
+            sb.table("group_cycles")
+            .select("*")
+            .eq("group_id", group_id)
+            .eq("status", "active")
+            .order("start_date", desc=True)
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+        if not ac:
+            return 0
+        cycle_id = str(ac[0]["cycle_id"])
+
+    parts = _active_participants(sb, group_id)
+    if not parts:
+        return 0
+
+    all_coms = (
+        sb.table("group_commitments")
+        .select("participant_id,cycle_id,committed_amount")
+        .eq("group_id", group_id)
+        .execute()
+        .data
+        or []
+    )
+
+    def in_scope(row: dict[str, Any]) -> bool:
+        cid = row.get("cycle_id")
+        if cycle_id is None:
+            return cid is None or cid == ""
+        return str(cid) == cycle_id
+
+    scoped = [c for c in all_coms if in_scope(c)]
+    have_pid = {str(c["participant_id"]) for c in scoped}
+    missing = [p for p in parts if str(p["participant_id"]) not in have_pid]
+    if not missing:
+        return 0
+
+    if cycle_id is None:
+        target = _d(g.get("target_amount"))
+    else:
+        cy_row = (
+            sb.table("group_cycles")
+            .select("target_amount")
+            .eq("cycle_id", cycle_id)
+            .maybe_single()
+            .execute()
+        )
+        cy_data = cy_row.data if cy_row is not None else None
+        target = _d(cy_data.get("target_amount")) if cy_data else Decimal("0")
+        if target <= 0:
+            target = _d(g.get("target_amount"))
+
+    sum_existing = sum(_d(c.get("committed_amount")) for c in scoped)
+    remainder = target - sum_existing
+    if remainder < 0:
+        remainder = Decimal("0")
+
+    due = date.today() + timedelta(days=7)
+    k = len(missing)
+    created = 0
+
+    if remainder > 0 and k > 0:
+        base = (remainder / k).quantize(Decimal("0.01"))
+        rem = remainder - base * k
+        for i, p in enumerate(missing):
+            amt = base + (rem if i == 0 else Decimal("0"))
+            row_ins: dict[str, Any] = {
+                "group_id": group_id,
+                "participant_id": str(p["participant_id"]),
+                "committed_amount": _f(amt),
+                "paid_amount": 0.0,
+                "due_date": str(due),
+                "status": "pending",
+                "commitment_type": "planned",
+                "source": "auto_seeded",
+            }
+            if cycle_id:
+                row_ins["cycle_id"] = cycle_id
+            ins = sb.table("group_commitments").insert(row_ins).execute()
+            if ins.data:
+                created += 1
+                log_activity(
+                    sb,
+                    group_id,
+                    event_type="commitment_created",
+                    message=f"Commitment created for {p.get('display_name')}",
+                    cycle_id=cycle_id,
+                )
+    else:
+        for p in missing:
+            row_ins = {
+                "group_id": group_id,
+                "participant_id": str(p["participant_id"]),
+                "committed_amount": 0.0,
+                "paid_amount": 0.0,
+                "due_date": str(due),
+                "status": commitment_derived_status(Decimal("0"), Decimal("0"), due),
+                "commitment_type": "planned",
+                "source": "auto_seeded",
+            }
+            if cycle_id:
+                row_ins["cycle_id"] = cycle_id
+            ins = sb.table("group_commitments").insert(row_ins).execute()
+            if ins.data:
+                created += 1
+                log_activity(
+                    sb,
+                    group_id,
+                    event_type="commitment_created",
+                    message=f"Commitment created for {p.get('display_name')}",
+                    cycle_id=cycle_id,
+                )
+
+    if cycle_id:
+        sync_cycle_collected(sb, cycle_id)
+    refresh_group_signals(sb, group_id)
+    return created
+
+
+def build_member_money_summary(sb: Client, user_id: str, group_id: str) -> list[dict[str, Any]]:
+    assert_member(sb, user_id, group_id)
+    g = _fetch_group(sb, group_id)
+    if not g:
+        raise ValueError("group_not_found")
+
+    active_cycle_id: str | None = None
+    if str(g.get("duration_type")) == "ongoing":
+        cyc = (
+            sb.table("group_cycles")
+            .select("cycle_id")
+            .eq("group_id", group_id)
+            .eq("status", "active")
+            .order("start_date", desc=True)
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+        if cyc:
+            active_cycle_id = str(cyc[0]["cycle_id"])
+
+    commitments = (
+        sb.table("group_commitments").select("*").eq("group_id", group_id).execute().data or []
+    )
+    expenses = (
+        sb.table("group_expenses")
+        .select("paid_by_participant_id,amount,cycle_id")
+        .eq("group_id", group_id)
+        .execute()
+        .data
+        or []
+    )
+
+    def commitment_in_scope(c: dict[str, Any]) -> bool:
+        cid = c.get("cycle_id")
+        if active_cycle_id:
+            return str(cid) == active_cycle_id if cid not in (None, "") else True
+        return cid is None or cid == ""
+
+    def expense_in_scope(e: dict[str, Any]) -> bool:
+        if active_cycle_id:
+            ec = e.get("cycle_id")
+            return str(ec) == active_cycle_id if ec not in (None, "") else True
+        return True
+
+    scoped = [c for c in commitments if commitment_in_scope(c)]
+
+    expense_totals: dict[str, Decimal] = {}
+    for e in expenses:
+        if not expense_in_scope(e):
+            continue
+        pid = str(e.get("paid_by_participant_id") or "")
+        if not pid:
+            continue
+        expense_totals[pid] = expense_totals.get(pid, Decimal("0")) + _d(e.get("amount"))
+
+    parts = _active_participants(sb, group_id)
+    roll: dict[str, dict[str, Decimal]] = {}
+    for p in parts:
+        roll[str(p["participant_id"])] = {
+            "planned": Decimal("0"),
+            "paid": Decimal("0"),
+        }
+    for c in scoped:
+        pid = str(c.get("participant_id") or "")
+        if pid not in roll:
+            continue
+        roll[pid]["planned"] += _d(c.get("committed_amount"))
+        roll[pid]["paid"] += _d(c.get("paid_amount"))
+
+    out: list[dict[str, Any]] = []
+    for p in sorted(parts, key=lambda x: str(x.get("display_name") or "").lower()):
+        pid = str(p["participant_id"])
+        r = roll.get(pid, {"planned": Decimal("0"), "paid": Decimal("0")})
+        planned = r["planned"]
+        contrib_paid = r["paid"]
+        pending = max(Decimal("0"), planned - contrib_paid)
+        extra = max(Decimal("0"), contrib_paid - planned)
+        out.append(
+            {
+                "participant_id": pid,
+                "user_id": p.get("user_id"),
+                "role": str(p.get("role") or "member"),
+                "status": str(p.get("status") or "active"),
+                "planned_contribution": planned,
+                "contribution_paid": contrib_paid,
+                "pending_contribution": pending,
+                "extra_contribution": extra,
+                "expenses_paid": expense_totals.get(pid, Decimal("0")),
+            }
+        )
+    return out
+
+
 def sync_cycle_collected(sb: Client, cycle_id: str) -> None:
     r = (
         sb.table("group_commitments")
@@ -370,54 +607,28 @@ def create_group_moment(sb: Client, creator_id: str, body: GroupMomentCreate) ->
             )
             .execute()
         )
-        if cyc.data and g.get("funding_model") == "pooled" and g.get("target_amount"):
+        if cyc.data and g.get("funding_model") in ("pooled", "hybrid") and g.get("target_amount"):
             _seed_equal_commitments(sb, group_id, str(cyc.data[0]["cycle_id"]), _d(g["target_amount"]))
 
     g2 = _fetch_group(sb, group_id)
     if (
         g2
         and str(g2.get("duration_type")) == "one_time"
-        and g2.get("funding_model") == "pooled"
+        and g2.get("funding_model") in ("pooled", "hybrid")
         and g2.get("target_amount")
     ):
         _seed_equal_commitments(sb, group_id, None, _d(g2["target_amount"]))
+
+    ensure_pool_commitments_for_active_scope(sb, group_id)
 
     log_activity(sb, group_id, event_type="group_created", message=f"Group «{row['title']}» created", actor_id=creator_id)
     refresh_group_signals(sb, group_id)
     return _detail_payload(sb, group_id)
 
 
-def _seed_equal_commitments(sb: Client, group_id: str, cycle_id: str | None, total: Decimal) -> None:
-    parts = _active_participants(sb, group_id)
-    if not parts or total <= 0:
-        return
-    n = len(parts)
-    base = (total / n).quantize(Decimal("0.01"))
-    remainder = total - base * n
-    for i, p in enumerate(parts):
-        amt = base + (remainder if i == 0 else Decimal("0"))
-        due = date.today() + timedelta(days=7)
-        row_ins: dict[str, Any] = {
-            "group_id": group_id,
-            "participant_id": str(p["participant_id"]),
-            "committed_amount": _f(amt),
-            "paid_amount": 0.0,
-            "due_date": str(due),
-            "status": "pending",
-            "commitment_type": "planned",
-            "source": "auto_seeded",
-        }
-        if cycle_id:
-            row_ins["cycle_id"] = cycle_id
-        ins = sb.table("group_commitments").insert(row_ins).execute()
-        if ins.data:
-            log_activity(
-                sb,
-                group_id,
-                event_type="commitment_created",
-                message=f"Commitment created for {p.get('display_name')}",
-                cycle_id=cycle_id,
-            )
+def _seed_equal_commitments(sb: Client, group_id: str, _cycle_id: str | None, _total: Decimal) -> None:
+    """Legacy name: full equal split is handled by ensure_pool_commitments_for_active_scope from DB targets."""
+    ensure_pool_commitments_for_active_scope(sb, group_id)
 
 
 def list_groups_for_user(sb: Client, user_id: str) -> list[dict[str, Any]]:
@@ -491,6 +702,8 @@ def add_participant(sb: Client, user_id: str, group_id: str, body: GroupParticip
         message=f"Added participant {body.display_name}",
         actor_id=user_id,
     )
+    if str(r.data[0].get("status")) == "active":
+        ensure_pool_commitments_for_active_scope(sb, group_id)
     return r.data[0]
 
 
@@ -523,6 +736,8 @@ def update_participant(
     )
     if r2 is None or not r2.data:
         raise ValueError("participant_not_found")
+    if raw.get("status") == "active":
+        ensure_pool_commitments_for_active_scope(sb, group_id)
     return r2.data
 
 
@@ -707,6 +922,7 @@ def accept_group_invite(sb: Client, user_id: str, user_email: str | None, token:
         message=f"{p.get('display_name') or 'Member'} joined via invite",
         actor_id=user_id,
     )
+    ensure_pool_commitments_for_active_scope(sb, gid)
     refresh_group_signals(sb, gid)
     return {"group_id": gid}
 
@@ -739,6 +955,9 @@ def create_cycle(sb: Client, user_id: str, group_id: str, payload: dict[str, Any
     if not r.data:
         raise RuntimeError("insert_failed")
     log_activity(sb, group_id, event_type="cycle_created", message=f"Cycle «{row['label']}»", actor_id=user_id)
+    g = _fetch_group(sb, group_id)
+    if g and str(g.get("funding_model")) in ("pooled", "hybrid"):
+        ensure_pool_commitments_for_active_scope(sb, group_id)
     return r.data[0]
 
 
@@ -812,6 +1031,7 @@ def generate_next_cycle(sb: Client, user_id: str, group_id: str) -> dict[str, An
         ).execute()
     log_activity(sb, group_id, event_type="cycle_rolled", message=f"New cycle «{label}»", actor_id=user_id, cycle_id=new_id)
     apply_recurring_templates_to_cycle(sb, user_id, group_id, new_id)
+    ensure_pool_commitments_for_active_scope(sb, group_id)
     refresh_group_signals(sb, group_id)
     return ins.data[0]
 
@@ -891,6 +1111,7 @@ def bulk_create_commitments(sb: Client, user_id: str, group_id: str, body: Group
         )
     if cycle_id:
         sync_cycle_collected(sb, cycle_id)
+    ensure_pool_commitments_for_active_scope(sb, group_id)
     refresh_group_signals(sb, group_id)
     return created
 

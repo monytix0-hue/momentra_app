@@ -419,5 +419,24 @@ class GroupPositionOut(BaseModel):
     net_position: Decimal
 
 
+# --- Member money (pool commitments + expense payer totals, separate ledgers) ---
+
+
+class GroupMemberMoneySummaryRow(BaseModel):
+    participant_id: UUID
+    user_id: str | None = None
+    role: str
+    status: str
+    planned_contribution: Decimal
+    contribution_paid: Decimal
+    pending_contribution: Decimal
+    extra_contribution: Decimal
+    expenses_paid: Decimal
+
+
+class GroupMemberMoneySummaryOut(BaseModel):
+    members: list[GroupMemberMoneySummaryRow]
+
+
 # Resolve forward refs
 GroupMomentDetailOut.model_rebuild()
