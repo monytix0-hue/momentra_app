@@ -12,7 +12,7 @@ Momentra is a personal + group finance tracking app.
 ```
 momentra_v2/
 ├── backend/          FastAPI + Supabase (Python 3.11+)
-├── frontend/         Next.js 16 + Cloudflare Pages (TypeScript)
+├── frontend/         Next.js 16 (TypeScript); deploy via Vercel and/or Cloudflare Pages
 └── supabase/
     └── migrations/
         ├── personal/   personal_* tables
@@ -72,7 +72,7 @@ backend/app/
 
 ## Frontend
 
-**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS · Cloudflare Pages (`next-on-pages`)
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS · often deployed on **Vercel**; repo also supports Cloudflare Pages (`next-on-pages`)
 
 > **IMPORTANT:** Next.js 16 has breaking API changes from earlier versions. Read `node_modules/next/dist/docs/` before using any Next.js API you're unsure about.
 
@@ -85,9 +85,9 @@ npm run lint        # ESLint
 npm run build       # production build
 ```
 
-**Deploy:** Cloudflare Pages via `wrangler.toml` (`name = "momentra-v1"`). Build output: `.vercel/output/static`.
+**Deploy:** Commonly **Vercel** (env: `NEXT_PUBLIC_API_URL`, then redeploy). Alternatively Cloudflare Pages via `wrangler.toml` (`name = "momentra-v1"`). Build output: `.vercel/output/static`.
 
-**Production API:** Set `NEXT_PUBLIC_API_URL` to the deployed FastAPI origin (e.g. `https://backend.mallaapp.org`) in the Pages project environment so the browser never calls `localhost`. The API’s `CORS_ORIGINS` must list every frontend origin that uses it (e.g. `https://momentra.tech`).
+**Production API:** Set `NEXT_PUBLIC_API_URL` to the deployed FastAPI origin (e.g. `https://backend.mallaapp.org`) in the **Vercel** (or Pages) project so the browser never calls `localhost`. If DNS (e.g. Hostinger) points `momentra.tech` at Vercel, use that project’s env. The API’s `CORS_ORIGINS` must list every frontend origin (e.g. `https://momentra.tech`).
 
 **Route structure:**
 ```

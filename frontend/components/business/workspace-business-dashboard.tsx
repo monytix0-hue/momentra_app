@@ -131,8 +131,8 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
           API base in this build: {apiOrigin}
           {looksLocal ? (
             <span className="mt-1 block text-urgency-high">
-              This build is still pointing at localhost — redeploy with NEXT_PUBLIC_API_URL on the host that serves this
-              domain, or fix the domain&apos;s DNS to the deployment that has the variable.
+              This build is still pointing at localhost — set NEXT_PUBLIC_API_URL in Vercel and redeploy, or fix DNS so
+              this domain hits the deployment that includes that variable.
             </span>
           ) : null}
         </p>

@@ -1,4 +1,4 @@
-/** Local dev default; production must set NEXT_PUBLIC_API_URL (e.g. Cloudflare Pages env). */
+/** Local dev default; production must set NEXT_PUBLIC_API_URL in the frontend host (e.g. Vercel env vars). */
 const defaultBase = "http://127.0.0.1:8002";
 
 export function getApiBaseUrl(): string {
@@ -16,10 +16,10 @@ export function humanizeApiNetworkError(e: unknown): string {
       m.includes("network")
     ) {
       return (
-        "Could not reach the API. Set NEXT_PUBLIC_API_URL (not URI) to your backend HTTPS URL, then redeploy — " +
-        "Next.js bakes this in at build time. If you use Vercel but momentra.tech points to Cloudflare (or another host), " +
-        "set the same variable on that project too. On the API server, add this exact site origin to CORS_ORIGINS " +
-        "(e.g. https://momentra.tech). HTTPS page + HTTP API is blocked (mixed content)."
+        "Could not reach the API. Set NEXT_PUBLIC_API_URL (not URI) to your backend HTTPS URL in your Vercel project, " +
+        "then trigger a new production deploy — Next.js bakes this in at build time. DNS at Hostinger should point the " +
+        "domain to Vercel; if the domain still serves another host, that build’s env (not Vercel’s) applies. On the API, " +
+        "add this site’s origin to CORS_ORIGINS (e.g. https://momentra.tech). HTTPS sites cannot call HTTP APIs (mixed content)."
       );
     }
     return m;
