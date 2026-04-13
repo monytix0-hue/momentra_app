@@ -4,7 +4,7 @@ import calendar
 import json
 import secrets
 from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 from uuid import UUID
 
@@ -1227,6 +1227,165 @@ def get_positions(sb: Client, user_id: str, group_id: str) -> list[dict[str, Any
     # Sort: most negative (owes most) first
     rows.sort(key=lambda r: r["net_position"])
     return rows
+
+
+def compute_expense_share_net_balances(sb: Client, group_id: str, cycle_id: str | None) -> dict[str, Decimal]:
+    """Splitwise-style net per participant from shared expenses (open share balances only).
+
+    For each expense: payer is credited ``amount``; each participant is debited their remaining share
+    (owed_amount − settled_amount, respecting ``settled`` status).
+    """
+    pr = (
+        sb.table("group_participants")
+        .select("participant_id,status")
+        .eq("group_id", group_id)
+        .execute()
+        .data
+        or []
+    )
+    active = {str(p["participant_id"]) for p in pr if str(p.get("status") or "") != "removed"}
+    balances: dict[str, Decimal] = {pid: Decimal("0") for pid in active}
+
+    ex = (
+        sb.table("group_expenses")
+        .select("expense_id,amount,paid_by_participant_id,cycle_id")
+        .eq("group_id", group_id)
+        .execute()
+        .data
+        or []
+    )
+    if cycle_id:
+        ex = [e for e in ex if str(e.get("cycle_id") or "") == str(cycle_id)]
+    if not ex:
+        return balances
+
+    eids = [str(e["expense_id"]) for e in ex]
+    sh_rows: list[dict[str, Any]] = []
+    chunk = 80
+    for i in range(0, len(eids), chunk):
+        part = eids[i : i + chunk]
+        sh_rows.extend(
+            sb.table("group_expense_shares")
+            .select("*")
+            .in_("expense_id", part)
+            .execute()
+            .data
+            or []
+        )
+
+    by_e: dict[str, list[dict[str, Any]]] = {}
+    for s in sh_rows:
+        by_e.setdefault(str(s["expense_id"]), []).append(s)
+
+    for e in ex:
+        eid = str(e["expense_id"])
+        amt = _d(e.get("amount"))
+        payer = str(e.get("paid_by_participant_id") or "")
+        for sh in by_e.get(eid, []):
+            pid = str(sh.get("participant_id") or "")
+            if pid not in balances:
+                continue
+            owed = _d(sh.get("owed_amount"))
+            settled = _d(sh.get("settled_amount"))
+            open_amt = owed - settled
+            if str(sh.get("status") or "") == "settled":
+                open_amt = Decimal("0")
+            if open_amt < 0:
+                open_amt = Decimal("0")
+            open_amt = open_amt.quantize(Decimal("0.01"))
+            paid_here = amt if pid == payer else Decimal("0")
+            balances[pid] = balances[pid] + paid_here - open_amt
+
+    return balances
+
+
+def _greedy_settlement_instructions(
+    balances: dict[str, Decimal],
+    display_names: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Minimal cash-flow settlement: match largest debtors to largest creditors (greedy)."""
+    eps = Decimal("0.005")
+    debtors: list[list[Any]] = []
+    creditors: list[list[Any]] = []
+    for pid, bal in balances.items():
+        if bal < -eps:
+            debtors.append([pid, bal])
+        elif bal > eps:
+            creditors.append([pid, bal])
+    debtors.sort(key=lambda x: x[1])
+    creditors.sort(key=lambda x: -x[1])
+    out: list[dict[str, Any]] = []
+    di, ci = 0, 0
+    while di < len(debtors) and ci < len(creditors):
+        d_pid, d_bal = debtors[di]
+        c_pid, c_bal = creditors[ci]
+        pay = min(-d_bal, c_bal).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        if pay <= eps:
+            break
+        out.append(
+            {
+                "from_participant_id": d_pid,
+                "to_participant_id": c_pid,
+                "amount": pay,
+                "from_display_name": display_names.get(d_pid, "Member"),
+                "to_display_name": display_names.get(c_pid, "Member"),
+            }
+        )
+        d_bal += pay
+        c_bal -= pay
+        if d_bal >= -eps:
+            di += 1
+        else:
+            debtors[di][1] = d_bal
+        if c_bal <= eps:
+            ci += 1
+        else:
+            creditors[ci][1] = c_bal
+    return out
+
+
+def get_settlement_plan(sb: Client, user_id: str, group_id: str, cycle_id: str | None) -> dict[str, Any]:
+    """Expense-share settlement plan: balances + who should pay whom (minimal transfers)."""
+    assert_member(sb, user_id, group_id)
+    balances = compute_expense_share_net_balances(sb, group_id, cycle_id)
+    pr = (
+        sb.table("group_participants")
+        .select("participant_id,display_name,status")
+        .eq("group_id", group_id)
+        .execute()
+        .data
+        or []
+    )
+    parts = [p for p in pr if str(p.get("status") or "") != "removed"]
+    names = {str(p["participant_id"]): str(p.get("display_name") or "Member") for p in parts}
+    for pid in list(balances.keys()):
+        if pid not in names:
+            del balances[pid]
+    for pid in names:
+        balances.setdefault(pid, Decimal("0"))
+
+    instructions = _greedy_settlement_instructions(balances, names)
+    balance_rows = [
+        {
+            "participant_id": pid,
+            "display_name": names[pid],
+            "net_balance": balances[pid],
+        }
+        for pid in sorted(names.keys(), key=lambda x: (names[x].lower()))
+    ]
+    n_pay = len(instructions)
+    if n_pay == 0:
+        summary = "Everyone is square on shared expenses (for this scope)."
+    else:
+        summary = f"Settle in {n_pay} payment{'s' if n_pay != 1 else ''}."
+    return {
+        "basis": "expense_shares",
+        "cycle_id": cycle_id,
+        "balances": balance_rows,
+        "instructions": instructions,
+        "payment_count": n_pay,
+        "summary_line": summary,
+    }
 
 
 def record_commitment_payment(

@@ -39,6 +39,7 @@ from app.schemas.group import (
     GroupMomentSummaryOut,
     GroupMemberMoneySummaryOut,
     GroupMemberMoneySummaryRow,
+    GroupSettlementPlanOut,
     GroupMomentUpdate,
     GroupParticipantCreate,
     GroupParticipantOut,
@@ -548,6 +549,22 @@ def get_member_money_summary(
     return GroupMemberMoneySummaryOut(
         members=[GroupMemberMoneySummaryRow.model_validate(r) for r in rows],
     )
+
+
+@router.get("/moments/{group_id}/settlement-plan", response_model=GroupSettlementPlanOut)
+def get_settlement_plan(
+    group_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+    cycle_id: UUID | None = Query(default=None),
+) -> GroupSettlementPlanOut:
+    sb = _sb()
+    try:
+        row = group_service.get_settlement_plan(sb, user_id, str(group_id), str(cycle_id) if cycle_id else None)
+    except PermissionError as e:
+        raise _http_from_service_err(e) from e
+    except APIError as e:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e)) from e
+    return GroupSettlementPlanOut.model_validate(row)
 
 
 @router.post("/moments/{group_id}/commitments", response_model=list[GroupCommitmentOut])

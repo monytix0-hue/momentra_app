@@ -559,6 +559,44 @@ export async function fetchGroupPositions(token: string, groupId: string): Promi
   return parseJson(res);
 }
 
+export type SettlementBalanceRow = {
+  participant_id: string;
+  display_name: string;
+  net_balance: string | number;
+};
+
+export type SettlementInstruction = {
+  from_participant_id: string;
+  to_participant_id: string;
+  amount: string | number;
+  from_display_name: string;
+  to_display_name: string;
+};
+
+export type GroupSettlementPlan = {
+  basis: string;
+  cycle_id: string | null;
+  balances: SettlementBalanceRow[];
+  instructions: SettlementInstruction[];
+  payment_count: number;
+  summary_line: string;
+};
+
+export async function fetchGroupSettlementPlan(
+  token: string,
+  groupId: string,
+  opts?: { cycleId?: string | null },
+): Promise<GroupSettlementPlan> {
+  const q =
+    opts?.cycleId != null && opts.cycleId !== ""
+      ? `?cycle_id=${encodeURIComponent(opts.cycleId)}`
+      : "";
+  const res = await fetch(`${getApiBaseUrl()}/group/moments/${groupId}/settlement-plan${q}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return parseJson<GroupSettlementPlan>(res);
+}
+
 export async function postGroupReminder(
   token: string,
   groupId: string,

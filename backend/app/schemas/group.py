@@ -443,5 +443,31 @@ class GroupMemberMoneySummaryOut(BaseModel):
     members: list[GroupMemberMoneySummaryRow]
 
 
+# --- Settlement plan (expense-share net + minimal transfers) ---
+
+
+class SettlementBalanceRowOut(BaseModel):
+    participant_id: UUID
+    display_name: str
+    net_balance: Decimal
+
+
+class SettlementInstructionOut(BaseModel):
+    from_participant_id: UUID
+    to_participant_id: UUID
+    amount: Decimal
+    from_display_name: str
+    to_display_name: str
+
+
+class GroupSettlementPlanOut(BaseModel):
+    basis: str = "expense_shares"
+    cycle_id: UUID | None = None
+    balances: list[SettlementBalanceRowOut]
+    instructions: list[SettlementInstructionOut]
+    payment_count: int
+    summary_line: str
+
+
 # Resolve forward refs
 GroupMomentDetailOut.model_rebuild()
