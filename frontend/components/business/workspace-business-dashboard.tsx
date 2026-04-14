@@ -12,8 +12,9 @@ import { WorkspaceBusinessWorkspaceTop } from "@/components/business/workspace-b
 import { SubmitSpendModal } from "@/components/business/submit-spend-modal";
 import { transactionKindLabel } from "@/lib/business/transaction-kinds";
 
-const card = "rounded-m-card border border-surface-300/80 bg-surface-100/95 p-m-4 shadow-sm";
-const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-4";
+const card =
+  "rounded-m-card border border-[color:var(--b-border)] bg-surface-100 p-m-4 shadow-sm";
+const eyebrow = "text-[10px] font-semibold uppercase tracking-[0.12em] text-b-text-dim";
 
 export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: string }) {
   const router = useRouter();
@@ -199,25 +200,27 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
           </span>
         </div>
         <div className="mt-m-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-4 sm:p-m-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Cash in hand</p>
-            <p className="mt-1 text-[clamp(1.35rem,4vw,1.5rem)] font-semibold tabular-nums text-ink">{vm.hero.cashInHandLabel}</p>
-            <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.hero.cashInHandSub}</p>
+          <div className="rounded-m-chip border border-[color:var(--b-border)] bg-b-surf-2 p-m-4 sm:p-m-3">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-b-text-dim">Cash in hand</p>
+            <p className="mt-1 text-[36px] font-bold leading-none tracking-[-0.02em] tabular-nums text-ink">
+              {vm.hero.cashInHandLabel}
+            </p>
+            <p className="mt-1 text-[11px] leading-snug text-b-text-dim">{vm.hero.cashInHandSub}</p>
           </div>
-          <div className="rounded-m-chip border border-teal-500/30 bg-teal-500/[0.08] p-m-4 shadow-sm ring-1 ring-teal-500/20 sm:p-m-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-teal-900/90">Purchases</p>
-            <p className="mt-1 text-[clamp(1.35rem,4vw,1.5rem)] font-semibold tabular-nums text-ink">{vm.hero.purchasesLabel}</p>
-            <p className="mt-1 text-[11px] leading-snug text-teal-900/75">{vm.hero.purchasesSub}</p>
+          <div className="rounded-m-chip border border-teal-500/35 bg-teal-500/[0.08] p-m-4 shadow-sm ring-1 ring-teal-500/25 sm:p-m-3">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-b-text-dim">Purchases</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.hero.purchasesLabel}</p>
+            <p className="mt-1 text-[11px] leading-snug text-b-text-dim">{vm.hero.purchasesSub}</p>
           </div>
-          <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-4 sm:p-m-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Sales</p>
-            <p className="mt-1 text-[clamp(1.35rem,4vw,1.5rem)] font-semibold tabular-nums text-ink">{vm.hero.salesLabel}</p>
-            <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.hero.salesSub}</p>
+          <div className="rounded-m-chip border border-[color:var(--b-border)] bg-b-surf-2 p-m-4 sm:p-m-3">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-b-text-dim">Sales</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.hero.salesLabel}</p>
+            <p className="mt-1 text-[11px] leading-snug text-b-text-dim">{vm.hero.salesSub}</p>
           </div>
-          <div className="rounded-m-chip border border-rose-500/15 bg-rose-500/[0.05] p-m-4 sm:p-m-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-rose-900/80">Expenses</p>
-            <p className="mt-1 text-[clamp(1.35rem,4vw,1.5rem)] font-semibold tabular-nums text-ink">{vm.hero.expensesLabel}</p>
-            <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.hero.expensesSub}</p>
+          <div className="rounded-m-chip border border-rose-500/25 bg-rose-500/[0.06] p-m-4 sm:p-m-3">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-b-text-dim">Expenses</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.hero.expensesLabel}</p>
+            <p className="mt-1 text-[11px] leading-snug text-b-text-dim">{vm.hero.expensesSub}</p>
           </div>
         </div>
       </section>
@@ -233,7 +236,7 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
           <button
             type="button"
             onClick={onNextStepCta}
-            className="mt-m-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-m-cta bg-ctx-accent px-m-4 text-[14px] font-semibold text-ctx-hero shadow-sm sm:w-auto"
+            className="mt-m-4 inline-flex min-h-[50px] w-full items-center justify-center rounded-m-cta bg-gradient-to-br from-ctx-accent to-ctx-accent-end px-m-4 text-[15px] font-semibold text-ctx-hero shadow-sm sm:w-auto"
           >
             {vm.nextStep.ctaLabel}
           </button>
@@ -261,7 +264,7 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
           {vm.payables.length > 0 ? (
             <p className="mt-m-3 rounded-m-chip border border-surface-300/80 bg-bg2/90 px-m-3 py-m-2 text-[13px] text-ink">
               <span className="text-ink-3">Total waiting: </span>
-              <span className="font-semibold tabular-nums text-ink">{bizMoney(payablesTotal, workspace.currency)}</span>
+              <span className="font-bold tabular-nums text-ink">{bizMoney(payablesTotal, workspace.currency)}</span>
             </p>
           ) : null}
           <ul className="mt-m-4 space-y-m-3">
@@ -287,7 +290,9 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
                     <p className="text-[12px] text-ink-3">{p.dueLine}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[15px] font-semibold tabular-nums text-ink">{bizMoney(p.amount, workspace.currency)}</span>
+                    <span className="text-[15px] font-bold tabular-nums text-ink">
+                      {bizMoney(p.amount, workspace.currency)}
+                    </span>
                     <button
                       type="button"
                       disabled={busy}
@@ -324,7 +329,7 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
           <p className="mt-1 text-[13px] text-ink-3">Customer credit & pending sales</p>
           <div className="mt-m-3 rounded-m-chip border border-sky-500/20 bg-sky-500/[0.06] p-m-4">
             <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-sky-900/75">Total to collect</p>
-            <p className="mt-1 text-[22px] font-semibold tabular-nums text-ink">—</p>
+            <p className="mt-1 text-[22px] font-bold tabular-nums text-ink">—</p>
             <p className="mt-2 text-[13px] leading-snug text-ink-3">
               No customer dues here yet. When you connect billing, shop credit and counter dues will list with amounts.
             </p>
@@ -347,27 +352,27 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
         <div className="mt-m-4 grid gap-m-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-m-chip border border-emerald-500/15 bg-emerald-500/[0.06] p-m-3">
             <p className="text-[11px] font-medium text-emerald-900/80">Sales</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.salesLabel}</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.daily.salesLabel}</p>
             <p className="mt-1 text-[11px] text-ink-3">{vm.daily.salesSub}</p>
           </div>
           <div className="rounded-m-chip border border-teal-500/20 bg-teal-500/[0.06] p-m-3">
             <p className="text-[11px] font-medium text-teal-900/85">Purchases</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.purchasesLabel}</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.daily.purchasesLabel}</p>
             <p className="mt-1 text-[11px] text-ink-3">{vm.daily.purchasesSub}</p>
           </div>
           <div className="rounded-m-chip border border-rose-500/15 bg-rose-500/[0.05] p-m-3">
             <p className="text-[11px] font-medium text-rose-900/80">Expenses</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.expensesLabel}</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.daily.expensesLabel}</p>
             <p className="mt-1 text-[11px] text-ink-3">{vm.daily.expensesSub}</p>
           </div>
           <div className="rounded-m-chip border border-sky-500/15 bg-sky-500/[0.05] p-m-3">
             <p className="text-[11px] font-medium text-sky-900/85">Collections</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.collectionsLabel}</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.daily.collectionsLabel}</p>
             <p className="mt-1 text-[11px] text-ink-3">{vm.daily.collectionsSub}</p>
           </div>
           <div className="rounded-m-chip border border-violet-500/15 bg-violet-500/[0.05] p-m-3">
             <p className="text-[11px] font-medium text-violet-900/85">Payments</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.paymentsLabel}</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.daily.paymentsLabel}</p>
             <p className="mt-1 text-[11px] text-ink-3">{vm.daily.paymentsSub}</p>
           </div>
           <div
@@ -378,7 +383,7 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
             }`}
           >
             <p className="text-[11px] font-medium text-ink-2">Net today</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.daily.netLabel}</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.daily.netLabel}</p>
             <p className="mt-1 text-[11px] text-ink-3">{vm.daily.netSub}</p>
           </div>
         </div>
@@ -399,7 +404,7 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
             View all
           </Link>
         </div>
-        <ul className="mt-m-3 divide-y divide-surface-300/60">
+        <ul className="mt-m-3 divide-y divide-b-separator">
           {vm.recentTransactions.length === 0 ? (
             <li className="py-m-4 text-[13px] text-ink-3">No purchases or expenses yet. Use Add Purchase or Add Expense.</li>
           ) : (
@@ -424,7 +429,9 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
                   {r.meta ? <p className="text-[11px] text-ink-4">{r.meta}</p> : null}
                 </div>
                 {r.amount > 0 ? (
-                  <span className="shrink-0 text-[14px] font-semibold tabular-nums text-ink">{bizMoney(r.amount, workspace.currency)}</span>
+                  <span className="shrink-0 text-[15px] font-bold tabular-nums text-ink">
+                    {bizMoney(r.amount, workspace.currency)}
+                  </span>
                 ) : null}
               </li>
             ))
@@ -440,12 +447,12 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
         <div className="mt-m-4 grid gap-m-3 sm:grid-cols-3">
           <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Incoming</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.outlookSummary.incomingLabel}</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.outlookSummary.incomingLabel}</p>
             <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.outlookSummary.incomingSub}</p>
           </div>
           <div className="rounded-m-chip border border-surface-300/80 bg-bg2/80 p-m-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-3">Outgoing</p>
-            <p className="mt-1 text-[18px] font-semibold tabular-nums text-ink">{vm.outlookSummary.outgoingLabel}</p>
+            <p className="mt-1 text-[18px] font-bold tabular-nums text-ink">{vm.outlookSummary.outgoingLabel}</p>
             <p className="mt-1 text-[11px] leading-snug text-ink-3">{vm.outlookSummary.outgoingSub}</p>
           </div>
           <div
@@ -479,7 +486,7 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
               </thead>
               <tbody>
                 {vm.outlook.map((row) => (
-                  <tr key={row.label} className="border-b border-surface-300/50">
+                  <tr key={row.label} className="border-b border-b-separator">
                     <td className="py-m-2 pr-m-2 font-medium text-ink">{row.label}</td>
                     <td className="py-m-2 pr-m-2 text-ink-2">{row.incoming}</td>
                     <td className="py-m-2 pr-m-2 tabular-nums text-ink">{row.outgoing}</td>
@@ -532,7 +539,7 @@ export function WorkspaceBusinessDashboard({ workspaceId }: { workspaceId: strin
           <p className={eyebrow}>Other</p>
           <h3 className="mt-1 text-[16px] font-semibold text-ink">Updates</h3>
           <p className="mt-1 text-[12px] text-ink-3">App & sync — not your main money list</p>
-          <ul className="mt-m-3 divide-y divide-surface-300/50">
+          <ul className="mt-m-3 divide-y divide-b-separator">
             {vm.recentUpdates.map((r) => (
               <li key={r.id} className="flex flex-col gap-0.5 py-m-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">

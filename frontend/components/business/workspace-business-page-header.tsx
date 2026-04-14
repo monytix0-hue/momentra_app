@@ -22,14 +22,14 @@ export function WorkspaceBusinessPageHeader({
   onAddExpense: () => void;
 }) {
   return (
-    <header className="relative overflow-hidden rounded-m-hero border border-surface-300/80 bg-surface-100 p-m-4 shadow-[0_16px_48px_-32px_rgba(15,23,42,0.18)]">
+    <header className="relative overflow-hidden rounded-m-hero border border-[color:var(--b-border)] bg-surface-100 p-m-4 shadow-[0_16px_48px_-32px_rgba(15,23,42,0.18)]">
       <div
         className="pointer-events-none absolute -right-10 top-0 h-36 w-36 rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.12),transparent_70%)] blur-2xl"
         aria-hidden
       />
       <div className="relative flex flex-col gap-m-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-ctx-accent/90">{workspaceTitle}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-b-text-dim">{workspaceTitle}</p>
           <h1 className="mt-1 text-[clamp(1.35rem,4vw,1.75rem)] font-semibold leading-tight text-ink">Business</h1>
           <p className="mt-2 max-w-xl text-[14px] leading-snug text-ink-2">{subtitle}</p>
           <div className="mt-m-3">
@@ -47,7 +47,7 @@ export function WorkspaceBusinessPageHeader({
           <button
             type="button"
             onClick={onAddExpense}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-m-cta bg-ctx-accent px-m-3 text-[13px] font-semibold text-ctx-hero shadow-sm transition hover:opacity-95"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-m-cta bg-gradient-to-br from-ctx-accent to-ctx-accent-end px-m-3 text-[15px] font-semibold text-ctx-hero shadow-sm transition hover:opacity-95"
           >
             Add Expense
           </button>

@@ -19,7 +19,8 @@ import { bizMoney, bizNum } from "@/lib/business/format";
 import { isPurchaseSpendType, spendTypeDetailLabel } from "@/lib/business/transaction-kinds";
 import { WorkspaceBusinessWorkspaceTop } from "@/components/business/workspace-business-page-header";
 
-const card = "rounded-m-card border border-surface-300/80 bg-surface-100/95 p-m-4 shadow-sm";
+const card =
+  "rounded-m-card border border-[color:var(--b-border)] bg-surface-100 p-m-4 shadow-sm";
 
 function useWorkspaceShell(workspaceId: string) {
   const { user, loading: authLoading } = useAuth();

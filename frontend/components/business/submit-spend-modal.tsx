@@ -185,7 +185,10 @@ export function SubmitSpendModal({
           <button type="button" onClick={onClose} className="rounded-m-chip border border-surface-300 px-m-3 py-2 text-[11px]">
             Cancel
           </button>
-          <button type="submit" className="rounded-m-chip bg-ctx-accent px-m-3 py-2 text-[11px] font-semibold text-white">
+          <button
+            type="submit"
+            className="min-h-[50px] w-full rounded-m-cta bg-gradient-to-br from-ctx-accent to-ctx-accent-end px-m-3 text-[15px] font-semibold text-ctx-hero sm:w-auto"
+          >
             Submit
           </button>
         </div>

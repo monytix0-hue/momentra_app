@@ -46,12 +46,16 @@
   --g-tab: #0e2018;
   --g-dim: #3d7a5c;
 
-  /* Business v2.2 (Burnished Amber) */
+  /* Business v2.2+ (Burnished Amber) — readability pass */
   --b-cover: #1a1200;
-  --b-surf: #2e2000;
+  --b-surf: #252000;
+  --b-surf-2: #2e2800;
   --b-acc: #d4880a;
   --b-acc-e: #f5a623;
   --b-text: #fde68a;
+  --b-text-dim: rgba(253, 230, 138, 0.45);
+  --b-separator: rgba(212, 136, 10, 0.12);
+  --b-border: rgba(212, 136, 10, 0.2);
   --b-hero: #0d0900;
   --b-tab: #1a1000;
   --b-dim: #7a5010;
@@ -151,6 +155,23 @@
   --ctx-tab-bg: var(--b-tab);
   --ctx-tab-dim: var(--b-dim);
   --ctx-border: var(--b-dim);
+
+  /* Card lift: amber surfaces + separators (not generic purple-gray) */
+  --s100: var(--b-surf);
+  --s200: var(--b-surf-2);
+  --s300: color-mix(in srgb, var(--b-acc) 22%, var(--b-surf-2));
+  --rule: var(--b-separator);
+
+  /* Primary copy & amounts: full-opacity amber cream; captions use dim */
+  --ink: var(--b-text);
+  --ink2: color-mix(in srgb, var(--b-text) 90%, white 10%);
+  --ink3: var(--b-text-dim);
+  --ink4: color-mix(in srgb, var(--b-text) 30%, transparent);
+}
+
+/* Phase 2: set data-business-theme="light" on <html> — define BusinessLightColors later; safe default = same as dark */
+[data-context="business"][data-business-theme="light"] {
+  /* Placeholder — no crash when toggled */
 }
 
 [data-context="circle"] {
@@ -202,6 +223,11 @@
   --color-ctx-tab-bg: var(--ctx-tab-bg);
   --color-ctx-tab-dim: var(--ctx-tab-dim);
   --color-ctx-border: var(--ctx-border);
+
+  --color-b-surf-2: var(--b-surf-2);
+  --color-b-text-dim: var(--b-text-dim);
+  --color-b-separator: var(--b-separator);
+  --color-b-border: var(--b-border);
 
   --color-urgency-high: var(--urgency-high-label);
   --color-urgency-medium: var(--urgency-medium-label);

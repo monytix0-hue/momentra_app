@@ -106,7 +106,7 @@ function JoinContent() {
       ) : user ? (
         <button
           type="button"
-          className="mt-m-6 w-full rounded-m-chip bg-gradient-to-br from-ctx-accent to-ctx-accent-end py-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-white disabled:opacity-50"
+          className="mt-m-6 min-h-[50px] w-full rounded-m-cta bg-gradient-to-br from-ctx-accent to-ctx-accent-end py-3 text-[15px] font-semibold text-ctx-hero disabled:opacity-50"
           disabled={busy}
           onClick={() => void onAccept()}
         >
