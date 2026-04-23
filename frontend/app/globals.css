@@ -1,0 +1,299 @@
+@import "tailwindcss";
+
+/* Momentra Theme Kit tokens (from momentra_themekit_recommended.html). */
+:root {
+  /* Exact docs token names */
+  --bg: #1c1830;
+  --s100: #232038;
+  --s200: #2c2848;
+  --s300: #393458;
+  --bg2: var(--s100);
+  --s400: color-mix(in srgb, var(--s300) 82%, white 18%);
+
+  --brand: #6c4ef2;
+  --brand-l: #8b6ff5;
+  --brand-d: #2d1f5e;
+
+  --u-high: #e24b4a;
+  --u-high-t: #fca5a5;
+  --u-high-s: #450a0a;
+  --u-med: #f59e0b;
+  --u-med-t: #fde68a;
+  --u-med-s: #451a00;
+  --u-cta: #10b981;
+  --paid-bg: #064e35;
+  --paid-t: #10b981;
+  --pend-bg: #451a00;
+  --pend-t: #f59e0b;
+  --over-bg: #450a0a;
+  --over-t: #e24b4a;
+
+  --p-cover: #1a0e38;
+  --p-surf: #2d1f5e;
+  --p-acc: #6c4ef2;
+  --p-acc-e: #8b6ff5;
+  --p-text: #c4b5fd;
+  --p-hero: #0f0a20;
+  --p-tab: #1a1430;
+  --p-dim: #6b5fa0;
+
+  --g-cover: #0a2a1a;
+  --g-surf: #064e35;
+  --g-acc: #0ec97f;
+  --g-acc-e: #34d399;
+  --g-text: #a7f3d0;
+  --g-hero: #091a12;
+  --g-tab: #0e2018;
+  --g-dim: #3d7a5c;
+
+  /* Business v2.2+ (Burnished Amber) — readability pass */
+  --b-cover: #1a1200;
+  --b-surf: #252000;
+  --b-surf-2: #2e2800;
+  --b-acc: #d4880a;
+  --b-acc-e: #f5a623;
+  --b-text: #fde68a;
+  --b-text-dim: rgba(253, 230, 138, 0.45);
+  --b-separator: rgba(212, 136, 10, 0.12);
+  --b-border: rgba(212, 136, 10, 0.2);
+  --b-hero: #0d0900;
+  --b-tab: #1a1000;
+  --b-dim: #7a5010;
+
+  --c-cover: #1a0828;
+  --c-surf: #4a1060;
+  --c-acc: #d946ef;
+  --c-acc-e: #e879f9;
+  --c-text: #f5d0fe;
+  --c-hero: #100520;
+  --c-tab: #1e0e30;
+  --c-dim: #7a3a90;
+
+  --on-dark: #f5f0ff;
+  --ink: #f5f0ff;
+  --ink2: #ddd5f0;
+  --ink3: #a8a0bf;
+  --ink4: #7a7390;
+  --rule: rgba(48, 42, 72, 0.4);
+
+  --font-sans-family: var(--font-plus-jakarta), "Plus Jakarta Sans", "DM Sans", -apple-system, sans-serif;
+  /* Theme kit is Plus Jakarta Sans only; keep serif alias mapped to same stack. */
+  --font-serif-family: var(--font-sans-family);
+
+  --urgency-high-bg: var(--u-high-s);
+  --urgency-high-label: var(--u-high);
+  --urgency-high-value: var(--u-high-t);
+  --urgency-medium-bg: var(--u-med-s);
+  --urgency-medium-label: var(--u-med);
+  --urgency-medium-value: var(--u-med-t);
+  --urgency-clear-bg: var(--u-cta);
+  --urgency-clear-label: var(--u-cta);
+  --urgency-clear-value: #a7f3d0;
+  --status-paid-fg: var(--paid-t);
+  --status-pending-fg: var(--pend-t);
+  --status-overdue-fg: var(--over-t);
+  --status-info-fg: #60a5fa;
+
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-medium: 350ms;
+  --duration-ring: 900ms;
+  --duration-brand-shimmer: 800ms;
+  --duration-gold-shimmer: var(--duration-brand-shimmer);
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Default context: business */
+  --ctx-cover: var(--b-cover);
+  --ctx-surface: var(--b-surf);
+  --ctx-accent: var(--b-acc);
+  --ctx-accent-end: var(--b-acc-e);
+  --ctx-text: var(--b-text);
+  --ctx-hero: var(--b-hero);
+  --ctx-tab-bg: var(--b-tab);
+  --ctx-tab-dim: var(--b-dim);
+  --ctx-border: var(--b-dim);
+
+  --gold: var(--ctx-accent);
+  --gold-l: var(--ctx-accent-end);
+  --gold-d: var(--ctx-border);
+  --gold-xd: var(--ctx-cover);
+  --gold-pale: var(--ctx-text);
+}
+
+[data-context="personal"] {
+  --ctx-cover: var(--p-cover);
+  --ctx-surface: var(--p-surf);
+  --ctx-accent: var(--p-acc);
+  --ctx-accent-end: var(--p-acc-e);
+  --ctx-text: var(--p-text);
+  --ctx-hero: var(--p-hero);
+  --ctx-tab-bg: var(--p-tab);
+  --ctx-tab-dim: var(--p-dim);
+  --ctx-border: var(--p-dim);
+}
+
+[data-context="group"] {
+  --ctx-cover: var(--g-cover);
+  --ctx-surface: var(--g-surf);
+  --ctx-accent: var(--g-acc);
+  --ctx-accent-end: var(--g-acc-e);
+  --ctx-text: var(--g-text);
+  --ctx-hero: var(--g-hero);
+  --ctx-tab-bg: var(--g-tab);
+  --ctx-tab-dim: var(--g-dim);
+  --ctx-border: var(--g-dim);
+}
+
+[data-context="business"] {
+  --ctx-cover: var(--b-cover);
+  --ctx-surface: var(--b-surf);
+  --ctx-accent: var(--b-acc);
+  --ctx-accent-end: var(--b-acc-e);
+  --ctx-text: var(--b-text);
+  --ctx-hero: var(--b-hero);
+  --ctx-tab-bg: var(--b-tab);
+  --ctx-tab-dim: var(--b-dim);
+  --ctx-border: var(--b-dim);
+
+  /* Card lift: amber surfaces + separators (not generic purple-gray) */
+  --s100: var(--b-surf);
+  --s200: var(--b-surf-2);
+  --s300: color-mix(in srgb, var(--b-acc) 22%, var(--b-surf-2));
+  --rule: var(--b-separator);
+
+  /* Primary copy & amounts: full-opacity amber cream; captions use dim */
+  --ink: var(--b-text);
+  --ink2: color-mix(in srgb, var(--b-text) 90%, white 10%);
+  --ink3: var(--b-text-dim);
+  --ink4: color-mix(in srgb, var(--b-text) 30%, transparent);
+}
+
+/* Phase 2: set data-business-theme="light" on <html> — define BusinessLightColors later; safe default = same as dark */
+[data-context="business"][data-business-theme="light"] {
+  /* Placeholder — no crash when toggled */
+}
+
+[data-context="circle"] {
+  --ctx-cover: var(--c-cover);
+  --ctx-surface: var(--c-surf);
+  --ctx-accent: var(--c-acc);
+  --ctx-accent-end: var(--c-acc-e);
+  --ctx-text: var(--c-text);
+  --ctx-hero: var(--c-hero);
+  --ctx-tab-bg: var(--c-tab);
+  --ctx-tab-dim: var(--c-dim);
+  --ctx-border: var(--c-dim);
+}
+
+@theme inline {
+  --font-sans: var(--font-sans-family);
+  --font-serif: var(--font-serif-family);
+
+  --color-bg: var(--bg);
+  --color-bg2: var(--bg2);
+  --color-bg-2: var(--bg2);
+  --color-surface-100: var(--s100);
+  --color-surface-200: var(--s200);
+  --color-surface-300: var(--s300);
+  --color-surface-400: var(--s400);
+
+  --color-brand: var(--brand);
+  --color-brand-light: var(--brand-l);
+  --color-brand-dark: var(--brand-d);
+
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-l);
+  --color-gold-dark: var(--gold-d);
+  --color-gold-xdark: var(--gold-xd);
+  --color-gold-pale: var(--gold-pale);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink2);
+  --color-ink-3: var(--ink3);
+  --color-ink-4: var(--ink4);
+  --color-rule: var(--rule);
+
+  --color-ctx-cover: var(--ctx-cover);
+  --color-ctx-surface: var(--ctx-surface);
+  --color-ctx-accent: var(--ctx-accent);
+  --color-ctx-accent-end: var(--ctx-accent-end);
+  --color-ctx-text: var(--ctx-text);
+  --color-ctx-hero: var(--ctx-hero);
+  --color-ctx-tab-bg: var(--ctx-tab-bg);
+  --color-ctx-tab-dim: var(--ctx-tab-dim);
+  --color-ctx-border: var(--ctx-border);
+
+  --color-b-surf-2: var(--b-surf-2);
+  --color-b-text-dim: var(--b-text-dim);
+  --color-b-separator: var(--b-separator);
+  --color-b-border: var(--b-border);
+
+  --color-urgency-high: var(--urgency-high-label);
+  --color-urgency-medium: var(--urgency-medium-label);
+  --color-urgency-clear: var(--urgency-clear-label);
+  --color-status-paid-fg: var(--status-paid-fg);
+  --color-status-pending-fg: var(--status-pending-fg);
+  --color-status-overdue-fg: var(--status-overdue-fg);
+  --color-status-info-fg: var(--status-info-fg);
+
+  /* Exact kit spacing scale: 4, 6, 8, 12, 14, 16, 18 */
+  --spacing-m-1: 4px;
+  --spacing-m-2: 6px;
+  --spacing-m-3: 8px;
+  --spacing-m-4: 12px;
+  --spacing-m-5: 14px;
+  --spacing-m-6: 16px;
+  --spacing-m-8: 18px;
+  /* Extended alias for places needing larger gaps */
+  --spacing-m-10: 24px;
+  --spacing-m-12: 28px;
+
+  --radius-m-badge: 4px;
+  --radius-m-chip: 10px;
+  --radius-m-card: 12px;
+  --radius-m-hero: 14px;
+  --radius-m-cta: 14px;
+
+  --transition-duration-instant: var(--duration-instant);
+  --transition-duration-fast: var(--duration-fast);
+  --transition-duration-normal: var(--duration-normal);
+  --transition-duration-medium: var(--duration-medium);
+  --transition-duration-ring: var(--duration-ring);
+  --ease-standard: var(--easing-standard);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans-family);
+}
+
+/* Group module — soft skeleton shimmer (no extra deps) */
+@keyframes group-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.group-skeleton-bar {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--s200) 55%, var(--s100));
+}
+
+.group-skeleton-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--ink) 7%, transparent),
+    transparent
+  );
+  animation: group-shimmer 1.35s ease-in-out infinite;
+}
