@@ -7,7 +7,7 @@ This backend is deployment-ready on Dokploy using the included `Dockerfile`.
 - **Type:** Dockerfile
 - **Context path:** `backend`
 - **Dockerfile path:** `Dockerfile`
-- **Container port:** `8000` (or use Dokploy's `PORT` injection)
+- **Container port:** `8002` (or use Dokploy's `PORT` injection)
 
 ## 2) Set environment variables
 
@@ -45,7 +45,7 @@ Docker healthcheck is already configured in `Dockerfile` against `/health`.
 
 No custom command needed. The image runs:
 
-- `uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}`
+- `uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8002}`
 
 ## 5) First deploy validation
 
