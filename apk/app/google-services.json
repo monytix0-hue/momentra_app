@@ -1,0 +1,142 @@
+{
+  "project_info": {
+    "project_number": "827594123681",
+    "project_id": "momentra-e07c6",
+    "storage_bucket": "momentra-e07c6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:827594123681:android:d79e15004f2930f5e7c3e0",
+        "android_client_info": {
+          "package_name": "app.momentra"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "827594123681-2m2bgmn1fuh1lmqeaoc8eijfuqn9j0qd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCozVu_sazGdIwutSKsCT4mZ6106A7Cs7g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "827594123681-2m2bgmn1fuh1lmqeaoc8eijfuqn9j0qd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "827594123681-mm5g86f9kcu7376puair4kjf3d36okno.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "MagnatePoint.Momentra"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:827594123681:android:692ae3eb04cf2763e7c3e0",
+        "android_client_info": {
+          "package_name": "com.example.momentra"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "827594123681-oji9m3qlgcrp4dn2ach0gs5363avn1fr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.momentra",
+            "certificate_hash": "0ab85d0a133283fc834e844365a84b4e251521fd"
+          }
+        },
+        {
+          "client_id": "827594123681-2m2bgmn1fuh1lmqeaoc8eijfuqn9j0qd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCozVu_sazGdIwutSKsCT4mZ6106A7Cs7g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "827594123681-2m2bgmn1fuh1lmqeaoc8eijfuqn9j0qd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "827594123681-mm5g86f9kcu7376puair4kjf3d36okno.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "MagnatePoint.Momentra"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:827594123681:android:d07c4bd2917cc504e7c3e0",
+        "android_client_info": {
+          "package_name": "com.example.momentra_v2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "827594123681-m22kqg9rph1693niq3sjcbb860q45eum.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.momentra_v2",
+            "certificate_hash": "0ab85d0a133283fc834e844365a84b4e251521fd"
+          }
+        },
+        {
+          "client_id": "827594123681-sj9hfoomtl0uav8bo41le989c9dionqd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.momentra_v2",
+            "certificate_hash": "3a9cdcce16bf36e0abefc035330cea4a7f0f1542"
+          }
+        },
+        {
+          "client_id": "827594123681-2m2bgmn1fuh1lmqeaoc8eijfuqn9j0qd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCozVu_sazGdIwutSKsCT4mZ6106A7Cs7g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "827594123681-2m2bgmn1fuh1lmqeaoc8eijfuqn9j0qd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "827594123681-mm5g86f9kcu7376puair4kjf3d36okno.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "MagnatePoint.Momentra"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

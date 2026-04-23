@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base (Momentra v2.2) -->
+    <color name="momentra_bg">#120F20</color>
+    <color name="momentra_s100">#1A1728</color>
+    <color name="momentra_s200">#241F38</color>
+    <color name="momentra_s300">#302A48</color>
+    <color name="momentra_brand_deep">#2D1F5E</color>
+    <color name="momentra_brand">#6C4EF2</color>
+    <color name="momentra_brand_light">#8B6FF5</color>
+    <color name="momentra_on_dark">#F5F0FF</color>
+</resources>

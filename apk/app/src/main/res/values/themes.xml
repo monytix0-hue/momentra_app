@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Transparent system bars: edge-to-edge + Compose `safeDrawingPadding()` paint MomentraBase.bg behind. -->
+    <style name="Theme.Momentra" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/momentra_bg</item>
+    </style>
+
+    <style name="Theme.Momentra.Splash" parent="Theme.Momentra">
+        <item name="android:windowBackground">@color/momentra_brand_deep</item>
+    </style>
+</resources>

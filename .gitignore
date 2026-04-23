@@ -1,0 +1,15 @@
+.DS_Store
+.cursor/
+.idea/
+.vscode/
+.stfolder/
+Plus_Jakarta_Sans/
+**/__pycache__/
+**/.pytest_cache/
+**/.venv/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.env
+**/uploads/
+
