@@ -27,7 +27,7 @@ Recommended:
 - `MOMENTRA_UPLOAD_DIR` (defaults to `/app/uploads`)
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
-- `UVICORN_WORKERS` (default `2`)
+- `UVICORN_WORKERS` (default `1`; increase only after removing startup DDL/backfill work)
 
 Optional dev/testing only:
 

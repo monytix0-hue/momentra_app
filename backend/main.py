@@ -3349,7 +3349,8 @@ if _cors_origins:
 @app.on_event("startup")
 def _on_startup() -> None:
     Base.metadata.create_all(bind=engine)
-    if DATABASE_URL.startswith("sqlite"):
+    uses_sqlite = DATABASE_URL.startswith("sqlite")
+    if uses_sqlite:
         with engine.begin() as conn:
             rows = conn.execute(text("PRAGMA table_info(business_budgets)")).fetchall()
             col_names = {str(r[1]) for r in rows}
@@ -3551,17 +3552,39 @@ def _on_startup() -> None:
             conn.execute(
                 text("ALTER TABLE business_budget_approvals ADD COLUMN IF NOT EXISTS receipt_name TEXT"),
             )
+            # Run one-shot token backfills in SQL to avoid cross-connection startup races.
+            conn.execute(
+                text(
+                    "UPDATE business_budgets "
+                    "SET join_token = md5(random()::text || clock_timestamp()::text) "
+                    "|| md5(random()::text || clock_timestamp()::text) "
+                    "WHERE join_token IS NULL OR btrim(join_token) = ''"
+                ),
+            )
+            conn.execute(
+                text(
+                    "UPDATE business_budget_members "
+                    "SET invite_token = md5(random()::text || clock_timestamp()::text) "
+                    "|| md5(random()::text || clock_timestamp()::text) "
+                    "WHERE email IS NOT NULL "
+                    "AND btrim(email) <> '' "
+                    "AND (invite_token IS NULL OR btrim(invite_token) = '') "
+                    "AND lower(coalesce(invite_status, '')) NOT IN ('joined', 'accepted')"
+                ),
+            )
 
-    with db_session() as session:
-        for b in session.scalars(select(BusinessBudget).where(BusinessBudget.join_token.is_(None))).all():
-            b.join_token = _new_business_join_secret()
-        for m in session.scalars(select(BusinessBudgetMember)).all():
-            if (m.email or "").strip() and m.invite_token is None and (m.invite_status or "").lower() not in {
-                "joined",
-                "accepted",
-            }:
-                m.invite_token = _new_business_join_secret()
-        session.commit()
+    if uses_sqlite:
+        # SQLite path keeps ORM backfill to preserve existing behavior.
+        with db_session() as session:
+            for b in session.scalars(select(BusinessBudget).where(BusinessBudget.join_token.is_(None))).all():
+                b.join_token = _new_business_join_secret()
+            for m in session.scalars(select(BusinessBudgetMember)).all():
+                if (m.email or "").strip() and m.invite_token is None and (m.invite_status or "").lower() not in {
+                    "joined",
+                    "accepted",
+                }:
+                    m.invite_token = _new_business_join_secret()
+            session.commit()
 
 
 @app.get("/health")

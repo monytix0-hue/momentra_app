@@ -15,8 +15,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-        // Physical device on LAN: same machine as backend (Wi‑Fi 192.168.68.117, or Ethernet 192.168.68.119). Emulator: 10.0.2.2
-        buildConfigField("String", "API_BASE_URL", "\"http://192.168.68.117:8000\"")
+        // Production backend base URL.
+        buildConfigField("String", "API_BASE_URL", "\"https://backend.mallaapp.org\"")
     }
 
     buildTypes {

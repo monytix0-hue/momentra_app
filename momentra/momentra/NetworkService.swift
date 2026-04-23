@@ -37,12 +37,12 @@ enum NetworkError: Error, LocalizedError {
 class NetworkService {
     static let shared = NetworkService()
 
-    /// Set `API_BASE_URL` in Info.plist (e.g. `http://192.168.x.x:8000`). Defaults when the key is missing.
+    /// Set `API_BASE_URL` in Info.plist (e.g. `https://backend.mallaapp.org`).
     private var baseURL: String {
         if let url = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String, !url.isEmpty {
             return normalizedBaseURL(url)
         }
-        return "http://192.168.68.117:8000"
+        return "https://backend.mallaapp.org"
     }
 
     /// Accepts bare local IPs (e.g. `192.168.68.122`) and normalizes to a full HTTP URL.
@@ -54,7 +54,9 @@ class NetworkService {
             value = "http://\(value)"
         }
 
-        if let components = URLComponents(string: value), components.port == nil {
+        if let components = URLComponents(string: value),
+           components.port == nil,
+           components.scheme?.lowercased() == "http" {
             value += ":8002"
         }
 
