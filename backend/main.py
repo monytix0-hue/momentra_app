@@ -487,7 +487,7 @@ class GroupMoment(Base):
     require_organiser_approval: Mapped[bool] = mapped_column(Boolean, default=False)
     join_token: Mapped[str] = mapped_column(String(96), unique=True, index=True)
     status: Mapped[str] = mapped_column(String(24), default="active")
-    milestones_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    milestones_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -6246,6 +6246,7 @@ def create_group_moment(
             require_organiser_approval=payload.rules.require_organiser_approval,
             join_token=f"{uuid4().hex}{uuid4().hex}",
             status="active",
+            milestones_json="[]",
             created_at=now,
             updated_at=now,
         )
