@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
 from contextlib import contextmanager
@@ -16,7 +17,7 @@ from uuid import uuid4
 
 import firebase_admin
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Header, HTTPException, Query, Response, UploadFile
+from fastapi import APIRouter, FastAPI, File, Header, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from firebase_admin import auth as firebase_auth
@@ -486,6 +487,7 @@ class GroupMoment(Base):
     require_organiser_approval: Mapped[bool] = mapped_column(Boolean, default=False)
     join_token: Mapped[str] = mapped_column(String(96), unique=True, index=True)
     status: Mapped[str] = mapped_column(String(24), default="active")
+    milestones_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -601,6 +603,46 @@ class GroupActivityEvent(Base):
     actor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     meta_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class MomentHealthSnapshot(Base):
+    __tablename__ = "moment_health_snapshots"
+
+    snapshot_id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: uuid4().hex)
+    scope_type: Mapped[str] = mapped_column(String(16), index=True)  # group | personal
+    moment_id: Mapped[str] = mapped_column(String(64), index=True)
+    composite_score: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=Decimal("0"))
+    health_state: Mapped[str] = mapped_column(String(32), default="ON_TRACK")
+    trend: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    payload_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    calculated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class V1SignalResolution(Base):
+    __tablename__ = "v1_signal_resolutions"
+
+    resolution_id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: uuid4().hex)
+    firebase_uid: Mapped[str] = mapped_column(String(128), index=True)
+    signal_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    resolved_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
+class V1GuidanceRead(Base):
+    __tablename__ = "v1_guidance_reads"
+
+    read_id: Mapped[str] = mapped_column(String(32), primary_key=True, default=lambda: uuid4().hex)
+    firebase_uid: Mapped[str] = mapped_column(String(128), index=True)
+    guidance_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    read_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
@@ -3451,6 +3493,10 @@ def _on_startup() -> None:
                 conn.execute(text("ALTER TABLE personal_transactions ADD COLUMN subcategory_id TEXT"))
             if "subcategory_label" not in txn_cols:
                 conn.execute(text("ALTER TABLE personal_transactions ADD COLUMN subcategory_label TEXT"))
+            gm_rows = conn.execute(text("PRAGMA table_info(group_moments)")).fetchall()
+            gm_cols = {str(r[1]) for r in gm_rows}
+            if gm_rows and "milestones_json" not in gm_cols:
+                conn.execute(text("ALTER TABLE group_moments ADD COLUMN milestones_json TEXT"))
     else:
         with engine.begin() as conn:
             conn.execute(
@@ -3557,6 +3603,7 @@ def _on_startup() -> None:
             conn.execute(
                 text("ALTER TABLE business_budget_approvals ADD COLUMN IF NOT EXISTS receipt_name TEXT"),
             )
+            conn.execute(text("ALTER TABLE group_moments ADD COLUMN IF NOT EXISTS milestones_json TEXT"))
             # Run one-shot token backfills in SQL to avoid cross-connection startup races.
             conn.execute(
                 text(

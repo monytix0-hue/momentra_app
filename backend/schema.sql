@@ -777,3 +777,44 @@ create index if not exists idx_group_activity_moment_id
 
 create index if not exists idx_group_activity_created_at
     on public.group_activity_events(moment_id, created_at desc);
+
+alter table public.group_moments
+    add column if not exists milestones_json jsonb not null default '[]'::jsonb;
+
+-- ---------------------------------------------------------------------------
+-- v1 API: health history, signal resolution, guidance read state
+-- ---------------------------------------------------------------------------
+-- scope_type: group | personal | business (raw moment/budget id in moment_id, no g_/p_/b_ prefix)
+create table if not exists public.moment_health_snapshots (
+    snapshot_id text primary key,
+    scope_type text not null,
+    moment_id text not null,
+    composite_score numeric(5, 2) not null default 0,
+    health_state text not null default 'ON_TRACK',
+    trend text,
+    payload_json jsonb not null default '{}'::jsonb,
+    calculated_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists idx_moment_health_scope_moment
+    on public.moment_health_snapshots(scope_type, moment_id, calculated_at desc);
+
+create table if not exists public.v1_signal_resolutions (
+    resolution_id text primary key,
+    firebase_uid text not null,
+    signal_fingerprint text not null,
+    resolved_at timestamptz not null default timezone('utc', now())
+);
+
+create unique index if not exists uq_v1_signal_resolution_user_fp
+    on public.v1_signal_resolutions(firebase_uid, signal_fingerprint);
+
+create table if not exists public.v1_guidance_reads (
+    read_id text primary key,
+    firebase_uid text not null,
+    guidance_fingerprint text not null,
+    read_at timestamptz not null default timezone('utc', now())
+);
+
+create unique index if not exists uq_v1_guidance_read_user_fp
+    on public.v1_guidance_reads(firebase_uid, guidance_fingerprint);
