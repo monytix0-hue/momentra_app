@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -29,7 +28,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SegmentedButton
@@ -51,7 +49,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -86,6 +83,11 @@ import app.momentra.network.GroupMomentRulesIn
 import app.momentra.network.GroupMomentRulesOut
 import app.momentra.ui.theme.DesignTokens
 import app.momentra.ui.theme.MomentraContext
+import app.momentra.ui.theme.MomentraContextTabs
+import app.momentra.ui.theme.MomentraPrimaryButton
+import app.momentra.ui.theme.MomentraScreenChrome
+import app.momentra.ui.theme.MomentraStatusBadge
+import app.momentra.ui.theme.rememberMomentraThemeState
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
@@ -351,11 +353,9 @@ fun HomeScreen(
     var businessSettingsState by remember { mutableStateOf(BusinessMomentSettingsState()) }
     var categoryOptions by remember { mutableStateOf<List<PersonalCategoryOut>>(emptyList()) }
     val userName = authRepository.currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "User"
-    val contextTheme = DesignTokens.theme(forContext = selectedContext)
-    val contextActionStyle = DesignTokens.actionStyle(
-        context = selectedContext,
-        status = null,
-    )
+    val momentraTheme = rememberMomentraThemeState(selectedContext)
+    val contextTheme = momentraTheme.contextTheme
+    val contextActionStyle = momentraTheme.actionStyle(status = null)
     val selectedActionStyle = DesignTokens.actionStyle(
         context = selectedMoment?.context ?: selectedContext,
         status = selectedMoment?.status,
@@ -791,26 +791,10 @@ fun HomeScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DesignTokens.base.bg),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp)
-                .background(contextTheme.headerBrush),
-        )
-        Box(
-            modifier = Modifier
-                .size(420.dp)
-                .align(Alignment.TopCenter)
-                .padding(top = 2.dp)
-                .clip(CircleShape)
-                .background(contextTheme.accent.copy(alpha = (contextTheme.orbOpacity + 0.08f).coerceAtMost(0.42f))),
-        )
-
+    MomentraScreenChrome(
+        context = selectedContext,
+        modifier = Modifier.fillMaxSize(),
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -841,44 +825,16 @@ fun HomeScreen(
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .padding(top = 14.dp)
-                    .clip(RoundedCornerShape(DesignTokens.radius.card))
-                    .background(DesignTokens.base.s100)
-                    .alpha(0.97f)
-                    .padding(6.dp)
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                MomentraContext.entries.forEach { context ->
-                    val selected = selectedContext == context
-                    Text(
-                        text = context.displayName,
-                        style = DesignTokens.type.caption,
-                        color = if (selected) contextTheme.text else contextTheme.tabDim,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(DesignTokens.radius.pill))
-                            .background(if (selected) contextTheme.surface else contextTheme.tabBg)
-                            .then(
-                                if (selected) {
-                                    Modifier
-                                } else {
-                                    Modifier
-                                        .clip(RoundedCornerShape(DesignTokens.radius.pill))
-                                        .background(contextTheme.tabBg.copy(alpha = 0.9f))
-                                }
-                            )
-                            .clickable {
-                                selectedMoment = null
-                                showSettingsSheet = false
-                                showDeleteConfirm = false
-                                selectedContext = context
-                            }
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                    )
-                }
-            }
+            MomentraContextTabs(
+                selectedContext = selectedContext,
+                onSelect = { context ->
+                    selectedMoment = null
+                    showSettingsSheet = false
+                    showDeleteConfirm = false
+                    selectedContext = context
+                },
+                modifier = Modifier.padding(top = 14.dp),
+            )
 
             if (selectedContext == MomentraContext.Business &&
                 selectedMoment == null &&
@@ -1377,16 +1333,11 @@ fun HomeScreen(
                                                 )
                                             }
                                             if (item.context == MomentraContext.Business && item.businessPendingApprovalsCount > 0) {
-                                                Text(
-                                                    "Pending approvals: ${item.businessPendingApprovalsCount}",
-                                                    color = DesignTokens.business.accent,
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    modifier = Modifier
-                                                        .padding(top = 6.dp)
-                                                        .clip(RoundedCornerShape(999.dp))
-                                                        .background(DesignTokens.base.s200)
-                                                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                                                MomentraStatusBadge(
+                                                    label = "Pending approvals: ${item.businessPendingApprovalsCount}",
+                                                    background = DesignTokens.base.s200,
+                                                    textColor = contextTheme.accent,
+                                                    modifier = Modifier.padding(top = 6.dp),
                                                 )
                                             }
                                         }
@@ -1401,55 +1352,50 @@ fun HomeScreen(
 
         when {
             selectedContext == MomentraContext.Personal && selectedMoment == null -> {
-                FloatingActionButton(
+                MomentraPrimaryButton(
+                    label = "New goal",
                     onClick = {
                         createMomentPreset = null
                         createSheetKey++
                         showCreateMomentSheet = true
                     },
-                    containerColor = contextActionStyle.solid,
-                    contentColor = contextActionStyle.text,
+                    actionStyle = contextActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(18.dp),
-                ) {
-                    Text("New goal", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
+                )
             }
             selectedContext == MomentraContext.Group && selectedMoment == null -> {
-                FloatingActionButton(
+                MomentraPrimaryButton(
+                    label = "New group",
                     onClick = {
                         createGroupPreset = null
                         createGroupSheetKey++
                         showCreateGroupMomentSheet = true
                     },
-                    containerColor = contextActionStyle.solid,
-                    contentColor = contextActionStyle.text,
+                    actionStyle = contextActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(18.dp),
-                ) {
-                    Text("New group", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
+                )
             }
             selectedContext == MomentraContext.Business && selectedMoment == null -> {
-                FloatingActionButton(
+                MomentraPrimaryButton(
+                    label = "New budget",
                     onClick = {
                         createBusinessPreset = null
                         createBusinessSheetKey++
                         showCreateBusinessMomentSheet = true
                     },
-                    containerColor = contextActionStyle.solid,
-                    contentColor = contextActionStyle.text,
+                    actionStyle = contextActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(18.dp),
-                ) {
-                    Text("New budget", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
+                )
             }
             selectedMoment?.context == MomentraContext.Personal -> {
-                FloatingActionButton(
+                MomentraPrimaryButton(
+                    label = "Add to My Fund",
                     onClick = {
                         editingTxnSnapshot = null
                         formState = PersonalTxnFormState(
@@ -1458,29 +1404,24 @@ fun HomeScreen(
                         )
                         showTxnSheet = true
                     },
-                    containerColor = selectedActionStyle.solid,
-                    contentColor = selectedActionStyle.text,
+                    actionStyle = selectedActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(18.dp),
-                ) {
-                    Text("Add to My Fund", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
+                )
             }
             selectedMoment?.context == MomentraContext.Group -> {
-                FloatingActionButton(
+                MomentraPrimaryButton(
+                    label = "Add expense",
                     onClick = {
                         groupExpenseSheetKey++
                         showGroupExpenseSheet = true
                     },
-                    containerColor = selectedActionStyle.solid,
-                    contentColor = selectedActionStyle.text,
+                    actionStyle = selectedActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(18.dp),
-                ) {
-                    Text("Add expense", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
+                )
             }
             selectedMoment?.context == MomentraContext.Business -> {
                 Column(
@@ -1491,45 +1432,33 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     if (detailState.businessCanInviteMembers) {
-                        Button(
+                        MomentraPrimaryButton(
+                            label = "Invite team",
                             onClick = {
                                 businessMemberSheetKey++
                                 showBusinessMemberSheet = true
                             },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = selectedActionStyle.solid,
-                                contentColor = selectedActionStyle.text,
-                            ),
-                        ) {
-                            Text("Invite team", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                        }
+                            actionStyle = selectedActionStyle,
+                        )
                     }
-                    Button(
+                    MomentraPrimaryButton(
+                        label = "Add expense",
                         onClick = {
                             businessExpenseKind = "expense"
                             businessExpenseSheetKey++
                             showBusinessExpenseSheet = true
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = selectedActionStyle.solid,
-                            contentColor = selectedActionStyle.text,
-                        ),
-                    ) {
-                        Text("Add expense", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                    Button(
+                        actionStyle = selectedActionStyle,
+                    )
+                    MomentraPrimaryButton(
+                        label = "Add purchase",
                         onClick = {
                             businessExpenseKind = "purchase"
                             businessExpenseSheetKey++
                             showBusinessExpenseSheet = true
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = selectedActionStyle.solidAlt,
-                            contentColor = selectedActionStyle.text,
-                        ),
-                    ) {
-                        Text("Add purchase", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    }
+                        actionStyle = selectedActionStyle,
+                    )
                 }
             }
         }
@@ -3286,10 +3215,18 @@ private fun BusinessExpenseSheet(
     var kind by remember(sheetKey) { mutableStateOf(defaultKind) }
     var title by remember(sheetKey) { mutableStateOf("") }
     var amount by remember(sheetKey) { mutableStateOf("") }
-    var budgetCategoryId by remember(sheetKey) { mutableStateOf(categories.firstOrNull()?.first.orEmpty()) }
     fun catalogRowsForKind(entryKind: String) = if (entryKind == "purchase") catalog?.purchase.orEmpty() else catalog?.expense.orEmpty()
     fun fallbackMapForKind(entryKind: String) = if (entryKind == "purchase") PURCHASE_CATEGORY_SUBCATEGORY_MAP else EXPENSE_CATEGORY_SUBCATEGORY_MAP
     val initialCatalogRows = catalogRowsForKind(defaultKind)
+    var budgetCategoryId by remember(sheetKey) {
+        mutableStateOf(
+            if (initialCatalogRows.isNotEmpty()) {
+                initialCatalogRows.first().budgetCategoryId
+            } else {
+                categories.firstOrNull()?.first.orEmpty()
+            },
+        )
+    }
     var businessCategory by remember(sheetKey) {
         mutableStateOf(
             if (initialCatalogRows.isNotEmpty()) {
@@ -3367,6 +3304,20 @@ private fun BusinessExpenseSheet(
         return categories.firstOrNull { (_, label) ->
             preferred.any { key -> label.contains(key, ignoreCase = true) }
         }?.first ?: categories.first().first
+    }
+
+    LaunchedEffect(catalog, sheetKey, kind) {
+        val rows = catalogRowsForKind(kind)
+        if (rows.isEmpty()) return@LaunchedEffect
+        val aligned = rows.any { row ->
+            row.budgetCategoryId == budgetCategoryId && row.name.equals(businessCategory, ignoreCase = true)
+        }
+        if (aligned) return@LaunchedEffect
+        val byName = rows.firstOrNull { it.name.equals(businessCategory, ignoreCase = true) }
+        val row = byName ?: rows.firstOrNull { it.budgetCategoryId == budgetCategoryId } ?: rows.first()
+        budgetCategoryId = row.budgetCategoryId
+        businessCategory = row.name
+        businessSubcategory = row.subcategories.firstOrNull().orEmpty()
     }
 
     fun format3(v: Double): String = String.format("%.3f", v).trimEnd('0').trimEnd('.')
@@ -3902,7 +3853,9 @@ private fun BusinessExpenseSheet(
             }
             Button(
                 onClick = {
-                    if (budgetCategoryId.isBlank()) {
+                    if (catalogRowsForKind(kind).isNotEmpty()) {
+                        budgetCategoryId = chooseBudgetCategoryId(kind)
+                    } else if (budgetCategoryId.isBlank()) {
                         budgetCategoryId = chooseBudgetCategoryId(kind)
                     }
                     if (budgetCategoryId.isBlank()) {

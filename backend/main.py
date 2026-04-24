@@ -2703,17 +2703,22 @@ def _validate_business_catalog_submission(
         raise HTTPException(status_code=422, detail="Subcategory is required")
     if "·" in raw_label:
         maybe_category, maybe_sub = [seg.strip() for seg in raw_label.split("·", 1)]
-        if maybe_category and _norm_catalog_key(maybe_category) != _norm_catalog_key(selected.name):
-            raise HTTPException(status_code=422, detail="Submitted category/subcategory pair is stale. Please refresh.")
+        # Category id is authoritative; tolerate stale/mismatched category prefix in submitted label.
+        # Clients can briefly drift between catalog refreshes and still provide a valid subcategory.
         normalized_sub = maybe_sub
     else:
         normalized_sub = raw_label
-    if normalized_sub not in selected.subcategories:
+    normalized_sub_key = _norm_catalog_key(normalized_sub)
+    matched_sub = next(
+        (sub for sub in selected.subcategories if _norm_catalog_key(sub) == normalized_sub_key),
+        None,
+    )
+    if matched_sub is None:
         raise HTTPException(
             status_code=422,
             detail=f"Invalid subcategory for {selected.name}. Please refresh and choose a valid option.",
         )
-    return f"{selected.name} · {normalized_sub}"
+    return f"{selected.name} · {matched_sub}"
 
 
 def _ensure_default_categories(session: Session, budget: BusinessBudget) -> None:
