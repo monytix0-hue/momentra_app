@@ -4,6 +4,7 @@ import base64
 import hashlib
 import json
 import os
+import threading
 from contextlib import contextmanager
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -43,6 +44,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 load_dotenv()
+
+# Serialize Firebase Admin default-app init — concurrent /api/auth/exchange calls race otherwise.
+_firebase_init_lock = threading.Lock()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./momentra.db")
 FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID")
@@ -699,6 +703,28 @@ def _load_firebase_credential() -> credentials.Base:
     )
 
 
+def _ensure_firebase_app_initialized() -> None:
+    """Initialize the default Firebase Admin app once, safely under concurrent requests."""
+    if FIREBASE_AUTH_DISABLED:
+        return
+    try:
+        firebase_admin.get_app()
+        return
+    except ValueError:
+        pass
+    with _firebase_init_lock:
+        try:
+            firebase_admin.get_app()
+            return
+        except ValueError:
+            pass
+        credential = _load_firebase_credential()
+        firebase_admin.initialize_app(
+            credential,
+            {"projectId": FIREBASE_PROJECT_ID} if FIREBASE_PROJECT_ID else None,
+        )
+
+
 def _verify_firebase_token(id_token: str) -> dict[str, Any]:
     if FIREBASE_AUTH_DISABLED:
         claims = _decode_jwt_claims_unverified(id_token)
@@ -707,14 +733,7 @@ def _verify_firebase_token(id_token: str) -> dict[str, Any]:
             raise HTTPException(status_code=401, detail="Invalid Firebase ID token")
         return claims
 
-    try:
-        firebase_admin.get_app()
-    except ValueError:
-        credential = _load_firebase_credential()
-        firebase_admin.initialize_app(
-            credential,
-            {"projectId": FIREBASE_PROJECT_ID} if FIREBASE_PROJECT_ID else None,
-        )
+    _ensure_firebase_app_initialized()
 
     try:
         return firebase_auth.verify_id_token(id_token, check_revoked=False)
