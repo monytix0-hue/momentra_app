@@ -18,12 +18,19 @@ from app.schemas.personal import (
     BudgetUpdate,
     CycleCreate,
     CycleOut,
+    DailyDigestOut,
     GoalCreate,
     GoalOut,
     GoalUpdate,
     MomentCreate,
     MomentOut,
     PersonalSummaryOut,
+    RegisterDeviceTokenIn,
+    ReminderCreate,
+    ReminderOut,
+    ReminderUpdate,
+    RoundUpIn,
+    RoundUpOut,
     SignalCreate,
     SignalOut,
     SpendBreakdownOut,
@@ -33,6 +40,7 @@ from app.schemas.personal import (
     TransactionOut,
     TransactionSubcategoryRefOut,
     TransactionUpdate,
+    WeeklyReportOut,
 )
 from app.services import personal_service
 
@@ -530,6 +538,106 @@ async def delete_transaction(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+# ── Round-Up Savings ─────────────────────────────────────────────────────
+
+
+@router.post("/transactions/round-up", response_model=RoundUpOut)
+async def round_up_transaction(
+    body: RoundUpIn,
+    user_id: str = Depends(get_current_user_id),
+) -> RoundUpOut:
+    """Round up a transaction to a target amount, create a savings transfer,
+    and apply it to the user's first active savings goal."""
+    sb = _sb()
+
+    # 1. Fetch the original transaction (must belong to user)
+    original = _fetch_transaction(sb, user_id, body.transaction_id)
+    if original is None:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    orig_amount = Decimal(str(original["amount"]))
+    if orig_amount >= body.round_up_to:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Transaction amount ({orig_amount}) is already at or above round_up_to ({body.round_up_to})",
+        )
+
+    round_up_amount = body.round_up_to - orig_amount
+
+    # 2. Create the round-up transaction (positive = savings transfer)
+    transaction_date = str(original.get("transaction_date", ""))
+    round_up_row = {
+        "user_id": user_id,
+        "amount": float(round_up_amount),
+        "merchant": None,
+        "description": f"Round-up from {original.get('merchant', 'transaction')}",
+        "transaction_date": transaction_date,
+        "category": "Savings",
+        "subcategory": None,
+        "moment_id": original.get("moment_id"),
+        "cycle_id": original.get("cycle_id"),
+        "category_id": original.get("category_id"),
+        "subcategory_id": original.get("subcategory_id"),
+    }
+    try:
+        res = sb.table("personal_transactions").insert(round_up_row).execute()
+        round_up_txn = TransactionOut.model_validate(_one(res.data))
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+    # 3. Find the user's first active goal
+    try:
+        goals_res = (
+            sb.table("personal_goals")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("target_date")
+            .limit(1)
+            .execute()
+        )
+        goals = as_dict_rows(goals_res.data)
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+    if not goals:
+        # Create a default "Round-Up Savings" goal if none exists
+        goal_row = {
+            "user_id": user_id,
+            "title": "Round-Up Savings",
+            "target_amount": float(round_up_amount * 10),  # soft target
+            "saved_amount": float(round_up_amount),
+            "target_date": None,
+        }
+        try:
+            goal_res = sb.table("personal_goals").insert(goal_row).execute()
+            goal = _one(goal_res.data)
+        except APIError as e:
+            raise HTTPException(status_code=502, detail=str(e)) from e
+    else:
+        goal = goals[0]
+        current_saved = Decimal(str(goal["saved_amount"]))
+        new_saved = current_saved + round_up_amount
+        goal_id_str = str(goal["goal_id"])
+        try:
+            updated = (
+                sb.table("personal_goals")
+                .update({"saved_amount": float(new_saved)})
+                .eq("goal_id", goal_id_str)
+                .eq("user_id", user_id)
+                .execute()
+            )
+            goal = _one(updated.data)
+        except APIError as e:
+            raise HTTPException(status_code=502, detail=str(e)) from e
+
+    return RoundUpOut(
+        round_up_amount=round_up_amount,
+        round_up_transaction=round_up_txn,
+        goal_id=goal["goal_id"],
+        new_saved_amount=Decimal(str(goal["saved_amount"])),
+    )
+
+
 @router.get("/transaction-categories", response_model=list[TransactionCategoryTreeOut])
 async def list_transaction_categories(
     _user_id: str = Depends(get_current_user_id),
@@ -857,4 +965,189 @@ async def get_summary(user_id: str = Depends(get_current_user_id)) -> PersonalSu
         insights=raw["insights"],
         top_category=raw["top_category"],
         recent_signals=signals,
+    )
+
+
+# ── Bill & Recharge Reminders ────────────────────────────────────────────────
+
+
+@router.get("/reminders", response_model=list[ReminderOut])
+async def list_reminders(
+    user_id: str = Depends(get_current_user_id),
+    upcoming: bool = Query(default=False, description="Only upcoming (not paid, due >= today)"),
+    limit: int = Query(default=50, ge=1, le=200),
+) -> list[ReminderOut]:
+    sb = _sb()
+    try:
+        q = sb.table("personal_reminders").select("*").eq("user_id", user_id)
+        if upcoming:
+            from datetime import date as dt_date
+            today_str = str(dt_date.today())
+            q = q.eq("is_paid", False).gte("due_date", today_str)
+        res = q.order("due_date", desc=False).limit(limit).execute()
+        return [ReminderOut.model_validate(r) for r in as_dict_rows(res.data)]
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.post("/reminders", response_model=ReminderOut, status_code=status.HTTP_201_CREATED)
+async def create_reminder(
+    body: ReminderCreate,
+    user_id: str = Depends(get_current_user_id),
+) -> ReminderOut:
+    sb = _sb()
+    row = {
+        "user_id": user_id,
+        "title": body.title,
+        "category": body.category,
+        "amount": float(body.amount),
+        "due_date": str(body.due_date),
+        "recurring": body.recurring,
+        "notes": body.notes,
+    }
+    try:
+        res = sb.table("personal_reminders").insert(row).execute()
+        return ReminderOut.model_validate(_one(res.data))
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.patch("/reminders/{reminder_id}", response_model=ReminderOut)
+async def update_reminder(
+    reminder_id: UUID,
+    body: ReminderUpdate,
+    user_id: str = Depends(get_current_user_id),
+) -> ReminderOut:
+    sb = _sb()
+    payload = body.model_dump(exclude_unset=True)
+    if not payload:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    if "due_date" in payload and payload["due_date"] is not None:
+        payload["due_date"] = str(payload["due_date"])
+    if "amount" in payload:
+        payload["amount"] = float(payload["amount"])
+    payload["updated_at"] = "now()"
+    try:
+        existing = _exec(
+            sb.table("personal_reminders")
+            .select("reminder_id")
+            .eq("reminder_id", str(reminder_id))
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        if existing.data is None:
+            raise HTTPException(status_code=404, detail="Reminder not found")
+        res = _exec(
+            sb.table("personal_reminders")
+            .update(payload)
+            .eq("reminder_id", str(reminder_id))
+            .eq("user_id", user_id)
+            .execute()
+        )
+        return ReminderOut.model_validate(_one(res.data))
+    except HTTPException:
+        raise
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.delete("/reminders/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_reminder(
+    reminder_id: UUID,
+    user_id: str = Depends(get_current_user_id),
+) -> Response:
+    sb = _sb()
+    try:
+        existing = sb.table("personal_reminders").select("reminder_id").eq("reminder_id", str(reminder_id)).eq("user_id", user_id).maybe_single().execute()
+        if existing is None or not existing.data:
+            raise HTTPException(status_code=404, detail="Reminder not found")
+        sb.table("personal_reminders").delete().eq("reminder_id", str(reminder_id)).eq("user_id", user_id).execute()
+    except HTTPException:
+        raise
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ── Device Tokens (FCM) ────────────────────────────────────────────────────
+
+
+@router.post("/device-tokens", status_code=status.HTTP_201_CREATED)
+async def register_device_token(
+    body: RegisterDeviceTokenIn,
+    user_id: str = Depends(get_current_user_id),
+) -> dict[str, str]:
+    sb = _sb()
+    try:
+        # Upsert: delete old token first, then insert
+        sb.table("personal_device_tokens").delete().eq("token", body.token).execute()
+        sb.table("personal_device_tokens").insert({
+            "user_id": user_id,
+            "token": body.token,
+            "platform": body.platform,
+        }).execute()
+        return {"status": "registered"}
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+
+
+@router.delete("/device-tokens/{token:path}", status_code=status.HTTP_204_NO_CONTENT)
+async def unregister_device_token(
+    token: str,
+    user_id: str = Depends(get_current_user_id),
+) -> Response:
+    sb = _sb()
+    try:
+        sb.table("personal_device_tokens").delete().eq("token", token).eq("user_id", user_id).execute()
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ── Weekly Report ───────────────────────────────────────────────────────────
+
+
+@router.get("/weekly-report", response_model=WeeklyReportOut)
+async def get_weekly_report(
+    user_id: str = Depends(get_current_user_id),
+) -> WeeklyReportOut:
+    """Get a weekly spend report comparing last 7 days vs previous 7 days."""
+    from datetime import timedelta
+
+    from app.services.daily_digest import build_weekly_report
+    today = date.today()
+    prev_week_end = today - timedelta(days=1)
+    prev_week_start = today - timedelta(days=7)
+
+    report_text = build_weekly_report(user_id)
+    week_label = f"{prev_week_start.isoformat()} to {prev_week_end.isoformat()}"
+
+    return WeeklyReportOut(report=report_text, week_label=week_label)
+
+
+# ── Daily Digest ────────────────────────────────────────────────────────────
+
+
+@router.get("/digest", response_model=DailyDigestOut)
+async def get_digest(
+    user_id: str = Depends(get_current_user_id),
+) -> DailyDigestOut:
+    """Get the morning digest text (no push sent, just preview)."""
+    from app.services.daily_digest import build_digest
+    digest = build_digest(user_id)
+    return DailyDigestOut(digest=digest, push_sent=False)
+
+
+@router.post("/digest/send", response_model=DailyDigestOut)
+async def send_digest(
+    user_id: str = Depends(get_current_user_id),
+) -> DailyDigestOut:
+    """Build and push the morning digest to the requesting user's devices."""
+    from app.services.daily_digest import send_daily_digest_to_user
+    result = send_daily_digest_to_user(user_id)
+    return DailyDigestOut(
+        digest=result.get("digest_preview"),
+        push_sent=result.get("status") == "sent",
+        users_sent=len(result.get("tokens", []) if isinstance(result.get("tokens"), list) else [1]) if result.get("status") == "sent" else 0,
     )

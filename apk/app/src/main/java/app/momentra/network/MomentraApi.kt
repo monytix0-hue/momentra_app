@@ -18,6 +18,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.DELETE
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.http.Streaming
 import java.util.concurrent.TimeUnit
@@ -340,6 +341,46 @@ interface MomentraApi {
         @Path("moment_id") momentId: String,
         @Path("guidance_id") guidanceId: String,
     ): Map<String, String>
+
+    // ── Bill & Recharge Reminders ─────────────────────────────────────────
+
+    @GET("personal/reminders")
+    suspend fun personalReminders(
+        @Header("Authorization") authorization: String,
+        @Query("upcoming") upcoming: Boolean = false,
+        @Query("limit") limit: Int = 50,
+    ): List<PersonalReminderOut>
+
+    @POST("personal/reminders")
+    suspend fun createPersonalReminder(
+        @Header("Authorization") authorization: String,
+        @Body body: PersonalReminderCreateIn,
+    ): PersonalReminderOut
+
+    @PATCH("personal/reminders/{reminder_id}")
+    suspend fun patchPersonalReminder(
+        @Header("Authorization") authorization: String,
+        @Path("reminder_id") reminderId: String,
+        @Body body: PersonalReminderPatchIn,
+    ): PersonalReminderOut
+
+    @DELETE("personal/reminders/{reminder_id}")
+    suspend fun deletePersonalReminder(
+        @Header("Authorization") authorization: String,
+        @Path("reminder_id") reminderId: String,
+    )
+
+    // ── Receipt Upload ─────────────────────────────────────────────────────
+
+    @Multipart
+    @POST("storage/upload/receipt")
+    suspend fun uploadReceipt(
+        @Header("Authorization") authorization: String,
+        @Part file: MultipartBody.Part,
+        @Part("transaction_id") transactionId: RequestBody?,
+        @Part("group_expense_id") groupExpenseId: RequestBody?,
+        @Part("compress") compress: RequestBody?,
+    ): ReceiptUploadOut
 }
 
 fun createMomentraApi(baseUrl: String): MomentraApi {

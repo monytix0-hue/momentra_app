@@ -6,6 +6,22 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+class WeeklyReportOut(BaseModel):
+    report: str | None = None
+    week_label: str
+
+
+class RegisterDeviceTokenIn(BaseModel):
+    token: str
+    platform: str = Field(default="ios", max_length=20)
+
+
+class DailyDigestOut(BaseModel):
+    digest: str | None = None
+    push_sent: bool = False
+    users_sent: int = 0
+
+
 class MomentCreate(BaseModel):
     title: str = Field(max_length=255)
     moment_type: str = Field(max_length=50)
@@ -182,6 +198,18 @@ class GoalOut(BaseModel):
     target_date: date | None
 
 
+class RoundUpIn(BaseModel):
+    transaction_id: UUID
+    round_up_to: Decimal = Field(gt=Decimal("0"))
+
+
+class RoundUpOut(BaseModel):
+    round_up_amount: Decimal
+    round_up_transaction: TransactionOut
+    goal_id: UUID
+    new_saved_amount: Decimal
+
+
 class SignalCreate(BaseModel):
     signal_type: str = Field(max_length=50)
     severity: str = Field(max_length=10)
@@ -197,6 +225,57 @@ class SignalOut(BaseModel):
     severity: str
     message: str
     created_at: str | None = None
+
+
+class ReminderCreate(BaseModel):
+    title: str = Field(max_length=255)
+    category: str = Field(default="other", max_length=50)
+    amount: Decimal
+    due_date: date
+    recurring: str | None = Field(default=None, max_length=20)
+    notes: str | None = None
+
+
+class ReminderUpdate(BaseModel):
+    title: str | None = Field(default=None, max_length=255)
+    category: str | None = Field(default=None, max_length=50)
+    amount: Decimal | None = None
+    due_date: date | None = None
+    is_paid: bool | None = None
+    recurring: str | None = Field(default=None, max_length=20)
+    notes: str | None = None
+
+
+class ReminderOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    reminder_id: UUID
+    user_id: str
+    title: str
+    category: str
+    amount: Decimal
+    due_date: date
+    is_paid: bool
+    recurring: str | None = None
+    notes: str | None = None
+    created_at: str | None = None
+
+
+class ReceiptUploadIn(BaseModel):
+    transaction_id: UUID | None = None
+    group_expense_id: UUID | None = None
+    compress: bool = True
+
+
+class ReceiptUploadOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    receipt_id: UUID
+    public_url: str
+    thumbnail_url: str | None = None
+    file_path: str
+    mime_type: str | None = None
+    file_size_bytes: int | None = None
 
 
 class PersonalSummaryOut(BaseModel):

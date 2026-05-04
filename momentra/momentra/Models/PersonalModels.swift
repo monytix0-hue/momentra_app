@@ -428,3 +428,77 @@ enum PersonalBookDateFormatting {
     }
 }
 
+// ── Bill & Recharge Reminders ─────────────────────────────────────────────
+
+struct PersonalReminderOut: Codable, Identifiable {
+    let reminderId: String
+    let title: String
+    let category: String
+    let amount: Double
+    let dueDate: String
+    let isPaid: Bool
+    let recurring: String?
+    let notes: String?
+
+    var id: String { reminderId }
+
+    enum CodingKeys: String, CodingKey {
+        case reminderId = "reminder_id"
+        case title
+        case category
+        case amount
+        case dueDate = "due_date"
+        case isPaid = "is_paid"
+        case recurring
+        case notes
+    }
+}
+
+struct PersonalReminderCreateIn: Codable {
+    let title: String
+    let category: String
+    let amount: Double
+    let dueDate: String
+    let recurring: String?
+    let notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case category
+        case amount
+        case dueDate = "due_date"
+        case recurring
+        case notes
+    }
+}
+
+struct PersonalReminderPatchIn: Encodable {
+    var title: String?
+    var category: String?
+    var amount: Double?
+    var dueDate: String?
+    var isPaid: Bool?
+    var recurring: String?
+    var notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case category
+        case amount
+        case dueDate = "due_date"
+        case isPaid = "is_paid"
+        case recurring
+        case notes
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(title, forKey: .title)
+        try c.encodeIfPresent(category, forKey: .category)
+        try c.encodeIfPresent(amount, forKey: .amount)
+        try c.encodeIfPresent(dueDate, forKey: .dueDate)
+        try c.encodeIfPresent(isPaid, forKey: .isPaid)
+        try c.encodeIfPresent(recurring, forKey: .recurring)
+        try c.encodeIfPresent(notes, forKey: .notes)
+    }
+}

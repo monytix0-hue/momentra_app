@@ -160,3 +160,38 @@ data class PersonalMomentCreateOut(
     @SerialName("duration_type") val durationType: String,
 )
 
+// ── Bill & Recharge Reminders ─────────────────────────────────────────────
+
+@Serializable
+data class PersonalReminderOut(
+    @SerialName("reminder_id") val reminderId: String,
+    val title: String,
+    val category: String = "other",
+    val amount: Double,
+    @SerialName("due_date") val dueDate: String,
+    @SerialName("is_paid") val isPaid: Boolean = false,
+    val recurring: String? = null,
+    val notes: String? = null,
+)
+
+@Serializable
+data class PersonalReminderCreateIn(
+    val title: String,
+    val category: String = "other",
+    val amount: Double,
+    @SerialName("due_date") val dueDate: String,
+    val recurring: String? = null,
+    val notes: String? = null,
+)
+
+@Serializable
+data class PersonalReminderPatchIn(
+    val title: String? = null,
+    val category: String? = null,
+    val amount: Double? = null,
+    @SerialName("due_date") val dueDate: String? = null,
+    @SerialName("is_paid") val isPaid: Boolean? = null,
+    val recurring: String? = null,
+    val notes: String? = null,
+)
+

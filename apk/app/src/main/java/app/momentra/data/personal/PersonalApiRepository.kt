@@ -7,6 +7,9 @@ import app.momentra.network.PersonalMomentCreateOut
 import app.momentra.network.PersonalMomentListResponse
 import app.momentra.network.PersonalMomentPatchIn
 import app.momentra.network.PersonalMomentItemOut
+import app.momentra.network.PersonalReminderCreateIn
+import app.momentra.network.PersonalReminderOut
+import app.momentra.network.PersonalReminderPatchIn
 import app.momentra.network.PersonalHomeOut
 import app.momentra.network.PersonalTransactionCreateIn
 import app.momentra.network.PersonalTransactionListOut
@@ -30,5 +33,13 @@ class PersonalApiRepository(
         authRepository.patchPersonalTransaction(transactionId, body)
     suspend fun categories(kind: String): Result<PersonalCategoryListOut> =
         authRepository.personalCategories(kind)
+    suspend fun reminders(upcoming: Boolean = true, limit: Int = 50): Result<List<PersonalReminderOut>> =
+        authRepository.personalReminders(upcoming, limit)
+    suspend fun createReminder(body: PersonalReminderCreateIn): Result<PersonalReminderOut> =
+        authRepository.createPersonalReminder(body)
+    suspend fun patchReminder(reminderId: String, body: PersonalReminderPatchIn): Result<PersonalReminderOut> =
+        authRepository.patchPersonalReminder(reminderId, body)
+    suspend fun deleteReminder(reminderId: String): Result<Unit> =
+        authRepository.deletePersonalReminder(reminderId)
 }
 

@@ -35,13 +35,16 @@ import { PersonalMoneyHero } from "@/components/personal/personal-money-hero";
 import { PersonalSpendPaceCard } from "@/components/personal/personal-spend-pace-card";
 import { PersonalTodaySnapshot } from "@/components/personal/personal-today-snapshot";
 import { PersonalTriggerBar } from "@/components/personal/personal-trigger-bar";
+import { AddReminderForm, ReminderCard } from "@/components/personal/personal-reminders";
 import {
   createBudget,
   createCycle,
   createGoal,
   createMoment,
+  createReminder,
   createTransaction,
   deleteMoment,
+  deleteReminder,
   deleteTransaction,
   evaluateSignals,
   fetchBudgets,
@@ -49,17 +52,20 @@ import {
   fetchGoals,
   fetchMoments,
   fetchPersonalSummary,
+  fetchReminders,
   fetchSpendBreakdown,
   fetchTransactionCategories,
   fetchTransactions,
   transactionsToCsv,
   updateBudget,
   updateGoal,
+  updateReminder,
   updateTransaction,
   type PersonalBudget,
   type PersonalCycle,
   type PersonalGoal,
   type PersonalMoment,
+  type PersonalReminder,
   type PersonalSummary,
   type PersonalTransaction,
   type PersonalTxnCategory,
@@ -164,6 +170,9 @@ export function PersonalDashboard() {
   const [budgetSubcategoryId, setBudgetSubcategoryId] = useState("");
   const [budgetFreeCategory, setBudgetFreeCategory] = useState("");
   const [budgetAmount, setBudgetAmount] = useState("");
+
+  // Reminders state
+  const [reminders, setReminders] = useState<PersonalReminder[]>([]);
 
   const txnFormRef = useRef<HTMLDivElement>(null);
   const signalsRef = useRef<HTMLDivElement>(null);
@@ -301,6 +310,12 @@ export function PersonalDashboard() {
         setTxnCategories(await fetchTransactionCategories(token));
       } catch {
         setTxnCategories([]);
+      }
+      // Fetch reminders
+      try {
+        setReminders(await fetchReminders(token, { upcoming: true, limit: 50 }));
+      } catch {
+        setReminders([]);
       }
       if (budgetCycleId) {
         try {
@@ -778,6 +793,55 @@ export function PersonalDashboard() {
     }
   }
 
+  async function onAddReminder(body: { title: string; category: string; amount: number; due_date: string; recurring?: string }) {
+    if (!user) return;
+    setBusy(true);
+    try {
+      const token = await user.getIdToken();
+      await createReminder(token, body);
+      const r = await fetchReminders(token, { upcoming: true, limit: 50 });
+      setReminders(r);
+      logAnalyticsEvent("personal_reminder_created", { category: body.category });
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Could not add reminder");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onMarkReminderPaid(reminderId: string) {
+    if (!user) return;
+    setBusy(true);
+    try {
+      const token = await user.getIdToken();
+      await updateReminder(token, reminderId, { is_paid: true });
+      const r = await fetchReminders(token, { upcoming: true, limit: 50 });
+      setReminders(r);
+      logAnalyticsEvent("personal_reminder_paid", { reminder_id: reminderId });
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Could not update reminder");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDeleteReminder(reminderId: string) {
+    if (!user) return;
+    if (!window.confirm("Delete this reminder?")) return;
+    setBusy(true);
+    try {
+      const token = await user.getIdToken();
+      await deleteReminder(token, reminderId);
+      const r = await fetchReminders(token, { upcoming: true, limit: 50 });
+      setReminders(r);
+      logAnalyticsEvent("personal_reminder_deleted");
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Could not delete reminder");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (authLoading) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-m-4 bg-bg px-m-4">
@@ -958,6 +1022,19 @@ export function PersonalDashboard() {
 
           {/* Savings goals — full width */}
           <section className="grid grid-cols-1 gap-[28px] lg:col-span-12 lg:grid-cols-12 lg:gap-[28px]">
+            {/* Reminders column */}
+            <div className="flex flex-col gap-m-6 lg:col-span-5">
+              <ReminderCard
+                reminders={reminders}
+                onMarkPaid={(id) => void onMarkReminderPaid(id)}
+                onDelete={(id) => void onDeleteReminder(id)}
+                busy={busy}
+              />
+              <div className={`${cardCls} p-m-6 md:p-m-8`}>
+                <SectionRule title="Add reminder" />
+                <AddReminderForm onAdd={(b) => void onAddReminder(b)} busy={busy} />
+              </div>
+            </div>
             <div className={`${cardCls} p-m-6 md:p-m-8 lg:col-span-5`}>
               <SectionRule title="Your goals" />
               <p className="mb-m-4 text-[12px] leading-relaxed text-ink-4">

@@ -31,6 +31,9 @@ import app.momentra.network.PersonalMomentItemOut
 import app.momentra.network.PersonalMomentCreateIn
 import app.momentra.network.PersonalMomentCreateOut
 import app.momentra.network.PersonalMomentPatchIn
+import app.momentra.network.PersonalReminderCreateIn
+import app.momentra.network.PersonalReminderOut
+import app.momentra.network.PersonalReminderPatchIn
 import app.momentra.network.PersonalTransactionCreateIn
 import app.momentra.network.PersonalTransactionOut
 import app.momentra.network.PersonalTransactionPatchIn
@@ -41,6 +44,7 @@ import app.momentra.network.V1CommitmentOut
 import app.momentra.network.V1GuidanceOut
 import app.momentra.network.V1HealthOut
 import app.momentra.network.V1SignalOut
+import app.momentra.network.ReceiptUploadOut
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -52,6 +56,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -423,6 +428,53 @@ class AuthRepository(
     suspend fun v1MarkGuidanceRead(momentId: String, guidanceId: String): Result<Unit> = runCatching {
         api.v1MarkGuidanceRead("Bearer ${bearerToken()}", momentId, guidanceId)
         Unit
+    }
+
+    suspend fun personalReminders(upcoming: Boolean = true, limit: Int = 50): Result<List<PersonalReminderOut>> = runCatching {
+        api.personalReminders("Bearer ${bearerToken()}", upcoming, limit)
+    }
+
+    suspend fun createPersonalReminder(body: PersonalReminderCreateIn): Result<PersonalReminderOut> = runCatching {
+        api.createPersonalReminder("Bearer ${bearerToken()}", body)
+    }
+
+    suspend fun patchPersonalReminder(reminderId: String, body: PersonalReminderPatchIn): Result<PersonalReminderOut> = runCatching {
+        api.patchPersonalReminder("Bearer ${bearerToken()}", reminderId, body)
+    }
+
+    suspend fun deletePersonalReminder(reminderId: String): Result<Unit> = runCatching {
+        api.deletePersonalReminder("Bearer ${bearerToken()}", reminderId)
+        Unit
+    }
+
+    // ── Receipt Upload ─────────────────────────────────────────────────────
+
+    suspend fun uploadReceipt(
+        file: File,
+        mimeType: String = "image/jpeg",
+        transactionId: String? = null,
+        groupExpenseId: String? = null,
+        compress: Boolean = true,
+    ): Result<ReceiptUploadOut> = runCatching {
+        val filePart = MultipartBody.Part.createFormData(
+            "file",
+            file.name,
+            file.asRequestBody(mimeType.toMediaTypeOrNull()),
+        )
+        val transactionIdPart = transactionId?.let {
+            it.toRequestBody("text/plain".toMediaTypeOrNull())
+        }
+        val groupExpenseIdPart = groupExpenseId?.let {
+            it.toRequestBody("text/plain".toMediaTypeOrNull())
+        }
+        val compressPart = compress.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+        api.uploadReceipt(
+            authorization = "Bearer ${bearerToken()}",
+            file = filePart,
+            transactionId = transactionIdPart,
+            groupExpenseId = groupExpenseIdPart,
+            compress = compressPart,
+        )
     }
 
     fun signOut() {

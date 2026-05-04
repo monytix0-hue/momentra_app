@@ -2,6 +2,7 @@
 
 import type { GroupSettlementPlan } from "@/lib/api/group";
 import { formatInr } from "@/lib/group/selectors";
+import { getSettlementUpiLink } from "@/lib/upi";
 
 function num(v: string | number) {
   const n = typeof v === "string" ? parseFloat(v) : v;
@@ -71,14 +72,32 @@ export function GroupSettlementPlanCard({
             <p className="mt-m-2 text-[12px] text-ink-3">No payments needed — balances net to zero.</p>
           ) : (
             <ol className="mt-m-2 list-decimal space-y-2 pl-m-4 text-[12px] text-ink">
-              {plan.instructions.map((ins, idx) => (
-                <li key={`${ins.from_participant_id}-${ins.to_participant_id}-${idx}`}>
-                  <span className="font-medium">{ins.from_display_name}</span>
-                  <span className="text-ink-3"> pays </span>
-                  <span className="font-medium">{ins.to_display_name}</span>
-                  <span className="tabular-nums text-ink/90"> {formatInr(num(ins.amount))}</span>
-                </li>
-              ))}
+              {plan.instructions.map((ins, idx) => {
+                const link = getSettlementUpiLink({
+                  fromName: ins.from_display_name,
+                  toName: ins.to_display_name,
+                  amount: num(ins.amount),
+                  groupName: plan.group_name || undefined,
+                });
+                return (
+                  <li key={`${ins.from_participant_id}-${ins.to_participant_id}-${idx}`} className="group">
+                    <span className="font-medium">{ins.from_display_name}</span>
+                    <span className="text-ink-3"> pays </span>
+                    <span className="font-medium">{ins.to_display_name}</span>
+                    <span className="tabular-nums text-ink/90"> {formatInr(num(ins.amount))}</span>
+                    {link && (
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-m-2 inline-flex items-center gap-1 rounded-full bg-ctx-accent/15 px-m-2 py-0.5 text-[10px] font-semibold text-ctx-accent transition-colors hover:bg-ctx-accent/25 opacity-0 group-hover:opacity-100"
+                      >
+                        💳 Pay via UPI
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ol>
           )}
         </div>

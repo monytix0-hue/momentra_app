@@ -1,0 +1,5 @@
+# Momentra cron jobs
+# 
+# 7 PM IST = 1:30 PM UTC
+# Runs daily at 13:30 UTC to send bill due tomorrow push notifications
+30 13 * * * cd /home/hermes/coding/momentra_app/backend && python scripts/bill_reminder_push.py >> /home/hermes/coding/momentra_app/backend/logs/bill_reminder_push.log 2>&1

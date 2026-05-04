@@ -28,7 +28,7 @@ import app.momentra.R
 import app.momentra.data.AuthRepository
 import app.momentra.data.MomentraPrefs
 import app.momentra.data.PhoneVerifyResult
-import app.momentra.ui.home.HomeScreen
+import app.momentra.ui.shell.MainShell
 import app.momentra.ui.mvp.MomentraAuthFlowViewModel
 import app.momentra.ui.mvp.OnboardingMVPScreen
 import app.momentra.ui.mvp.OtpVerifyScreen
@@ -405,7 +405,7 @@ fun MomentraNavHost(
         }
 
         composable(MomentraDestinations.HOME_PERSONAL) {
-            HomeScreen(
+            MainShell(
                 authRepository = authRepository,
                 initialContext = MomentraContext.Personal,
                 onSignOut = {
@@ -419,7 +419,7 @@ fun MomentraNavHost(
         }
 
         composable(MomentraDestinations.HOME_GROUP) {
-            HomeScreen(
+            MainShell(
                 authRepository = authRepository,
                 initialContext = MomentraContext.Group,
                 onSignOut = {
@@ -433,7 +433,7 @@ fun MomentraNavHost(
         }
 
         composable(MomentraDestinations.HOME_BUSINESS) {
-            HomeScreen(
+            MainShell(
                 authRepository = authRepository,
                 initialContext = MomentraContext.Business,
                 onSignOut = {

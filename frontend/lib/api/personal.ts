@@ -127,6 +127,18 @@ export type SpendBreakdown = {
   total: string | number;
 };
 
+export type WeeklyReportResponse = {
+  report: string | null;
+  week_label: string;
+};
+
+export async function fetchWeeklyReport(token: string): Promise<WeeklyReportResponse> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/weekly-report`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return parseJson<WeeklyReportResponse>(res);
+}
+
 export async function fetchPersonalSummary(token: string): Promise<PersonalSummary> {
   const res = await fetch(`${getApiBaseUrl()}/personal/summary`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -396,6 +408,138 @@ export async function evaluateSignals(token: string): Promise<{ insights: number
   return parseJson<{ insights: number }>(res);
 }
 
+// ── Device Tokens & Daily Digest ───────────────────────────────────────
+
+export type DailyDigestResponse = {
+  digest: string | null;
+  push_sent: boolean;
+  users_sent: number;
+};
+
+export async function registerDeviceToken(
+  token: string,
+  body: { token: string; platform?: string },
+): Promise<{ status: string }> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/device-tokens`, {
+    method: "POST",
+    headers: await headersJson(token),
+    body: JSON.stringify(body),
+  });
+  return parseJson<{ status: string }>(res);
+}
+
+export async function unregisterDeviceToken(
+  token: string,
+  deviceToken: string,
+): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/device-tokens/${encodeURIComponent(deviceToken)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    return parseJson<void>(res);
+  }
+}
+
+export async function fetchDigest(
+  token: string,
+): Promise<DailyDigestResponse> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/digest`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return parseJson<DailyDigestResponse>(res);
+}
+
+export async function sendDigestPush(
+  token: string,
+): Promise<DailyDigestResponse> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/digest/send`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return parseJson<DailyDigestResponse>(res);
+}
+
+// ── Bill & Recharge Reminders ───────────────────────────────────────────
+
+export type PersonalReminder = {
+  reminder_id: string;
+  user_id: string;
+  title: string;
+  category: string;
+  amount: number;
+  due_date: string;
+  is_paid: boolean;
+  recurring: string | null;
+  notes: string | null;
+  created_at?: string | null;
+};
+
+export async function fetchReminders(
+  token: string,
+  opts?: { upcoming?: boolean; limit?: number },
+): Promise<PersonalReminder[]> {
+  const q = new URLSearchParams();
+  if (opts?.upcoming) q.set("upcoming", "true");
+  if (opts?.limit) q.set("limit", String(opts.limit));
+  const qs = q.toString();
+  const res = await fetch(
+    `${getApiBaseUrl()}/personal/reminders${qs ? `?${qs}` : ""}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  return parseJson<PersonalReminder[]>(res);
+}
+
+export async function createReminder(
+  token: string,
+  body: {
+    title: string;
+    category?: string;
+    amount: number;
+    due_date: string;
+    recurring?: string | null;
+    notes?: string | null;
+  },
+): Promise<PersonalReminder> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/reminders`, {
+    method: "POST",
+    headers: await headersJson(token),
+    body: JSON.stringify(body),
+  });
+  return parseJson<PersonalReminder>(res);
+}
+
+export async function updateReminder(
+  token: string,
+  reminderId: string,
+  body: Partial<{
+    title: string;
+    category: string;
+    amount: number;
+    due_date: string;
+    is_paid: boolean;
+    recurring: string | null;
+    notes: string | null;
+  }>,
+): Promise<PersonalReminder> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/reminders/${reminderId}`, {
+    method: "PATCH",
+    headers: await headersJson(token),
+    body: JSON.stringify(body),
+  });
+  return parseJson<PersonalReminder>(res);
+}
+
+export async function deleteReminder(token: string, reminderId: string): Promise<void> {
+  const res = await fetch(`${getApiBaseUrl()}/personal/reminders/${reminderId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    return parseJson<void>(res);
+  }
+}
+
 export function transactionsToCsv(rows: PersonalTransaction[]): string {
   const header = [
     "transaction_id",
@@ -427,4 +571,45 @@ export function transactionsToCsv(rows: PersonalTransaction[]): string {
     );
   }
   return lines.join("\n");
+}
+
+// ── Receipt upload ────────────────────────────────────────────────────────────
+
+export type ReceiptUploadOut = {
+  receipt_id: string;
+  public_url: string;
+  thumbnail_url?: string | null;
+  file_path: string;
+  mime_type?: string | null;
+  file_size_bytes?: number | null;
+};
+
+export async function uploadReceipt(
+  token: string,
+  file: File,
+  opts?: { transactionId?: string; groupExpenseId?: string; compress?: boolean },
+): Promise<ReceiptUploadOut> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (opts?.transactionId) formData.append("transaction_id", opts.transactionId);
+  if (opts?.groupExpenseId) formData.append("group_expense_id", opts.groupExpenseId);
+  if (opts?.compress !== undefined) formData.append("compress", String(opts.compress));
+
+  const res = await fetch(`${getApiBaseUrl()}/storage/upload/receipt`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  return parseJson<ReceiptUploadOut>(res);
+}
+
+export async function deleteReceipt(
+  token: string,
+  receiptId: string,
+): Promise<{ status: string }> {
+  const res = await fetch(`${getApiBaseUrl()}/storage/upload/receipt/${receiptId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return parseJson<{ status: string }>(res);
 }

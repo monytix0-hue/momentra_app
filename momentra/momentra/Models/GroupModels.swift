@@ -351,3 +351,23 @@ struct GroupMomentPatchIn: Encodable {
     }
 }
 
+// MARK: - Receipt
+
+struct ReceiptUploadOut: Codable {
+    let receiptId: String
+    let publicUrl: String
+    let thumbnailUrl: String?
+    let filePath: String
+    let mimeType: String?
+    let fileSizeBytes: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case receiptId = "receipt_id"
+        case publicUrl = "public_url"
+        case thumbnailUrl = "thumbnail_url"
+        case filePath = "file_path"
+        case mimeType = "mime_type"
+        case fileSizeBytes = "file_size_bytes"
+    }
+}
+

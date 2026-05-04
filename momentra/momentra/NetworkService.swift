@@ -244,6 +244,30 @@ class NetworkService {
         try await requestNoContent(endpoint: "/personal/transactions/\(transactionId)", method: "DELETE", token: token)
     }
 
+    // ── Reminders ──────────────────────────────────────────────────────────
+
+    func fetchPersonalReminders(token: String, upcoming: Bool = true, limit: Int = 50) async throws -> [PersonalReminderOut] {
+        let qs = "?upcoming=\(upcoming)&limit=\(limit)"
+        let data = try await dataForAuthorizedRequest(endpoint: "/personal/reminders\(qs)", method: "GET", token: token)
+        do {
+            return try jsonDecoder.decode([PersonalReminderOut].self, from: data)
+        } catch {
+            throw NetworkError.decodingError
+        }
+    }
+
+    func createPersonalReminder(body: PersonalReminderCreateIn, token: String) async throws -> PersonalReminderOut {
+        try await request(endpoint: "/personal/reminders", method: "POST", body: body, token: token)
+    }
+
+    func patchPersonalReminder(reminderId: String, body: PersonalReminderPatchIn, token: String) async throws -> PersonalReminderOut {
+        try await request(endpoint: "/personal/reminders/\(reminderId)", method: "PATCH", body: body, token: token)
+    }
+
+    func deletePersonalReminder(reminderId: String, token: String) async throws {
+        try await requestNoContent(endpoint: "/personal/reminders/\(reminderId)", method: "DELETE", token: token)
+    }
+
     /// Generic API request with authentication
     func request<T: Decodable>(
         endpoint: String,
@@ -471,6 +495,101 @@ class NetworkService {
         switch httpResponse.statusCode {
         case 200...299:
             return try jsonDecoder.decode(StorageUploadOut.self, from: data)
+        case 401:
+            throw NetworkError.unauthorized
+        default:
+            if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let detail = obj["detail"] {
+                if let s = detail as? String {
+                    throw NetworkError.serverError(s)
+                }
+            }
+            throw NetworkError.serverError("Server error: \(httpResponse.statusCode)")
+        }
+    }
+
+    /// Authenticated multipart upload to `POST /storage/upload/receipt`.
+    /// - Parameters:
+    ///   - imageData: Raw image file bytes.
+    ///   - filename: Display filename (e.g. "receipt.jpg").
+    ///   - transactionId: Optional personal transaction ID to attach the receipt to.
+    ///   - groupExpenseId: Optional group expense ID to attach the receipt to.
+    ///   - token: Bearer auth token.
+    func uploadReceipt(
+        imageData: Data,
+        filename: String,
+        transactionId: String? = nil,
+        groupExpenseId: String? = nil,
+        token: String
+    ) async throws -> ReceiptUploadOut {
+        guard let url = URL(string: "\(baseURL)/storage/upload/receipt") else {
+            throw NetworkError.invalidURL
+        }
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+
+        // -- file field
+        let filePrefix = "--\(boundary)\r\n"
+            + "Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n"
+            + "Content-Type: application/octet-stream\r\n\r\n"
+        guard let filePrefixData = filePrefix.data(using: .utf8) else {
+            throw NetworkError.invalidURL
+        }
+        body.append(filePrefixData)
+        body.append(imageData)
+        body.append("\r\n".data(using: .utf8)!)
+
+        // -- compress field (always true)
+        let compressField = "--\(boundary)\r\n"
+            + "Content-Disposition: form-data; name=\"compress\"\r\n\r\n"
+            + "true\r\n"
+        guard let compressData = compressField.data(using: .utf8) else {
+            throw NetworkError.invalidURL
+        }
+        body.append(compressData)
+
+        // -- transaction_id (optional)
+        if let tid = transactionId {
+            let tidField = "--\(boundary)\r\n"
+                + "Content-Disposition: form-data; name=\"transaction_id\"\r\n\r\n"
+                + "\(tid)\r\n"
+            guard let tidData = tidField.data(using: .utf8) else {
+                throw NetworkError.invalidURL
+            }
+            body.append(tidData)
+        }
+
+        // -- group_expense_id (optional)
+        if let geid = groupExpenseId {
+            let geidField = "--\(boundary)\r\n"
+                + "Content-Disposition: form-data; name=\"group_expense_id\"\r\n\r\n"
+                + "\(geid)\r\n"
+            guard let geidData = geidField.data(using: .utf8) else {
+                throw NetworkError.invalidURL
+            }
+            body.append(geidData)
+        }
+
+        // -- closing boundary
+        guard let closing = "--\(boundary)--\r\n".data(using: .utf8) else {
+            throw NetworkError.invalidURL
+        }
+        body.append(closing)
+
+        request.httpBody = body
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+        switch httpResponse.statusCode {
+        case 200...299:
+            return try jsonDecoder.decode(ReceiptUploadOut.self, from: data)
         case 401:
             throw NetworkError.unauthorized
         default:
