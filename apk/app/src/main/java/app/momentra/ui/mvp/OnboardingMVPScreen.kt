@@ -20,8 +20,6 @@ import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.momentra.ui.theme.DesignTokens
+import app.momentra.ui.theme.MomentraPrimaryButton
 
 private val Muted = DesignTokens.base.onDark60
 private val Muted2 = DesignTokens.base.onDark40
@@ -76,13 +75,13 @@ fun OnboardingMVPScreen(
                 .padding(horizontal = DesignTokens.spacing.screenH),
         ) {
             Row(
-                Modifier.padding(top = 24.dp),
+                Modifier.padding(top = DesignTokens.spacing.screenV + DesignTokens.spacing.item),
                 verticalAlignment = Alignment.Top,
             ) {
                 Box(
                     Modifier
                         .size(44.dp)
-                        .background(DesignTokens.base.s200, RoundedCornerShape(12.dp)),
+                        .background(DesignTokens.base.s200, RoundedCornerShape(DesignTokens.radius.input)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -92,15 +91,15 @@ fun OnboardingMVPScreen(
                         modifier = Modifier.size(DesignTokens.icon.md),
                     )
                 }
-                Column(Modifier.padding(start = 8.dp, top = 2.dp)) {
+                Column(Modifier.padding(start = DesignTokens.spacing.item, top = 2.dp)) {
                     MomentraWordmark(sizeSp = 18f, dotSizeDp = 5f, dotOffsetXDp = 1f, dotOffsetYDp = -8f)
                 }
                 Spacer(Modifier.weight(1f))
             }
 
-            previewCard(Modifier.padding(top = 16.dp))
+            previewCard(Modifier.padding(top = DesignTokens.spacing.screenV))
 
-            Column(Modifier.padding(top = 20.dp)) {
+            Column(Modifier.padding(top = DesignTokens.spacing.section + DesignTokens.spacing.item)) {
                 Text(
                     text = "Your money,\nall in one place.",
                     fontSize = 36.sp,
@@ -112,39 +111,36 @@ fun OnboardingMVPScreen(
                     text = "Track expenses, split with friends,\nand manage business budgets.",
                     fontSize = 15.sp,
                     color = Muted,
-                    modifier = Modifier.padding(top = 12.dp),
+                    modifier = Modifier.padding(top = DesignTokens.spacing.section),
                 )
             }
 
             Box(
                 Modifier
-                    .padding(top = 16.dp)
+                    .padding(top = DesignTokens.spacing.screenV)
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center,
             ) {
                 Box(
                     Modifier
-                        .size(width = 24.dp, height = 8.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .size(width = 24.dp, height = DesignTokens.sizing.triggerDot)
+                        .clip(RoundedCornerShape(DesignTokens.radius.data))
                         .background(brand),
                 )
             }
 
-            Button(
+            MomentraPrimaryButton(
+                label = "Get Started",
                 onClick = onGetStarted,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 20.dp)
+                    .padding(top = DesignTokens.spacing.section + DesignTokens.spacing.item)
                     .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = brand),
-            ) {
-                Text("Get Started", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = DesignTokens.base.onDark)
-            }
+            )
 
             TextButton(
                 onClick = onSignIn,
-                modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = DesignTokens.spacing.cardH),
             ) {
                 Text(
                     "Already have an account?  Sign in",
@@ -159,7 +155,10 @@ fun OnboardingMVPScreen(
                 color = Muted2,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 32.dp),
+                    .padding(
+                        top = DesignTokens.spacing.item,
+                        bottom = DesignTokens.spacing.screenV + DesignTokens.spacing.screenV,
+                    ),
             )
         }
     }
@@ -173,7 +172,7 @@ private fun previewCard(modifier: Modifier = Modifier) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(DesignTokens.radius.hero))
                 .background(s100),
         ) {
             Box(
@@ -181,26 +180,31 @@ private fun previewCard(modifier: Modifier = Modifier) {
                     .matchParentSize()
                     .background(brand.copy(alpha = 0.05f)),
             )
-            Column(Modifier.padding(20.dp)) {
+            Column(Modifier.padding(DesignTokens.spacing.screenV + DesignTokens.spacing.xs)) {
                 Text(
                     DesignTokens.formatInr(124_500.0),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = DesignTokens.base.onDark,
                 )
-                Text("Net balance · May 2025", fontSize = 11.sp, color = Muted, modifier = Modifier.padding(top = 8.dp))
-                Row(Modifier.padding(top = 4.dp)) {
+                Text(
+                    "Net balance · May 2025",
+                    fontSize = 11.sp,
+                    color = Muted,
+                    modifier = Modifier.padding(top = DesignTokens.spacing.item),
+                )
+                Row(Modifier.padding(top = DesignTokens.spacing.xs)) {
                     pill("Personal", DesignTokens.personal.surface, DesignTokens.personal.text)
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(DesignTokens.spacing.item))
                     pill("Groups", DesignTokens.group.surface, DesignTokens.group.text)
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(DesignTokens.spacing.item))
                     pill("Business", DesignTokens.business.surface, DesignTokens.business.text)
                 }
-                Column(Modifier.padding(top = 12.dp)) {
+                Column(Modifier.padding(top = DesignTokens.spacing.section)) {
                     txnRow(Icons.Filled.Restaurant, "Dinner — Social Kitchen", "-₹840", false)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(DesignTokens.spacing.item))
                     txnRow(Icons.Filled.ShoppingCart, "DMart Groceries", "-₹2,100", false)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(DesignTokens.spacing.item))
                     txnRow(Icons.Filled.AttachMoney, "Salary — May", "+₹85,000", true)
                 }
             }
@@ -208,24 +212,24 @@ private fun previewCard(modifier: Modifier = Modifier) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
-                .clip(RoundedCornerShape(14.dp)),
+                .padding(top = DesignTokens.spacing.section)
+                .clip(RoundedCornerShape(DesignTokens.radius.card)),
         ) {
             Box(Modifier.matchParentSize().background(s100))
             Box(Modifier.matchParentSize().background(Green.copy(alpha = 0.06f)))
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(14.dp),
+                    .padding(DesignTokens.spacing.cardH),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-            Text(
-                "Goa Trip Fund  ·  4 members  ·  ₹38,500 raised",
-                fontSize = 12.sp,
-                color = Muted,
-                modifier = Modifier.weight(1f),
-            )
-            Text("77%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Green)
+                Text(
+                    "Goa Trip Fund  ·  4 members  ·  ₹38,500 raised",
+                    fontSize = 12.sp,
+                    color = Muted,
+                    modifier = Modifier.weight(1f),
+                )
+                Text("77%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Green)
             }
         }
     }
@@ -239,9 +243,9 @@ private fun pill(label: String, bg: Color, fg: Color) {
         fontWeight = FontWeight.SemiBold,
         color = fg,
         modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(DesignTokens.radius.pill))
             .background(bg)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+            .padding(horizontal = DesignTokens.spacing.section, vertical = 5.dp),
     )
 }
 
@@ -250,9 +254,12 @@ private fun txnRow(icon: ImageVector, title: String, amount: String, positive: B
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(DesignTokens.radius.contextTabInner))
             .background(DesignTokens.base.s200)
-            .padding(horizontal = 10.dp, vertical = 10.dp),
+            .padding(
+                horizontal = DesignTokens.spacing.section,
+                vertical = DesignTokens.spacing.section,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -270,7 +277,7 @@ private fun txnRow(icon: ImageVector, title: String, amount: String, positive: B
             title,
             fontSize = 11.sp,
             color = Muted,
-            modifier = Modifier.padding(start = 10.dp).weight(1f),
+            modifier = Modifier.padding(start = DesignTokens.spacing.section).weight(1f),
         )
         Text(
             amount,

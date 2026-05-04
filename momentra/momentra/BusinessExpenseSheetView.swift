@@ -94,7 +94,7 @@ struct BusinessExpenseSheetView: View {
             Form {
                 if categories.isEmpty {
                     Text("This budget has no categories yet. Add categories in moment settings.")
-                        .foregroundColor(DesignTokens.base.brandText)
+                        .foregroundColor(DesignTokens.business.text)
                 }
                 Picker("Type", selection: $kind) {
                     Text("Expense").tag("expense")
@@ -166,13 +166,12 @@ struct BusinessExpenseSheetView: View {
 
                 if let localError, !localError.isEmpty {
                     Text(localError)
-                        .foregroundColor(DesignTokens.urgency.high)
+                        .foregroundColor(DesignTokens.urgency.highText)
                         .font(.system(size: 13))
                 }
             }
             .id(sheetKey)
-            .scrollContentBackground(.hidden)
-            .background(DesignTokens.base.bg)
+            .momentraFormSheetChrome()
             .onAppear {
                 kind = defaultKind
                 budgetCategoryId = chooseCatalogBudgetCategoryId()
@@ -208,6 +207,9 @@ struct BusinessExpenseSheetView: View {
                 }
             }
         }
+        .tint(accent)
+        .toolbarBackground(DesignTokens.base.s100, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .preferredColorScheme(.dark)
     }
 

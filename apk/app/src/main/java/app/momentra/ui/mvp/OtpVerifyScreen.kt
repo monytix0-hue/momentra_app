@@ -21,8 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -46,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.momentra.ui.theme.DesignTokens
+import app.momentra.ui.theme.MomentraPrimaryButton
 import kotlinx.coroutines.delay
 
 private val Muted = DesignTokens.base.onDark60
@@ -147,21 +146,22 @@ fun OtpVerifyScreen(
                     .clickable { focusRequester.requestFocus() },
                 contentAlignment = Alignment.Center,
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(DesignTokens.spacing.item)) {
                     repeat(6) { index ->
                         val char = otp.getOrNull(index)?.toString() ?: ""
                         val active = otp.length == index
                         val filled = char.isNotEmpty()
+                        val boxShape = RoundedCornerShape(DesignTokens.radius.input)
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(boxShape)
                                 .background(DesignTokens.base.s200)
                                 .then(
                                     when {
-                                        filled -> Modifier.border(2.dp, brand, RoundedCornerShape(12.dp))
-                                        active -> Modifier.border(2.dp, brand.copy(alpha = 0.85f), RoundedCornerShape(12.dp))
-                                        else -> Modifier.border(1.dp, DesignTokens.base.s300, RoundedCornerShape(12.dp))
+                                        filled -> Modifier.border(1.5.dp, brand, boxShape)
+                                        active -> Modifier.border(1.5.dp, brand.copy(alpha = 0.85f), boxShape)
+                                        else -> Modifier.border(0.5.dp, DesignTokens.base.s300, boxShape)
                                     },
                                 ),
                             contentAlignment = Alignment.Center,
@@ -223,9 +223,12 @@ fun OtpVerifyScreen(
             ) {
                 Row(
                     Modifier
-                        .clip(RoundedCornerShape(999.dp))
+                        .clip(RoundedCornerShape(DesignTokens.radius.pill))
                         .background(DesignTokens.base.s200)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(
+                            horizontal = DesignTokens.spacing.section,
+                            vertical = DesignTokens.spacing.inline,
+                        ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
@@ -242,22 +245,16 @@ fun OtpVerifyScreen(
                 }
             }
 
-            Button(
+            MomentraPrimaryButton(
+                label = "Verify & Enter App",
                 onClick = onVerify,
                 enabled = otp.length == 6 && !loading,
+                loading = loading,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 20.dp)
+                    .padding(top = DesignTokens.spacing.section + DesignTokens.spacing.item)
                     .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = brand),
-            ) {
-                if (loading) {
-                    CircularProgressIndicator(Modifier.size(24.dp), color = DesignTokens.base.onDark, strokeWidth = 2.dp)
-                } else {
-                    Text("Verify & Enter App", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = DesignTokens.base.onDark)
-                }
-            }
+            )
 
             Text(
                 "No setup after this — goes straight to your Personal Home.",

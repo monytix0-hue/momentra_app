@@ -4,22 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -31,12 +25,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.momentra.ui.theme.DesignTokens
-import app.momentra.ui.theme.MomentraBase
 import app.momentra.ui.theme.MomentraContext
+import app.momentra.ui.theme.MomentraGhostButton
+import app.momentra.ui.theme.MomentraPrimaryButton
+import app.momentra.ui.theme.MomentraScreenChrome
+import app.momentra.ui.theme.rememberMomentraThemeState
 
 @Composable
 fun SetupWizardScreen(
@@ -52,34 +47,24 @@ fun SetupWizardScreen(
         "business" -> MomentraContext.Business
         else -> MomentraContext.Personal
     }
-    val theme = DesignTokens.theme(forContext = selectedContext)
+    val themeState = rememberMomentraThemeState(selectedContext)
+    val theme = themeState.contextTheme
+    val ctaStyle = themeState.actionStyle()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MomentraBase.bg),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(132.dp)
-                .background(theme.headerBrush),
-        )
-        Box(
-            modifier = Modifier
-                .size(340.dp)
-                .align(Alignment.TopCenter)
-                .offset(y = (-110).dp)
-                .clip(CircleShape)
-                .background(theme.accent.copy(alpha = theme.orbOpacity)),
-        )
-
+    MomentraScreenChrome(
+        context = selectedContext,
+        modifier = Modifier.fillMaxSize(),
+        headerHeight = 132.dp,
+        orbSize = 340.dp,
+        orbOffsetY = (-110).dp,
+        orbExtraOpacity = 0f,
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = DesignTokens.spacing.screenH, vertical = DesignTokens.spacing.screenV),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.spacing.cardH),
         ) {
             Text("Setup", style = DesignTokens.type.display, color = DesignTokens.base.onDark)
 
@@ -103,12 +88,15 @@ fun SetupWizardScreen(
                             .clip(RoundedCornerShape(DesignTokens.radius.input))
                             .background(if (isSelected) itemTheme.surface else DesignTokens.base.s100)
                             .border(
-                                width = 1.dp,
+                                width = 0.5.dp,
                                 color = if (isSelected) itemTheme.accent else DesignTokens.base.s300,
                                 shape = RoundedCornerShape(DesignTokens.radius.input),
                             )
                             .clickable { focus = key }
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                            .padding(
+                                horizontal = DesignTokens.spacing.cardH,
+                                vertical = DesignTokens.spacing.section,
+                            ),
                     ) {
                         Text(
                             text = label,
@@ -158,71 +146,51 @@ fun SetupWizardScreen(
             }
 
             error?.let { Text(it, color = DesignTokens.urgency.high, style = DesignTokens.type.caption) }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(DesignTokens.spacing.inline))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (step == 2) {
-                    Button(
+                    MomentraGhostButton(
+                        label = "Back",
                         onClick = { step = 1 },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = DesignTokens.base.s200,
-                            contentColor = DesignTokens.base.onDark,
-                        ),
-                        shape = RoundedCornerShape(DesignTokens.radius.pill),
-                    ) {
-                        Text("Back", style = DesignTokens.type.bodyMedium)
-                    }
+                        borderColor = DesignTokens.base.s300,
+                        contentColor = DesignTokens.base.onDark,
+                    )
                 } else {
                     Spacer(modifier = Modifier.height(1.dp))
                 }
 
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(DesignTokens.radius.button))
-                        .background(Brush.horizontalGradient(listOf(theme.accent, theme.accentEnd)))
-                        .border(
-                            width = 1.dp,
-                            color = theme.accent.copy(alpha = 0.35f),
-                            shape = RoundedCornerShape(DesignTokens.radius.button),
-                        ),
-                ) {
-                    Button(
-                        onClick = {
-                            error = null
-                            if (step == 1) {
-                                if (focus == null) {
-                                    error = "Please choose your primary focus."
-                                } else {
-                                    step = 2
-                                }
+                MomentraPrimaryButton(
+                    label = if (step == 1) "Next" else "Finish",
+                    actionStyle = ctaStyle,
+                    onClick = {
+                        error = null
+                        if (step == 1) {
+                            if (focus == null) {
+                                error = "Please choose your primary focus."
                             } else {
-                                val f = focus
-                                if (f == null) {
-                                    error = "Please choose your primary focus."
-                                    step = 1
-                                } else if (f == "business" && org.trim().isEmpty()) {
-                                    error = "Organization name is required for business."
-                                } else {
-                                    onFinish(
-                                        f,
-                                        currency.trim().ifEmpty { "INR" },
-                                        org.trim().ifEmpty { null },
-                                    )
-                                }
+                                step = 2
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = DesignTokens.semantic.ctaText,
-                        ),
-                        shape = RoundedCornerShape(DesignTokens.radius.button),
-                    ) {
-                        Text(if (step == 1) "Next" else "Finish", style = DesignTokens.type.bodyMedium)
-                    }
-                }
+                        } else {
+                            val f = focus
+                            if (f == null) {
+                                error = "Please choose your primary focus."
+                                step = 1
+                            } else if (f == "business" && org.trim().isEmpty()) {
+                                error = "Organization name is required for business."
+                            } else {
+                                onFinish(
+                                    f,
+                                    currency.trim().ifEmpty { "INR" },
+                                    org.trim().ifEmpty { null },
+                                )
+                            }
+                        }
+                    },
+                )
             }
         }
     }

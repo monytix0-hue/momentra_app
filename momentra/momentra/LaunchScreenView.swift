@@ -14,6 +14,7 @@
 //
 // Usage: present full-screen on app launch; MVP dismisses after ~0.8s (Figma OB-MVP-1).
 
+import Combine
 import SwiftUI
 #if canImport(UIKit)
 import UIKit

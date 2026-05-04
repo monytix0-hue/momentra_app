@@ -11,4 +11,6 @@ object MomentraSpacing {
     val cardH = 14.dp
     val screenV = 16.dp
     val screenH = 18.dp
+    /** Context tab segment vertical padding (Theme Kit `.ctx-btn`). */
+    val contextTabPadV = 9.dp
 }

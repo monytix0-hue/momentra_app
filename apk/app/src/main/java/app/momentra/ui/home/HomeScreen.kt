@@ -1,5 +1,7 @@
 package app.momentra.ui.home
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -11,11 +13,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -24,12 +28,31 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.BusinessCenter
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.BusinessCenter
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -82,11 +105,13 @@ import app.momentra.network.GroupMomentPatchIn
 import app.momentra.network.GroupMomentRulesIn
 import app.momentra.network.GroupMomentRulesOut
 import app.momentra.ui.theme.DesignTokens
+import app.momentra.ui.theme.MomentraAnim
 import app.momentra.ui.theme.MomentraContext
-import app.momentra.ui.theme.MomentraContextTabs
+import app.momentra.ui.theme.MomentraElevatedCard
 import app.momentra.ui.theme.MomentraPrimaryButton
 import app.momentra.ui.theme.MomentraScreenChrome
 import app.momentra.ui.theme.MomentraStatusBadge
+import app.momentra.ui.theme.momentraHairlineBorder
 import app.momentra.ui.theme.rememberMomentraThemeState
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -106,9 +131,19 @@ import app.momentra.invite.parseInvitePayload
 import app.momentra.invite.parseInviteUri
 import app.momentra.network.BusinessPendingInviteOut
 import app.momentra.network.GroupPendingInviteOut
+import app.momentra.network.V1CommitmentOut
+import app.momentra.network.V1GuidanceOut
+import app.momentra.network.V1HealthOut
+import app.momentra.network.V1SignalOut
+import app.momentra.network.v1MomentIdOrNull
 import java.io.File
 import java.util.Calendar
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -128,6 +163,8 @@ private data class HomeMomentItem(
     val description: String? = null,
     val savingMode: String? = null,
     val isPrivateMoment: Boolean = true,
+    /** When API returns [PersonalMomentItemOut.savedAmount], drives goal card progress. */
+    val personalSavedAmount: Double? = null,
     val splitMode: String? = null,
     val businessPendingApprovalsCount: Int = 0,
 )
@@ -135,7 +172,6 @@ private data class HomeMomentItem(
 private data class HomeDataState(
     val loading: Boolean = false,
     val error: String? = null,
-    val personalNetBalance: Double? = null,
     val personalItems: List<HomeMomentItem> = emptyList(),
     val groupItems: List<HomeMomentItem> = emptyList(),
     val businessItems: List<HomeMomentItem> = emptyList(),
@@ -168,7 +204,46 @@ private data class DetailState(
     val businessCanInviteMembers: Boolean = false,
     val businessCanApproveApprovals: Boolean = false,
     val businessPendingApprovals: List<BusinessBudgetPendingApprovalOut> = emptyList(),
+    val v1Health: V1HealthOut? = null,
+    val v1Commitments: List<V1CommitmentOut> = emptyList(),
+    val v1Signals: List<V1SignalOut> = emptyList(),
+    val v1Guidance: List<V1GuidanceOut> = emptyList(),
+    val v1InsightsBanner: String? = null,
 )
+
+private fun v1HealthStateLabel(state: String): String = when (state.uppercase()) {
+    "ON_TRACK" -> "On track"
+    "SLIGHTLY_BEHIND" -> "Slightly behind"
+    "NEEDS_ATTENTION" -> "Needs attention"
+    else -> state.replace('_', ' ').lowercase().replaceFirstChar { it.titlecase() }
+}
+
+private fun v1BreakdownSubtitle(health: V1HealthOut): String {
+    val b = health.breakdown
+    fun intish(key: String): Int? {
+        val prim = b[key]?.jsonPrimitive ?: return null
+        return prim.intOrNull ?: prim.doubleOrNull?.toInt() ?: prim.content.toIntOrNull()
+    }
+    fun ratio(key: String): Double? {
+        val prim = b[key]?.jsonPrimitive ?: return null
+        return prim.doubleOrNull ?: prim.content.toDoubleOrNull()
+    }
+    val parts = mutableListOf<String>()
+    ratio("funding_ratio")?.let { parts += "${(it * 100).toInt()}% funded" }
+    intish("overdue")?.takeIf { it > 0 }?.let { parts += "$it overdue" }
+    intish("over_budget")?.takeIf { it > 0 }?.let { parts += "$it over budget" }
+    intish("pending")?.takeIf { it > 0 && parts.size < 3 }?.let { parts += "$it pending" }
+    if (parts.isEmpty()) {
+        health.trend?.takeIf { it.isNotBlank() }?.let { parts += it }
+    }
+    return parts.take(3).joinToString(" · ")
+}
+
+private fun v1HealthPillColor(state: String, accent: Color): Color = when (state.uppercase()) {
+    "ON_TRACK" -> accent
+    "SLIGHTLY_BEHIND" -> DesignTokens.base.brandText
+    else -> DesignTokens.urgency.high
+}
 
 private data class BusinessVendorRecordRow(
     val vendorId: String,
@@ -212,6 +287,7 @@ private data class PersonalTxnItem(
     val subcategoryId: String?,
     val note: String,
     val txnDateIso: String,
+    val emoji: String? = null,
 )
 
 private data class PersonalTxnFormState(
@@ -282,6 +358,20 @@ private data class BusinessMomentSettingsState(
     val error: String? = null,
 )
 
+private enum class HomeBottomNavItem(
+    val label: String,
+    val context: MomentraContext?,
+    val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    val unselectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
+) {
+    Personal("Personal", MomentraContext.Personal, Icons.Filled.Person, Icons.Outlined.Person),
+    Group("Group", MomentraContext.Group, Icons.Filled.Groups, Icons.Outlined.Groups),
+    Business("Business", MomentraContext.Business, Icons.Filled.BusinessCenter, Icons.Outlined.BusinessCenter),
+    Circle("Circle", MomentraContext.Circle, Icons.Filled.Public, Icons.Outlined.Public),
+    Profile("Profile", null, Icons.Filled.AccountCircle, Icons.Outlined.AccountCircle),
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     authRepository: AuthRepository,
@@ -291,6 +381,16 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val appContext = LocalContext.current
     var selectedContext by remember { mutableStateOf(initialContext) }
+    var selectedBottomNav by remember {
+        mutableStateOf(
+            when (initialContext) {
+                MomentraContext.Personal -> HomeBottomNavItem.Personal
+                MomentraContext.Group -> HomeBottomNavItem.Group
+                MomentraContext.Business -> HomeBottomNavItem.Business
+                MomentraContext.Circle -> HomeBottomNavItem.Circle
+            },
+        )
+    }
     var selectedMoment by remember { mutableStateOf<HomeMomentItem?>(null) }
     var dataState by remember { mutableStateOf(HomeDataState()) }
     var detailState by remember { mutableStateOf(DetailState()) }
@@ -313,6 +413,7 @@ fun HomeScreen(
     var createBusinessPreset by remember { mutableStateOf<BusinessQuickTemplate?>(null) }
     var createBusinessSheetKey by remember { mutableIntStateOf(0) }
     var createBusinessMomentSubmitting by remember { mutableStateOf(false) }
+    var showCreateTemplatePicker by remember { mutableStateOf(false) }
     var showGroupExpenseSheet by remember { mutableStateOf(false) }
     var groupExpenseSheetKey by remember { mutableIntStateOf(0) }
     var groupExpenseSubmitting by remember { mutableStateOf(false) }
@@ -349,10 +450,25 @@ fun HomeScreen(
     var businessApprovalSubmittingId by remember { mutableStateOf<String?>(null) }
     var businessExpenseKind by remember { mutableStateOf("expense") }
     var businessCatalog by remember { mutableStateOf<BusinessCatalogOut?>(null) }
+    var showV1HealthHistory by remember { mutableStateOf(false) }
+    var v1HealthHistory by remember { mutableStateOf<List<V1HealthOut>>(emptyList()) }
+    var v1HealthHistoryLoading by remember { mutableStateOf(false) }
     var groupSettingsState by remember { mutableStateOf(GroupMomentSettingsState()) }
     var businessSettingsState by remember { mutableStateOf(BusinessMomentSettingsState()) }
     var categoryOptions by remember { mutableStateOf<List<PersonalCategoryOut>>(emptyList()) }
     val userName = authRepository.currentUser?.displayName?.takeIf { it.isNotBlank() } ?: "User"
+    val greetingName = remember(authRepository.currentUser?.displayName, authRepository.currentUser?.email) {
+        val fromName = authRepository.currentUser?.displayName
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.substringBefore(" ")
+        if (!fromName.isNullOrBlank()) return@remember fromName
+        val fromEmail = authRepository.currentUser?.email
+            ?.substringBefore("@")
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+        fromEmail ?: "User"
+    }
     val momentraTheme = rememberMomentraThemeState(selectedContext)
     val contextTheme = momentraTheme.contextTheme
     val contextActionStyle = momentraTheme.actionStyle(status = null)
@@ -361,6 +477,38 @@ fun HomeScreen(
         status = selectedMoment?.status,
     )
     val emptyTemplates = remember(selectedContext) { homeEmptyTemplates(selectedContext) }
+    val pickerTemplates = remember(selectedContext, emptyTemplates) {
+        emptyTemplates.filter { template ->
+            when (selectedContext) {
+                MomentraContext.Personal -> template is HomeEmptyTemplate.WithPreset
+                MomentraContext.Group -> template is HomeEmptyTemplate.WithGroupPreset
+                MomentraContext.Business -> template is HomeEmptyTemplate.WithBusinessPreset
+                MomentraContext.Circle -> false
+            }
+        }
+    }
+    val createFabBottomPadding = 92.dp
+
+    fun launchCreateFromTemplate(template: HomeEmptyTemplate?) {
+        when (selectedContext) {
+            MomentraContext.Personal -> {
+                createMomentPreset = (template as? HomeEmptyTemplate.WithPreset)?.preset
+                createSheetKey++
+                showCreateMomentSheet = true
+            }
+            MomentraContext.Group -> {
+                createGroupPreset = (template as? HomeEmptyTemplate.WithGroupPreset)?.preset
+                createGroupSheetKey++
+                showCreateGroupMomentSheet = true
+            }
+            MomentraContext.Business -> {
+                createBusinessPreset = (template as? HomeEmptyTemplate.WithBusinessPreset)?.preset
+                createBusinessSheetKey++
+                showCreateBusinessMomentSheet = true
+            }
+            MomentraContext.Circle -> Unit
+        }
+    }
 
     fun mapPersonalMoment(it: PersonalMomentItemOut): HomeMomentItem {
         return HomeMomentItem(
@@ -376,6 +524,7 @@ fun HomeScreen(
             description = it.description,
             savingMode = it.savingMode,
             isPrivateMoment = it.isPrivateMoment,
+            personalSavedAmount = it.savedAmount,
         )
     }
 
@@ -503,20 +652,39 @@ fun HomeScreen(
         )
     }
 
+    suspend fun attachV1InsightBundle(base: DetailState, moment: HomeMomentItem): DetailState {
+        val v1Id = v1MomentIdOrNull(moment.context, moment.id) ?: return base
+        return supervisorScope {
+            val hr = async { authRepository.v1MomentHealth(v1Id) }
+            val cr = async { authRepository.v1MomentCommitments(v1Id) }
+            val sr = async { authRepository.v1MomentSignals(v1Id) }
+            val gr = async { authRepository.v1MomentGuidance(v1Id) }
+            val h = hr.await()
+            val c = cr.await()
+            val s = sr.await()
+            val g = gr.await()
+            val anySuccess = listOf(h, c, s, g).any { it.isSuccess }
+            base.copy(
+                v1Health = h.getOrNull(),
+                v1Commitments = c.getOrNull().orEmpty(),
+                v1Signals = s.getOrNull().orEmpty(),
+                v1Guidance = g.getOrNull().orEmpty(),
+                v1InsightsBanner = if (!anySuccess) "Insights unavailable" else null,
+            )
+        }
+    }
+
     suspend fun refreshPersonalMoments() {
-        val home = authRepository.personalHome()
         val moments = authRepository.personalMoments()
-        if (home.isFailure || moments.isFailure) {
+        if (moments.isFailure) {
             dataState = dataState.copy(
-                personalNetBalance = home.getOrNull()?.netBalance ?: dataState.personalNetBalance,
                 personalItems = moments.getOrNull()?.moments.orEmpty().map { mapPersonalMoment(it) },
-                error = home.exceptionOrNull()?.message ?: moments.exceptionOrNull()?.message,
+                error = moments.exceptionOrNull()?.message,
             )
             return
         }
         dataState = dataState.copy(
             error = null,
-            personalNetBalance = home.getOrNull()?.netBalance,
             personalItems = moments.getOrNull()?.moments.orEmpty().map { mapPersonalMoment(it) },
         )
     }
@@ -550,9 +718,9 @@ fun HomeScreen(
         businessCatalog = catalogResult.getOrNull()
     }
 
-    suspend fun refreshPersonalDetail(moment: HomeMomentItem) {
+    suspend fun buildPersonalDetailState(moment: HomeMomentItem): DetailState {
         val txns = authRepository.personalTransactions(limit = 8)
-        detailState = DetailState(
+        return DetailState(
             loading = false,
             title = moment.title,
             lines = listOf(
@@ -577,26 +745,29 @@ fun HomeScreen(
                     subcategoryId = it.subcategoryId,
                     note = it.note.orEmpty(),
                     txnDateIso = it.txnDate.orEmpty(),
+                    emoji = it.emoji,
                 )
             },
         )
+    }
+
+    suspend fun refreshPersonalDetail(moment: HomeMomentItem) {
+        detailState = attachV1InsightBundle(buildPersonalDetailState(moment), moment)
     }
 
     suspend fun reloadMoments() {
         dataState = dataState.copy(loading = true, error = null)
         dataState = when (selectedContext) {
             MomentraContext.Personal -> {
-                val home = authRepository.personalHome()
                 val moments = authRepository.personalMoments()
-                if (home.isFailure || moments.isFailure) {
+                if (moments.isFailure) {
                     dataState.copy(
                         loading = false,
-                        error = home.exceptionOrNull()?.message ?: moments.exceptionOrNull()?.message,
+                        error = moments.exceptionOrNull()?.message,
                     )
                 } else {
                     dataState.copy(
                         loading = false,
-                        personalNetBalance = home.getOrNull()?.netBalance,
                         personalItems = moments.getOrNull()?.moments.orEmpty().map { mapPersonalMoment(it) },
                     )
                 }
@@ -628,17 +799,22 @@ fun HomeScreen(
     }
 
     LaunchedEffect(selectedContext) {
+        selectedBottomNav = when (selectedContext) {
+            MomentraContext.Personal -> HomeBottomNavItem.Personal
+            MomentraContext.Group -> HomeBottomNavItem.Group
+            MomentraContext.Business -> HomeBottomNavItem.Business
+            MomentraContext.Circle -> HomeBottomNavItem.Circle
+        }
         reloadMoments()
     }
 
     LaunchedEffect(selectedMoment) {
         val moment = selectedMoment ?: return@LaunchedEffect
+        showV1HealthHistory = false
+        v1HealthHistory = emptyList()
         detailState = DetailState(loading = true, title = moment.title)
         detailState = when (moment.context) {
-            MomentraContext.Personal -> {
-                refreshPersonalDetail(moment)
-                detailState
-            }
+            MomentraContext.Personal -> attachV1InsightBundle(buildPersonalDetailState(moment), moment)
             MomentraContext.Group -> {
                 val result = authRepository.groupMomentDetail(moment.id)
                 val uid = authRepository.currentUser?.uid
@@ -647,7 +823,7 @@ fun HomeScreen(
                 } else {
                     val body = result.getOrNull()
                     if (body != null) {
-                        buildGroupDetailState(body, moment.title, uid)
+                        attachV1InsightBundle(buildGroupDetailState(body, moment.title, uid), moment)
                     } else {
                         DetailState(loading = false, title = moment.title, error = "No detail")
                     }
@@ -660,7 +836,7 @@ fun HomeScreen(
                     DetailState(loading = false, error = result.exceptionOrNull()?.message, title = moment.title)
                 } else {
                     refreshBusinessCatalog(moment.id)
-                    buildBusinessDetailState(result.getOrNull(), moment.title)
+                    attachV1InsightBundle(buildBusinessDetailState(result.getOrNull(), moment.title), moment)
                 }
             }
             MomentraContext.Circle -> DetailState(
@@ -669,6 +845,15 @@ fun HomeScreen(
                 lines = listOf("Context" to "Circle", "Status" to "Coming soon"),
             )
         }
+    }
+
+    LaunchedEffect(showV1HealthHistory, selectedMoment?.id) {
+        if (!showV1HealthHistory) return@LaunchedEffect
+        val m = selectedMoment ?: return@LaunchedEffect
+        val vid = v1MomentIdOrNull(m.context, m.id) ?: return@LaunchedEffect
+        v1HealthHistoryLoading = true
+        v1HealthHistory = authRepository.v1MomentHealthHistory(vid, limit = 40).getOrNull().orEmpty()
+        v1HealthHistoryLoading = false
     }
 
     LaunchedEffect(showTxnSheet, formState.isIncome) {
@@ -799,7 +984,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = DesignTokens.spacing.screenH, vertical = 12.dp),
+                .padding(horizontal = DesignTokens.spacing.screenH, vertical = DesignTokens.spacing.section),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -808,7 +993,7 @@ fun HomeScreen(
             ) {
                 Column {
                     Text(
-                        text = "Good ${timeOfDayLabel()}, $userName",
+                        text = "Good ${timeOfDayLabel()}, $greetingName",
                         color = DesignTokens.base.onDark,
                         fontSize = 36.sp,
                         lineHeight = 40.sp,
@@ -820,34 +1005,51 @@ fun HomeScreen(
                         style = DesignTokens.type.body,
                     )
                 }
-                TextButton(onClick = onSignOut) {
-                    Text("Sign out", color = DesignTokens.base.onDark60, style = DesignTokens.type.caption)
+                IconButton(onClick = onSignOut) {
+                    Icon(
+                        imageVector = Icons.Filled.Logout,
+                        contentDescription = "Sign out",
+                        tint = DesignTokens.base.onDark60,
+                    )
                 }
             }
 
-            MomentraContextTabs(
-                selectedContext = selectedContext,
-                onSelect = { context ->
-                    selectedMoment = null
-                    showSettingsSheet = false
-                    showDeleteConfirm = false
-                    selectedContext = context
-                },
-                modifier = Modifier.padding(top = 14.dp),
-            )
+            if (selectedBottomNav != HomeBottomNavItem.Profile) {
+                Text(
+                    text = selectedContext.displayName,
+                    color = contextTheme.accent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 14.dp),
+                )
+            }
 
-            if (selectedContext == MomentraContext.Business &&
+            if (selectedBottomNav == HomeBottomNavItem.Profile) {
+                val profileShape = RoundedCornerShape(DesignTokens.radius.card)
+                Column(
+                    modifier = Modifier
+                        .padding(top = DesignTokens.spacing.screenV + DesignTokens.spacing.xs)
+                        .fillMaxWidth()
+                        .clip(profileShape)
+                        .background(DesignTokens.base.s100)
+                        .momentraHairlineBorder(profileShape)
+                        .padding(DesignTokens.spacing.screenV),
+                    verticalArrangement = Arrangement.spacedBy(DesignTokens.spacing.item),
+                ) {
+                    Text("Profile", color = DesignTokens.base.onDark, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Signed in as $userName", color = DesignTokens.base.brandText, fontSize = 13.sp)
+                    Text("Manage preferences and account from moment settings.", color = DesignTokens.base.brandText, fontSize = 12.sp)
+                    TextButton(onClick = onSignOut) { Text("Sign out", color = contextTheme.accent) }
+                }
+            } else if (selectedContext == MomentraContext.Business &&
                 selectedMoment == null &&
                 businessPendingInvites.isNotEmpty()
             ) {
                 businessPendingInvites.forEach { inv ->
-                    Column(
+                    MomentraElevatedCard(
                         modifier = Modifier
-                            .padding(top = 12.dp)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(DesignTokens.radius.card))
-                            .background(DesignTokens.base.s100)
-                            .padding(14.dp),
+                            .padding(top = DesignTokens.spacing.section)
+                            .fillMaxWidth(),
                     ) {
                         Text(
                             "You're invited · ${inv.budgetName}",
@@ -859,9 +1061,12 @@ fun HomeScreen(
                             "Role: ${inv.role}",
                             color = DesignTokens.base.brandText,
                             fontSize = 12.sp,
-                            modifier = Modifier.padding(top = 4.dp),
+                            modifier = Modifier.padding(top = DesignTokens.spacing.xs),
                         )
-                        Row(modifier = Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.padding(top = DesignTokens.spacing.inline),
+                            horizontalArrangement = Arrangement.spacedBy(DesignTokens.spacing.item),
+                        ) {
                             TextButton(
                                 onClick = {
                                     scope.launch {
@@ -924,13 +1129,10 @@ fun HomeScreen(
                 groupPendingInvites.isNotEmpty()
             ) {
                 groupPendingInvites.forEach { inv ->
-                    Column(
+                    MomentraElevatedCard(
                         modifier = Modifier
-                            .padding(top = 12.dp)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(DesignTokens.radius.card))
-                            .background(DesignTokens.base.s100)
-                            .padding(14.dp),
+                            .padding(top = DesignTokens.spacing.section)
+                            .fillMaxWidth(),
                     ) {
                         Text(
                             "You're invited · ${inv.momentTitle}",
@@ -938,7 +1140,10 @@ fun HomeScreen(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 14.sp,
                         )
-                        Row(modifier = Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.padding(top = DesignTokens.spacing.inline),
+                            horizontalArrangement = Arrangement.spacedBy(DesignTokens.spacing.item),
+                        ) {
                             TextButton(
                                 onClick = {
                                     scope.launch {
@@ -988,7 +1193,7 @@ fun HomeScreen(
             if (selectedMoment == null &&
                 (selectedContext == MomentraContext.Business || selectedContext == MomentraContext.Group)
             ) {
-                Row(modifier = Modifier.padding(top = 10.dp)) {
+                Row(modifier = Modifier.padding(top = DesignTokens.spacing.inline + DesignTokens.spacing.xs)) {
                     TextButton(
                         onClick = {
                             val ok = ContextCompat.checkSelfPermission(
@@ -1014,6 +1219,24 @@ fun HomeScreen(
                     isPersonal = selectedMoment?.context == MomentraContext.Personal,
                     isGroup = selectedMoment?.context == MomentraContext.Group,
                     isBusiness = selectedMoment?.context == MomentraContext.Business,
+                    v1MomentKey = selectedMoment?.let { v1MomentIdOrNull(it.context, it.id) },
+                    onOpenV1HealthHistory = { showV1HealthHistory = true },
+                    onResolveV1Signal = { signalId ->
+                        val m = selectedMoment ?: return@MomentDetailsView
+                        val vid = v1MomentIdOrNull(m.context, m.id) ?: return@MomentDetailsView
+                        scope.launch {
+                            authRepository.v1ResolveSignal(vid, signalId)
+                            detailState = attachV1InsightBundle(detailState, m)
+                        }
+                    },
+                    onMarkV1GuidanceRead = { guidanceId ->
+                        val m = selectedMoment ?: return@MomentDetailsView
+                        val vid = v1MomentIdOrNull(m.context, m.id) ?: return@MomentDetailsView
+                        scope.launch {
+                            authRepository.v1MarkGuidanceRead(vid, guidanceId)
+                            detailState = attachV1InsightBundle(detailState, m)
+                        }
+                    },
                     onBack = { selectedMoment = null },
                     onAddGroupExpense = {
                         groupExpenseSheetKey++
@@ -1054,7 +1277,15 @@ fun HomeScreen(
                                 val detail = authRepository.businessMomentDetail(budgetId)
                                 if (detail.isSuccess) {
                                     refreshBusinessCatalog(budgetId)
-                                    detailState = buildBusinessDetailState(detail.getOrNull(), selectedMoment?.title.orEmpty())
+                                    val m = selectedMoment
+                                    detailState = if (m != null) {
+                                        attachV1InsightBundle(
+                                            buildBusinessDetailState(detail.getOrNull(), m.title),
+                                            m,
+                                        )
+                                    } else {
+                                        buildBusinessDetailState(detail.getOrNull(), selectedMoment?.title.orEmpty())
+                                    }
                                 }
                             } else {
                                 Toast.makeText(
@@ -1078,7 +1309,15 @@ fun HomeScreen(
                                 val detail = authRepository.businessMomentDetail(budgetId)
                                 if (detail.isSuccess) {
                                     refreshBusinessCatalog(budgetId)
-                                    detailState = buildBusinessDetailState(detail.getOrNull(), selectedMoment?.title.orEmpty())
+                                    val m = selectedMoment
+                                    detailState = if (m != null) {
+                                        attachV1InsightBundle(
+                                            buildBusinessDetailState(detail.getOrNull(), m.title),
+                                            m,
+                                        )
+                                    } else {
+                                        buildBusinessDetailState(detail.getOrNull(), selectedMoment?.title.orEmpty())
+                                    }
                                 }
                             } else {
                                 Toast.makeText(
@@ -1244,101 +1483,128 @@ fun HomeScreen(
                     } else if (items.isEmpty()) {
                         val amountLine = "No active moments found yet."
                         EmptyStateCard(
-                            title = "Create your first ${selectedContext.displayName.lowercase()} moment",
-                            subtitle = amountLine,
-                            cta = "Use a starter plan",
-                            templates = emptyTemplates,
-                            accent = contextActionStyle.gradientStart,
-                            accentEnd = contextActionStyle.gradientEnd,
-                            contextLabel = selectedContext.displayName.uppercase(),
-                            onPrimaryCta = {
-                                when (selectedContext) {
-                                    MomentraContext.Personal -> {
-                                        createMomentPreset = null
-                                        createSheetKey++
-                                        showCreateMomentSheet = true
+                                title = "Create your first ${selectedContext.displayName.lowercase()} moment",
+                                subtitle = amountLine,
+                                cta = "Use a starter plan",
+                                templates = emptyTemplates,
+                                accent = contextActionStyle.gradientStart,
+                                accentEnd = contextActionStyle.gradientEnd,
+                                contextLabel = selectedContext.displayName.uppercase(),
+                                onPrimaryCta = {
+                                    when (selectedContext) {
+                                        MomentraContext.Personal -> {
+                                            createMomentPreset = null
+                                            createSheetKey++
+                                            showCreateMomentSheet = true
+                                        }
+                                        MomentraContext.Group -> {
+                                            createGroupPreset = null
+                                            createGroupSheetKey++
+                                            showCreateGroupMomentSheet = true
+                                        }
+                                        MomentraContext.Business -> {
+                                            createBusinessPreset = null
+                                            createBusinessSheetKey++
+                                            showCreateBusinessMomentSheet = true
+                                        }
+                                        else -> Unit
                                     }
-                                    MomentraContext.Group -> {
-                                        createGroupPreset = null
-                                        createGroupSheetKey++
-                                        showCreateGroupMomentSheet = true
+                                },
+                                onTemplateRow = { row ->
+                                    when (row) {
+                                        is HomeEmptyTemplate.WithPreset -> {
+                                            createMomentPreset = row.preset
+                                            createSheetKey++
+                                            showCreateMomentSheet = true
+                                        }
+                                        is HomeEmptyTemplate.WithGroupPreset -> {
+                                            createGroupPreset = row.preset
+                                            createGroupSheetKey++
+                                            showCreateGroupMomentSheet = true
+                                        }
+                                        is HomeEmptyTemplate.WithBusinessPreset -> {
+                                            createBusinessPreset = row.preset
+                                            createBusinessSheetKey++
+                                            showCreateBusinessMomentSheet = true
+                                        }
+                                        is HomeEmptyTemplate.Simple -> Unit
                                     }
-                                    MomentraContext.Business -> {
-                                        createBusinessPreset = null
-                                        createBusinessSheetKey++
-                                        showCreateBusinessMomentSheet = true
-                                    }
-                                    else -> Unit
-                                }
-                            },
-                            onTemplateRow = { row ->
-                                when (row) {
-                                    is HomeEmptyTemplate.WithPreset -> {
-                                        createMomentPreset = row.preset
-                                        createSheetKey++
-                                        showCreateMomentSheet = true
-                                    }
-                                    is HomeEmptyTemplate.WithGroupPreset -> {
-                                        createGroupPreset = row.preset
-                                        createGroupSheetKey++
-                                        showCreateGroupMomentSheet = true
-                                    }
-                                    is HomeEmptyTemplate.WithBusinessPreset -> {
-                                        createBusinessPreset = row.preset
-                                        createBusinessSheetKey++
-                                        showCreateBusinessMomentSheet = true
-                                    }
-                                    is HomeEmptyTemplate.Simple -> Unit
-                                }
-                            },
-                        )
+                                },
+                            )
                     } else {
-                        Column(modifier = Modifier.padding(top = 20.dp)) {
-                            items.forEach { item ->
-                                Box(
+                        Column(
+                            modifier = Modifier
+                                .padding(top = 20.dp)
+                                .animateContentSize(animationSpec = tween(MomentraAnim.normalMs)),
+                        ) {
+                            if (selectedContext == MomentraContext.Personal && items.isNotEmpty()) {
+                                Text(
+                                    text = "Personal Moments",
+                                    color = DesignTokens.base.onDark60,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier
-                                        .padding(bottom = 10.dp)
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(contextTheme.surface)
-                                        .clickable { selectedMoment = item }
-                                        .padding(14.dp),
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
+                                        .padding(bottom = 8.dp),
+                                )
+                            }
+                            items.forEach { item ->
+                                if (item.context == MomentraContext.Personal) {
+                                    PersonalMomentGoalCard(
+                                        title = item.title,
+                                        momentType = item.momentType,
+                                        targetAmount = item.targetAmount,
+                                        durationType = item.durationType,
+                                        endDate = item.endDate,
+                                        status = item.status,
+                                        theme = contextTheme,
+                                        savedAmount = item.personalSavedAmount,
+                                        savedFraction = item.personalSavedAmount?.let { saved ->
+                                            item.targetAmount?.takeIf { t -> t > 0 }
+                                                ?.let { t -> (saved / t).coerceIn(0.0, 1.0) }
+                                        },
+                                        onClick = { selectedMoment = item },
+                                        modifier = Modifier.padding(bottom = 10.dp),
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(bottom = 10.dp)
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(DesignTokens.radius.momentCard))
+                                            .background(contextTheme.surface)
+                                            .momentraHairlineBorder(RoundedCornerShape(DesignTokens.radius.momentCard))
+                                            .clickable { selectedMoment = item }
+                                            .padding(DesignTokens.spacing.cardH),
                                     ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                item.title,
-                                                color = DesignTokens.base.onDark,
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                            )
-                                            if (item.context == MomentraContext.Personal && item.durationType != null) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
                                                 Text(
-                                                    personalRhythmLabel(item.durationType, item.endDate),
-                                                    style = DesignTokens.type.micro,
-                                                    color = DesignTokens.base.onDark40,
-                                                    modifier = Modifier.padding(top = 4.dp),
+                                                    item.title,
+                                                    color = DesignTokens.base.onDark,
+                                                    fontSize = 15.sp,
+                                                    fontWeight = FontWeight.SemiBold,
                                                 )
-                                            }
-                                            if (item.context == MomentraContext.Group && item.splitMode != null) {
-                                                Text(
-                                                    groupSplitLabel(item.splitMode),
-                                                    style = DesignTokens.type.micro,
-                                                    color = DesignTokens.base.onDark40,
-                                                    modifier = Modifier.padding(top = 4.dp),
-                                                )
-                                            }
-                                            if (item.context == MomentraContext.Business && item.businessPendingApprovalsCount > 0) {
-                                                MomentraStatusBadge(
-                                                    label = "Pending approvals: ${item.businessPendingApprovalsCount}",
-                                                    background = DesignTokens.base.s200,
-                                                    textColor = contextTheme.accent,
-                                                    modifier = Modifier.padding(top = 6.dp),
-                                                )
+                                                if (item.context == MomentraContext.Group && item.splitMode != null) {
+                                                    Text(
+                                                        groupSplitLabel(item.splitMode),
+                                                        style = DesignTokens.type.micro,
+                                                        color = DesignTokens.base.onDark40,
+                                                        modifier = Modifier.padding(top = 4.dp),
+                                                    )
+                                                }
+                                                if (item.context == MomentraContext.Business && item.businessPendingApprovalsCount > 0) {
+                                                    MomentraStatusBadge(
+                                                        label = "Pending approvals: ${item.businessPendingApprovalsCount}",
+                                                        background = DesignTokens.base.s200,
+                                                        textColor = contextTheme.accent,
+                                                        modifier = Modifier.padding(top = 6.dp),
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -1351,46 +1617,41 @@ fun HomeScreen(
         }
 
         when {
+            selectedBottomNav == HomeBottomNavItem.Profile -> Unit
             selectedContext == MomentraContext.Personal && selectedMoment == null -> {
                 MomentraPrimaryButton(
                     label = "New goal",
                     onClick = {
-                        createMomentPreset = null
-                        createSheetKey++
-                        showCreateMomentSheet = true
+                        showCreateTemplatePicker = true
                     },
                     actionStyle = contextActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(18.dp),
+                        .padding(end = 18.dp, bottom = createFabBottomPadding),
                 )
             }
             selectedContext == MomentraContext.Group && selectedMoment == null -> {
                 MomentraPrimaryButton(
                     label = "New group",
                     onClick = {
-                        createGroupPreset = null
-                        createGroupSheetKey++
-                        showCreateGroupMomentSheet = true
+                        showCreateTemplatePicker = true
                     },
                     actionStyle = contextActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(18.dp),
+                        .padding(end = 18.dp, bottom = createFabBottomPadding),
                 )
             }
             selectedContext == MomentraContext.Business && selectedMoment == null -> {
                 MomentraPrimaryButton(
                     label = "New budget",
                     onClick = {
-                        createBusinessPreset = null
-                        createBusinessSheetKey++
-                        showCreateBusinessMomentSheet = true
+                        showCreateTemplatePicker = true
                     },
                     actionStyle = contextActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(18.dp),
+                        .padding(end = 18.dp, bottom = createFabBottomPadding),
                 )
             }
             selectedMoment?.context == MomentraContext.Personal -> {
@@ -1407,7 +1668,7 @@ fun HomeScreen(
                     actionStyle = selectedActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(18.dp),
+                        .padding(end = 18.dp, bottom = createFabBottomPadding),
                 )
             }
             selectedMoment?.context == MomentraContext.Group -> {
@@ -1420,16 +1681,16 @@ fun HomeScreen(
                     actionStyle = selectedActionStyle,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(18.dp),
+                        .padding(end = 18.dp, bottom = createFabBottomPadding),
                 )
             }
             selectedMoment?.context == MomentraContext.Business -> {
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(18.dp),
+                        .padding(end = 18.dp, bottom = createFabBottomPadding),
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(DesignTokens.spacing.item),
                 ) {
                     if (detailState.businessCanInviteMembers) {
                         MomentraPrimaryButton(
@@ -1459,6 +1720,165 @@ fun HomeScreen(
                         },
                         actionStyle = selectedActionStyle,
                     )
+                }
+            }
+        }
+        NavigationBar(
+            containerColor = DesignTokens.base.s100,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            HomeBottomNavItem.entries.forEach { item ->
+                val selected = selectedBottomNav == item
+                NavigationBarItem(
+                    selected = selected,
+                    onClick = {
+                        selectedBottomNav = item
+                        selectedMoment = null
+                        showSettingsSheet = false
+                        showDeleteConfirm = false
+                        item.context?.let { selectedContext = it }
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                            contentDescription = item.label,
+                        )
+                    },
+                    label = { Text(item.label) },
+                )
+            }
+        }
+    }
+
+    if (showV1HealthHistory) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showV1HealthHistory = false
+                v1HealthHistory = emptyList()
+            },
+            containerColor = DesignTokens.base.s100,
+            contentColor = DesignTokens.base.onDark,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = DesignTokens.spacing.screenV, vertical = 10.dp)
+                    .padding(bottom = 24.dp),
+            ) {
+                Text(
+                    text = "Health trend",
+                    style = DesignTokens.type.titleLG,
+                    color = DesignTokens.base.onDark,
+                )
+                if (v1HealthHistoryLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(color = contextTheme.accent)
+                    }
+                } else if (v1HealthHistory.isEmpty()) {
+                    Text(
+                        text = "No history yet.",
+                        color = DesignTokens.base.brandText,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                } else {
+                    v1HealthHistory.forEach { snap ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column {
+                                Text(
+                                    v1HealthStateLabel(snap.healthState),
+                                    color = DesignTokens.base.onDark,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                Text(
+                                    snap.calculatedAt,
+                                    color = DesignTokens.base.brandText,
+                                    fontSize = 11.sp,
+                                )
+                            }
+                            Text(
+                                "${snap.compositeScore.toInt()}",
+                                color = contextTheme.accent,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+                TextButton(
+                    onClick = {
+                        showV1HealthHistory = false
+                        v1HealthHistory = emptyList()
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text("Close", color = DesignTokens.base.onDark60)
+                }
+            }
+        }
+    }
+
+    if (showCreateTemplatePicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showCreateTemplatePicker = false },
+            containerColor = DesignTokens.base.s100,
+            contentColor = DesignTokens.base.onDark,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .padding(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = "Choose a template",
+                    style = DesignTokens.type.titleLG,
+                    color = DesignTokens.base.onDark,
+                )
+                TemplatePickerCard(
+                    title = "Start from scratch",
+                    subtitle = "Open a blank ${selectedContext.displayName.lowercase()} form",
+                    accent = contextTheme.accent,
+                    onClick = {
+                        showCreateTemplatePicker = false
+                        launchCreateFromTemplate(null)
+                    },
+                )
+                pickerTemplates.forEach { template ->
+                    val title = when (template) {
+                        is HomeEmptyTemplate.WithPreset -> template.preset.title
+                        is HomeEmptyTemplate.WithGroupPreset -> template.preset.title
+                        is HomeEmptyTemplate.WithBusinessPreset -> template.preset.budgetName
+                        is HomeEmptyTemplate.Simple -> template.label
+                    }
+                    val subtitle = when (template) {
+                        is HomeEmptyTemplate.WithPreset -> template.preset.subtitle
+                        is HomeEmptyTemplate.WithGroupPreset -> template.preset.subtitle
+                        is HomeEmptyTemplate.WithBusinessPreset -> template.preset.subtitle
+                        is HomeEmptyTemplate.Simple -> "Template"
+                    }
+                    TemplatePickerCard(
+                        title = title,
+                        subtitle = subtitle,
+                        accent = contextTheme.accent,
+                        onClick = {
+                            showCreateTemplatePicker = false
+                            launchCreateFromTemplate(template)
+                        },
+                    )
+                }
+                TextButton(onClick = { showCreateTemplatePicker = false }) {
+                    Text("Cancel", color = DesignTokens.base.onDark60)
                 }
             }
         }
@@ -1577,13 +1997,15 @@ fun HomeScreen(
                     if (r.isSuccess) {
                         val detail = r.getOrNull() ?: return@launch
                         showGroupExpenseSheet = false
-                        detailState = buildGroupDetailState(
-                            detail,
-                            selectedMoment?.title.orEmpty(),
-                            authRepository.currentUser?.uid,
-                        )
                         refreshGroupMoments()
                         selectedMoment = dataState.groupItems.firstOrNull { it.id == gid }
+                        val m = selectedMoment
+                        if (m != null) {
+                            detailState = attachV1InsightBundle(
+                                buildGroupDetailState(detail, m.title, authRepository.currentUser?.uid),
+                                m,
+                            )
+                        }
                     }
                 }
             },
@@ -1611,7 +2033,15 @@ fun HomeScreen(
                         val detail = authRepository.businessMomentDetail(budgetId)
                         if (detail.isSuccess) {
                             refreshBusinessCatalog(budgetId)
-                            detailState = buildBusinessDetailState(detail.getOrNull(), selectedMoment?.title.orEmpty())
+                            val m = selectedMoment
+                            detailState = if (m != null) {
+                                attachV1InsightBundle(
+                                    buildBusinessDetailState(detail.getOrNull(), m.title),
+                                    m,
+                                )
+                            } else {
+                                buildBusinessDetailState(detail.getOrNull(), selectedMoment?.title.orEmpty())
+                            }
                         }
                         refreshBusinessMoments()
                     }
@@ -1637,7 +2067,13 @@ fun HomeScreen(
                     body = BusinessVendorCreateIn(vendorName = vendorName),
                 )
                 if (result.isSuccess) {
-                    detailState = buildBusinessDetailState(result.getOrNull(), selectedMoment?.title.orEmpty())
+                    scope.launch {
+                        val m = selectedMoment ?: return@launch
+                        detailState = attachV1InsightBundle(
+                            buildBusinessDetailState(result.getOrNull(), m.title),
+                            m,
+                        )
+                    }
                     true
                 } else {
                     false
@@ -1650,7 +2086,13 @@ fun HomeScreen(
                     body = BusinessVendorPatchIn(vendorName = vendorName),
                 )
                 if (result.isSuccess) {
-                    detailState = buildBusinessDetailState(result.getOrNull(), selectedMoment?.title.orEmpty())
+                    scope.launch {
+                        val m = selectedMoment ?: return@launch
+                        detailState = attachV1InsightBundle(
+                            buildBusinessDetailState(result.getOrNull(), m.title),
+                            m,
+                        )
+                    }
                     true
                 } else {
                     false
@@ -1662,7 +2104,13 @@ fun HomeScreen(
                     vendorId = vendorId,
                 )
                 if (result.isSuccess) {
-                    detailState = buildBusinessDetailState(result.getOrNull(), selectedMoment?.title.orEmpty())
+                    scope.launch {
+                        val m = selectedMoment ?: return@launch
+                        detailState = attachV1InsightBundle(
+                            buildBusinessDetailState(result.getOrNull(), m.title),
+                            m,
+                        )
+                    }
                     true
                 } else {
                     false
@@ -1700,7 +2148,15 @@ fun HomeScreen(
                         val detail = authRepository.businessMomentDetail(budgetId)
                         if (detail.isSuccess) {
                             refreshBusinessCatalog(budgetId)
-                            detailState = buildBusinessDetailState(detail.getOrNull(), selectedMoment?.title.orEmpty())
+                            val m = selectedMoment
+                            detailState = if (m != null) {
+                                attachV1InsightBundle(
+                                    buildBusinessDetailState(detail.getOrNull(), m.title),
+                                    m,
+                                )
+                            } else {
+                                buildBusinessDetailState(detail.getOrNull(), selectedMoment?.title.orEmpty())
+                            }
                         }
                     } else {
                         businessExpenseSubmitting = false
@@ -1829,7 +2285,7 @@ fun HomeScreen(
         )
     }
 
-    if (showTxnSheet && selectedMoment?.context == MomentraContext.Personal) {
+    if (showTxnSheet && selectedContext == MomentraContext.Personal) {
         PersonalTransactionSheet(
             contextAccent = contextTheme.accent,
             formState = formState,
@@ -1842,7 +2298,11 @@ fun HomeScreen(
             onRequestDelete = { showDeleteTxnAlert = true },
             onFormChange = { formState = it },
             onSubmit = {
-                val moment = selectedMoment ?: return@PersonalTransactionSheet
+                val momentForDetail = selectedMoment?.takeIf { it.context == MomentraContext.Personal }
+                if (formState.editingTransactionId != null && momentForDetail == null) {
+                    formState = formState.copy(error = "Open a goal to edit a transaction")
+                    return@PersonalTransactionSheet
+                }
                 val selectedCategory = categoryOptions.firstOrNull { it.categoryId == formState.selectedCategoryId }
                 val amount = formState.amountInput.toDoubleOrNull()
                 val dateTrim = formState.txnDateInput.trim()
@@ -1887,7 +2347,8 @@ fun HomeScreen(
                         showTxnSheet = false
                         editingTxnSnapshot = null
                         formState = PersonalTxnFormState()
-                        refreshPersonalDetail(moment)
+                        refreshPersonalMoments()
+                        momentForDetail?.let { refreshPersonalDetail(it) }
                     } else {
                         formState = formState.copy(
                             loading = false,
@@ -2043,7 +2504,10 @@ fun HomeScreen(
                             selectedMoment = updated
                             val full = authRepository.groupMomentDetail(moment.id).getOrNull()
                             if (full != null) {
-                                detailState = buildGroupDetailState(full, updated.title, authRepository.currentUser?.uid)
+                                detailState = attachV1InsightBundle(
+                                    buildGroupDetailState(full, updated.title, authRepository.currentUser?.uid),
+                                    updated,
+                                )
                             } else {
                                 detailState = detailState.copy(error = null)
                             }
@@ -2205,6 +2669,10 @@ private fun MomentDetailsView(
     isPersonal: Boolean,
     isGroup: Boolean = false,
     isBusiness: Boolean = false,
+    v1MomentKey: String? = null,
+    onOpenV1HealthHistory: () -> Unit = {},
+    onResolveV1Signal: (String) -> Unit = {},
+    onMarkV1GuidanceRead: (String) -> Unit = {},
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
     onAddGroupExpense: () -> Unit = {},
@@ -2217,27 +2685,43 @@ private fun MomentDetailsView(
     onRejectBusinessApproval: (String) -> Unit = {},
     onTransactionTap: (PersonalTxnItem) -> Unit,
 ) {
-    Column(
+    val detailCardShape = RoundedCornerShape(DesignTokens.radius.hero)
+    Box(
         modifier = Modifier
-            .padding(top = 20.dp)
+            .padding(top = DesignTokens.spacing.screenV + DesignTokens.spacing.xs)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(detailCardShape)
             .background(DesignTokens.base.s100)
-            .padding(16.dp),
+            .momentraHairlineBorder(detailCardShape),
     ) {
-        TextButton(onClick = onBack) {
-            Text("Back", color = accent)
-        }
-        Text(
-            text = detailState.title.ifBlank { "Moment details" },
-            color = DesignTokens.base.onDark,
-            fontSize = 19.sp,
-            fontWeight = FontWeight.Bold,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(170.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            accent.copy(alpha = 0.14f),
+                            accent.copy(alpha = 0.03f),
+                            Color.Transparent,
+                        ),
+                    ),
+                ),
         )
-        when {
+        Column(modifier = Modifier.padding(DesignTokens.spacing.screenH)) {
+            TextButton(onClick = onBack) {
+                Text("Back", color = accent)
+            }
+            Text(
+                text = detailState.title.ifBlank { "Moment details" },
+                color = DesignTokens.base.onDark,
+                fontSize = 21.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            when {
             detailState.loading -> {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = DesignTokens.spacing.screenV + DesignTokens.spacing.xs),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(color = accent)
@@ -2252,6 +2736,11 @@ private fun MomentDetailsView(
                 )
             }
             else -> {
+                val contextLabel = when {
+                    isPersonal -> "personal"
+                    isGroup -> "group"
+                    else -> "business"
+                }
                 detailState.lines.forEach { (label, value) ->
                     Row(
                         modifier = Modifier
@@ -2259,9 +2748,166 @@ private fun MomentDetailsView(
                             .padding(top = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text(label, color = DesignTokens.base.brandText, fontSize = 13.sp)
+                        Text(label, color = DesignTokens.base.onDark60, fontSize = 13.sp)
                         Text(value, color = DesignTokens.base.onDark, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
+                }
+                val banner = detailState.v1InsightsBanner
+                if (!banner.isNullOrBlank()) {
+                    Text(
+                        text = banner,
+                        color = DesignTokens.base.brandText,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
+                }
+                val health = detailState.v1Health
+                DetailSectionHeader(title = "Health")
+                if (v1MomentKey != null && health != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = DesignTokens.spacing.section)
+                            .clip(RoundedCornerShape(DesignTokens.radius.cardSm))
+                            .background(DesignTokens.base.s200)
+                            .momentraHairlineBorder(RoundedCornerShape(DesignTokens.radius.cardSm))
+                            .clickable { onOpenV1HealthHistory() }
+                            .padding(horizontal = DesignTokens.spacing.section, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = v1HealthStateLabel(health.healthState),
+                            color = v1HealthPillColor(health.healthState, accent),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(DesignTokens.radius.data))
+                                .background(v1HealthPillColor(health.healthState, accent).copy(alpha = 0.15f))
+                                .padding(horizontal = DesignTokens.spacing.item, vertical = DesignTokens.spacing.xs),
+                        )
+                        Column(
+                            modifier = Modifier.weight(1f).padding(horizontal = DesignTokens.spacing.inline + DesignTokens.spacing.xs),
+                        ) {
+                            Text(
+                                text = "Score ${health.compositeScore.toInt()}",
+                                color = DesignTokens.base.onDark,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            val sub = v1BreakdownSubtitle(health)
+                            if (sub.isNotBlank()) {
+                                Text(
+                                    text = sub,
+                                    color = DesignTokens.base.brandText,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(top = 2.dp),
+                                )
+                            }
+                        }
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowRight,
+                            contentDescription = "Health history",
+                            tint = accent,
+                        )
+                    }
+                } else {
+                    DetailPlaceholderCard(text = "No $contextLabel health data yet.")
+                }
+                DetailSectionHeader(title = "Commitments")
+                if (detailState.v1Commitments.isNotEmpty()) {
+                    detailState.v1Commitments.forEach { row ->
+                        val overdue = row.status.equals("overdue", ignoreCase = true) ||
+                            row.status.equals("over_budget", ignoreCase = true)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                                .clip(RoundedCornerShape(DesignTokens.radius.contextTabInner))
+                                .background(if (overdue) DesignTokens.urgency.high.copy(alpha = 0.08f) else DesignTokens.base.s200)
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                text = row.displayName ?: row.email ?: "Commitment",
+                                color = DesignTokens.base.onDark,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            val due = row.dueDate?.takeIf { it.isNotBlank() }?.let { "Due $it · " }.orEmpty()
+                            Text(
+                                text = "$due${row.status.replaceFirstChar { it.titlecase() }} · remaining ${DesignTokens.formatInr(row.amountRemaining)}",
+                                color = DesignTokens.base.brandText,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                        }
+                    }
+                } else {
+                    DetailPlaceholderCard(text = "No $contextLabel commitments yet.")
+                }
+                val topSignals = detailState.v1Signals.take(3)
+                val guidanceUnread = detailState.v1Guidance.filter { !it.read }.take(2)
+                DetailSectionHeader(title = "Signals & guidance")
+                if (topSignals.isNotEmpty() || guidanceUnread.isNotEmpty()) {
+                    topSignals.forEach { sig ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                                .clip(RoundedCornerShape(DesignTokens.radius.contextTabInner))
+                                .background(DesignTokens.base.s200)
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                text = sig.title,
+                                color = DesignTokens.base.onDark,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = sig.message,
+                                color = DesignTokens.base.brandText,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                            TextButton(
+                                onClick = { onResolveV1Signal(sig.signalId) },
+                                modifier = Modifier.padding(top = 2.dp),
+                            ) {
+                                Text("Resolve", color = accent, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                    guidanceUnread.forEach { g ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                                .clip(RoundedCornerShape(DesignTokens.radius.contextTabInner))
+                                .background(DesignTokens.base.s200)
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                text = g.title,
+                                color = DesignTokens.base.onDark,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = g.message,
+                                color = DesignTokens.base.brandText,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                            TextButton(
+                                onClick = { onMarkV1GuidanceRead(g.guidanceId) },
+                                modifier = Modifier.padding(top = 2.dp),
+                            ) {
+                                Text("Mark read", color = accent, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                } else {
+                    DetailPlaceholderCard(text = "No active $contextLabel signals or guidance.")
                 }
                 if (!isPersonal && !isGroup && detailState.businessVendorBalances.isNotEmpty()) {
                     Text(
@@ -2276,7 +2922,7 @@ private fun MomentDetailsView(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 8.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(DesignTokens.radius.contextTabInner))
                                 .background(DesignTokens.base.s200)
                                 .padding(horizontal = 10.dp, vertical = 8.dp),
                         ) {
@@ -2311,7 +2957,7 @@ private fun MomentDetailsView(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(DesignTokens.radius.contextTabInner))
                                     .background(DesignTokens.base.s200)
                                     .padding(horizontal = 10.dp, vertical = 8.dp),
                             ) {
@@ -2389,21 +3035,34 @@ private fun MomentDetailsView(
                     }
                 }
                 Row(
-                    modifier = Modifier.padding(top = 4.dp),
+                    modifier = Modifier.padding(top = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     TextButton(onClick = onOpenSettings) {
-                        Text("Moment settings", color = accent)
+                        Text("Moment settings", color = accent, fontWeight = FontWeight.SemiBold)
                     }
                 }
                 if (isPersonal) {
-                    Text(
-                        text = "Recent transactions",
-                        color = DesignTokens.base.onDark,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 6.dp),
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Recent",
+                            color = DesignTokens.base.onDark,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = "See all ->",
+                            color = accent.copy(alpha = 0.78f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
                     if (detailState.recentTransactions.isEmpty()) {
                         Text(
                             text = "No recent transactions yet.",
@@ -2416,22 +3075,46 @@ private fun MomentDetailsView(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .heightIn(min = 60.dp)
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(DesignTokens.base.s200)
                                     .clickable { onTransactionTap(txn) }
-                                    .padding(horizontal = 10.dp, vertical = 9.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(DesignTokens.base.s100),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    val em = txn.emoji?.trim().orEmpty()
+                                    if (em.isNotEmpty()) {
+                                        Text(text = em, fontSize = 20.sp)
+                                    } else {
+                                        Icon(
+                                            imageVector = if (txn.isIncome) {
+                                                Icons.Filled.KeyboardArrowDown
+                                            } else {
+                                                Icons.Filled.KeyboardArrowUp
+                                            },
+                                            contentDescription = null,
+                                            tint = if (txn.isIncome) DesignTokens.group.accentEnd else DesignTokens.urgency.high,
+                                            modifier = Modifier.size(22.dp),
+                                        )
+                                    }
+                                }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(txn.title, color = DesignTokens.base.onDark, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                                    Text(txn.subtitle, color = DesignTokens.base.brandText, fontSize = 11.sp)
+                                    Text(txn.subtitle, color = DesignTokens.base.onDark60, fontSize = 10.sp)
                                 }
                                 val signed = if (txn.isIncome) txn.amount else -txn.amount
                                 Text(
                                     text = DesignTokens.formatInr(signed),
                                     color = if (txn.isIncome) DesignTokens.group.accentEnd else DesignTokens.urgency.high,
-                                    fontSize = 12.sp,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                 )
                             }
@@ -2458,7 +3141,7 @@ private fun MomentDetailsView(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(DesignTokens.radius.contextTabInner))
                                     .background(DesignTokens.base.s200)
                                     .padding(horizontal = 10.dp, vertical = 9.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2479,8 +3162,35 @@ private fun MomentDetailsView(
                     }
                 }
             }
+            }
         }
     }
+}
+
+@Composable
+private fun DetailSectionHeader(title: String) {
+    Text(
+        text = title,
+        color = DesignTokens.base.onDark,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 14.dp),
+    )
+}
+
+@Composable
+private fun DetailPlaceholderCard(text: String) {
+    Text(
+        text = text,
+        color = DesignTokens.base.onDark60,
+        fontSize = 12.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .clip(RoundedCornerShape(DesignTokens.radius.contextTabInner))
+            .background(DesignTokens.base.s200)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -4188,9 +4898,9 @@ private fun EmptyStateCard(
         modifier = Modifier
             .padding(top = 20.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(DesignTokens.radius.hero))
             .background(DesignTokens.base.s100)
-            .padding(16.dp),
+            .padding(DesignTokens.spacing.screenV),
     ) {
         Text(
             contextLabel,
@@ -4209,10 +4919,10 @@ private fun EmptyStateCard(
             modifier = Modifier
                 .padding(top = 14.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(DesignTokens.radius.button))
                 .background(Brush.horizontalGradient(listOf(accent, accentEnd)))
                 .clickable(onClick = onPrimaryCta)
-                .padding(vertical = 12.dp),
+                .padding(vertical = DesignTokens.spacing.section),
             contentAlignment = Alignment.Center,
         ) {
             Text(cta, color = DesignTokens.semantic.ctaText, style = DesignTokens.type.label)
@@ -4308,6 +5018,40 @@ private fun EmptyStateCard(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TemplatePickerCard(
+    title: String,
+    subtitle: String,
+    accent: Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(DesignTokens.base.s200)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(30.dp)
+                    .clip(RoundedCornerShape(DesignTokens.radius.data))
+                    .background(accent),
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, color = DesignTokens.base.onDark, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(subtitle, color = DesignTokens.base.onDark40, fontSize = 11.sp)
             }
         }
     }

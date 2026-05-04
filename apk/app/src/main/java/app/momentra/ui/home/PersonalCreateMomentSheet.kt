@@ -1,23 +1,16 @@
 package app.momentra.ui.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,14 +31,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.momentra.network.PersonalMomentCreateIn
 import app.momentra.ui.theme.DesignTokens
+import app.momentra.ui.theme.MomentraPrimaryButton
 
 data class PersonalCreateMomentFormState(
     val title: String = "",
@@ -121,6 +112,13 @@ fun PersonalCreateMomentSheet(
     }
     val endDateState = rememberDatePickerState(initialSelectedDateMillis = endMillis)
     val startDateState = rememberDatePickerState(initialSelectedDateMillis = startMillis)
+    val createCtaStyle = DesignTokens.ActionStyle(
+        solid = contextAccent,
+        solidAlt = accentEnd,
+        gradientStart = contextAccent,
+        gradientEnd = accentEnd,
+        text = DesignTokens.semantic.ctaText,
+    )
 
     if (endPickerOpen) {
         DatePickerDialog(
@@ -177,15 +175,17 @@ fun PersonalCreateMomentSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(
+                    horizontal = DesignTokens.spacing.screenH,
+                    vertical = DesignTokens.spacing.item,
+                ),
         ) {
             Text(
                 "New personal moment",
                 color = DesignTokens.base.onDark,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+                style = DesignTokens.type.titleLG,
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
 
             OutlinedTextField(
                 value = form.title,
@@ -198,10 +198,10 @@ fun PersonalCreateMomentSheet(
                     cursorColor = contextAccent,
                 ),
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
 
             Text("Rhythm", color = DesignTokens.base.onDark60, style = DesignTokens.type.caption)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.inline))
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 SegmentedButton(
                     selected = form.rhythmMonthly,
@@ -223,15 +223,19 @@ fun PersonalCreateMomentSheet(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Start date", color = DesignTokens.base.onDark60, fontSize = 12.sp)
-                    Text(form.startDateIso, color = DesignTokens.base.onDark, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Text("Start date", color = DesignTokens.base.onDark60, style = DesignTokens.type.caption)
+                    Text(
+                        form.startDateIso,
+                        color = DesignTokens.base.onDark,
+                        style = DesignTokens.type.bodyMedium,
+                    )
                 }
                 TextButton(onClick = { startPickerOpen = true }) {
                     Text("Change", color = contextAccent)
@@ -239,15 +243,19 @@ fun PersonalCreateMomentSheet(
             }
 
             if (!form.rhythmMonthly) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(DesignTokens.spacing.item))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("End date", color = DesignTokens.base.onDark60, fontSize = 12.sp)
-                        Text(form.endDateIso, color = DesignTokens.base.onDark, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text("End date", color = DesignTokens.base.onDark60, style = DesignTokens.type.caption)
+                        Text(
+                            form.endDateIso,
+                            color = DesignTokens.base.onDark,
+                            style = DesignTokens.type.bodyMedium,
+                        )
                     }
                     TextButton(onClick = { endPickerOpen = true }) {
                         Text("Change", color = contextAccent)
@@ -255,7 +263,7 @@ fun PersonalCreateMomentSheet(
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
             OutlinedTextField(
                 value = form.targetAmount,
                 onValueChange = {
@@ -270,7 +278,7 @@ fun PersonalCreateMomentSheet(
                     cursorColor = contextAccent,
                 ),
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
             OutlinedTextField(
                 value = form.description,
                 onValueChange = { form = form.copy(description = it, error = null) },
@@ -283,13 +291,13 @@ fun PersonalCreateMomentSheet(
                     cursorColor = contextAccent,
                 ),
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.item))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Private moment", color = DesignTokens.base.onDark, fontSize = 14.sp)
+                Text("Private moment", color = DesignTokens.base.onDark, style = DesignTokens.type.bodyMedium)
                 Switch(
                     checked = form.isPrivateMoment,
                     onCheckedChange = { form = form.copy(isPrivateMoment = it) },
@@ -300,45 +308,32 @@ fun PersonalCreateMomentSheet(
                 Text(
                     text = it,
                     color = DesignTokens.urgency.high,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 8.dp),
+                    style = DesignTokens.type.caption,
+                    modifier = Modifier.padding(top = DesignTokens.spacing.item),
                 )
             }
 
-            Box(
+            MomentraPrimaryButton(
+                label = "Create moment",
+                onClick = createPersonal@{
+                    val t = form.title.trim()
+                    if (t.isEmpty()) {
+                        form = form.copy(error = "Enter a title")
+                        return@createPersonal
+                    }
+                    if (!form.rhythmMonthly && form.endDateIso.isBlank()) {
+                        form = form.copy(error = "Pick an end date")
+                        return@createPersonal
+                    }
+                    onSubmit(form.toCreateIn())
+                },
                 modifier = Modifier
-                    .padding(top = 14.dp, bottom = 18.dp)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Brush.horizontalGradient(listOf(contextAccent, accentEnd)))
-                    .clickable(
-                        enabled = !isSubmitting,
-                        onClick = {
-                            val t = form.title.trim()
-                            if (t.isEmpty()) {
-                                form = form.copy(error = "Enter a title")
-                                return@clickable
-                            }
-                            if (!form.rhythmMonthly && form.endDateIso.isBlank()) {
-                                form = form.copy(error = "Pick an end date")
-                                return@clickable
-                            }
-                            onSubmit(form.toCreateIn())
-                        },
-                    )
-                    .padding(vertical = 14.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        color = DesignTokens.semantic.ctaText,
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Text("Create moment", color = DesignTokens.semantic.ctaText, style = DesignTokens.type.label)
-                }
-            }
+                    .padding(top = DesignTokens.spacing.cardH, bottom = DesignTokens.spacing.screenH),
+                actionStyle = createCtaStyle,
+                enabled = !isSubmitting,
+                loading = isSubmitting,
+            )
         }
     }
 }

@@ -37,6 +37,10 @@ import app.momentra.network.PersonalTransactionPatchIn
 import app.momentra.network.PersonalTransactionListOut
 import app.momentra.network.SyncUserRequest
 import app.momentra.network.TokenExchangeRequest
+import app.momentra.network.V1CommitmentOut
+import app.momentra.network.V1GuidanceOut
+import app.momentra.network.V1HealthOut
+import app.momentra.network.V1SignalOut
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -388,6 +392,36 @@ class AuthRepository(
 
     suspend fun deleteBusinessBudget(budgetId: String): Result<Unit> = runCatching {
         api.deleteBusinessBudget("Bearer ${bearerToken()}", budgetId)
+        Unit
+    }
+
+    suspend fun v1MomentHealth(momentId: String): Result<V1HealthOut> = runCatching {
+        api.v1MomentHealth("Bearer ${bearerToken()}", momentId)
+    }
+
+    suspend fun v1MomentHealthHistory(momentId: String, limit: Int = 20): Result<List<V1HealthOut>> = runCatching {
+        api.v1MomentHealthHistory("Bearer ${bearerToken()}", momentId, limit)
+    }
+
+    suspend fun v1MomentCommitments(momentId: String): Result<List<V1CommitmentOut>> = runCatching {
+        api.v1MomentCommitments("Bearer ${bearerToken()}", momentId)
+    }
+
+    suspend fun v1MomentSignals(momentId: String): Result<List<V1SignalOut>> = runCatching {
+        api.v1MomentSignals("Bearer ${bearerToken()}", momentId)
+    }
+
+    suspend fun v1MomentGuidance(momentId: String): Result<List<V1GuidanceOut>> = runCatching {
+        api.v1MomentGuidance("Bearer ${bearerToken()}", momentId)
+    }
+
+    suspend fun v1ResolveSignal(momentId: String, signalId: String): Result<Unit> = runCatching {
+        api.v1ResolveSignal("Bearer ${bearerToken()}", momentId, signalId)
+        Unit
+    }
+
+    suspend fun v1MarkGuidanceRead(momentId: String, guidanceId: String): Result<Unit> = runCatching {
+        api.v1MarkGuidanceRead("Bearer ${bearerToken()}", momentId, guidanceId)
         Unit
     }
 

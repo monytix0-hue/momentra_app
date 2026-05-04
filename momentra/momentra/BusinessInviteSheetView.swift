@@ -25,7 +25,7 @@ struct BusinessInviteSheetView: View {
                     if joinUrl.isEmpty {
                         Text("Loading invite link…")
                             .font(.caption)
-                            .foregroundColor(DesignTokens.base.brandText)
+                            .foregroundColor(DesignTokens.business.text)
                         Button("Retry") { onRefreshLink() }
                             .foregroundColor(accent)
                     } else {
@@ -56,7 +56,7 @@ struct BusinessInviteSheetView: View {
                     if let resultMessage, !resultMessage.isEmpty {
                         Text(resultMessage)
                             .font(.caption)
-                            .foregroundColor(DesignTokens.base.brandText)
+                            .foregroundColor(DesignTokens.business.text)
                     }
                     if isSending {
                         ProgressView()
@@ -69,6 +69,7 @@ struct BusinessInviteSheetView: View {
                     }
                 }
             }
+            .momentraFormSheetChrome()
             .navigationTitle("Invite team")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -78,6 +79,9 @@ struct BusinessInviteSheetView: View {
                 }
             }
         }
+        .tint(accent)
+        .toolbarBackground(DesignTokens.base.s100, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .id(sheetKey)
     }
 }

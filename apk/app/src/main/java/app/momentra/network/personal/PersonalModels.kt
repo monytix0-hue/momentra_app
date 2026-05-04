@@ -16,6 +16,7 @@ data class PersonalMomentItemOut(
     val description: String? = null,
     @SerialName("saving_mode") val savingMode: String? = null,
     @SerialName("is_private_moment") val isPrivateMoment: Boolean = true,
+    @SerialName("saved_amount") val savedAmount: Double? = null,
 )
 
 @Serializable
@@ -24,8 +25,24 @@ data class PersonalMomentListResponse(
 )
 
 @Serializable
+data class PersonalAccountOut(
+    @SerialName("account_id") val accountId: String,
+    val name: String,
+    @SerialName("account_type") val accountType: String,
+    @SerialName("icon_emoji") val iconEmoji: String? = null,
+    @SerialName("color_hex") val colorHex: String? = null,
+    val balance: Double = 0.0,
+)
+
+@Serializable
 data class PersonalHomeOut(
     @SerialName("net_balance") val netBalance: Double = 0.0,
+    @SerialName("month_spend") val monthSpend: Double = 0.0,
+    @SerialName("month_income") val monthIncome: Double = 0.0,
+    @SerialName("budget_spent") val budgetSpent: Double = 0.0,
+    @SerialName("budget_cap") val budgetCap: Double = 0.0,
+    val accounts: List<PersonalAccountOut> = emptyList(),
+    val recent: List<PersonalTransactionOut> = emptyList(),
 )
 
 @Serializable
@@ -38,6 +55,8 @@ data class PersonalTransactionOut(
     val category: String? = null,
     @SerialName("subcategory_id") val subcategoryId: String? = null,
     @SerialName("subcategory_label") val subcategoryLabel: String? = null,
+    @SerialName("account_name") val accountName: String? = null,
+    val emoji: String? = null,
     val note: String? = null,
     @SerialName("txn_date") val txnDate: String? = null,
 )

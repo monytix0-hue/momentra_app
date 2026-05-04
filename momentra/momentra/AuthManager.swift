@@ -226,7 +226,7 @@ class AuthManager: ObservableObject {
                 error = .unknown(authError)
                 throw AuthError.unknown(authError)
             }
-        } catch let networkError as NetworkError {
+        } catch is NetworkError {
             isLoading = false
             error = .tokenExchangeFailed
             throw AuthError.tokenExchangeFailed
@@ -264,7 +264,7 @@ class AuthManager: ObservableObject {
                 error = .unknown(authError)
                 throw AuthError.unknown(authError)
             }
-        } catch let networkError as NetworkError {
+        } catch is NetworkError {
             isLoading = false
             error = .tokenExchangeFailed
             throw AuthError.tokenExchangeFailed

@@ -136,7 +136,7 @@ fun SplashScreen(onFinish: () -> Unit) {
                 drawCircle(ember, p(5.5f), Offset(p(105f), p(18f)))
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section + DesignTokens.spacing.item))
 
             Row(verticalAlignment = Alignment.Top) {
                 Text(
@@ -151,7 +151,7 @@ fun SplashScreen(onFinish: () -> Unit) {
                 Spacer(Modifier.width(2.dp))
                 Box(
                     Modifier
-                        .size(7.dp)
+                        .size(DesignTokens.sizing.indicatorDot)
                         .offset(y = (-4).dp)
                         .background(amber, CircleShape),
                 )
@@ -167,7 +167,7 @@ fun SplashScreen(onFinish: () -> Unit) {
                 color = softWhite.copy(alpha = 0.38f),
             )
 
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.screenV + DesignTokens.spacing.screenV + DesignTokens.spacing.item))
 
             CircularProgressIndicator(
                 modifier = Modifier.size(28.dp),

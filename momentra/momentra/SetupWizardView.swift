@@ -7,6 +7,7 @@ import SwiftUI
 
 struct SetupWizardView: View {
     @ObservedObject private var auth = AuthManager.shared
+    @EnvironmentObject private var momentraTheme: MomentraTheme
     @State private var step = 1
     @State private var focus: PrimaryFocus?
     @State private var currency = "INR"
@@ -22,20 +23,16 @@ struct SetupWizardView: View {
         }
     }
     
-    private var theme: ContextTheme { DesignTokens.theme(for: context) }
+    private var theme: ContextTheme { momentraTheme.theme(for: context) }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            MomentraBase.bg.ignoresSafeArea()
-            Rectangle()
-                .fill(theme.headerGradient)
-                .frame(height: 132)
-                .frame(maxHeight: .infinity, alignment: .top)
-            Circle()
-                .fill(theme.accent.opacity(theme.orbOpacity))
-                .frame(width: 340, height: 340)
-                .offset(y: -110)
-            
+        MomentraScreenChrome(
+            context: context,
+            headerHeight: 132,
+            orbSize: 340,
+            orbOffsetY: -110,
+            orbExtraOpacity: 0
+        ) { theme in
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     Text("Setup")
@@ -85,6 +82,12 @@ struct SetupWizardView: View {
                 .padding(.vertical, DesignTokens.spacing.screenV)
             }
         }
+        .onAppear {
+            momentraTheme.select(context)
+        }
+        .onChange(of: context) { newContext in
+            momentraTheme.select(newContext)
+        }
         .preferredColorScheme(.dark)
     }
 
@@ -124,4 +127,5 @@ struct SetupWizardView: View {
 
 #Preview {
     SetupWizardView()
+        .environmentObject(MomentraTheme())
 }

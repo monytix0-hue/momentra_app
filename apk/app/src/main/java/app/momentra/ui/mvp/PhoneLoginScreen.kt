@@ -23,9 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -45,6 +43,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.momentra.ui.theme.DesignTokens
+import app.momentra.ui.theme.MomentraPrimaryButton
 
 private val Muted = DesignTokens.base.onDark60
 private val Footer = DesignTokens.base.onDark40
@@ -99,19 +98,19 @@ fun PhoneLoginScreen(
             )
             Row(
                 Modifier
-                    .padding(top = 4.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .padding(top = DesignTokens.spacing.xs)
+                    .clip(RoundedCornerShape(DesignTokens.radius.momentCard))
                     .background(DesignTokens.base.s200)
-                    .border(2.dp, brand, RoundedCornerShape(16.dp))
-                    .padding(10.dp),
+                    .border(1.dp, brand, RoundedCornerShape(DesignTokens.radius.momentCard))
+                    .padding(DesignTokens.spacing.section),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
                     Modifier
                         .width(68.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(DesignTokens.radius.input))
                         .background(DesignTokens.base.s200)
-                        .padding(vertical = 6.dp),
+                        .padding(vertical = DesignTokens.spacing.inline),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -125,15 +124,15 @@ fun PhoneLoginScreen(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = DesignTokens.base.onDark,
-                        modifier = Modifier.padding(start = 4.dp),
+                        modifier = Modifier.padding(start = DesignTokens.spacing.xs),
                     )
                 }
                 Box(
                     Modifier
-                        .padding(horizontal = 8.dp)
-                        .width(1.dp)
+                        .padding(horizontal = DesignTokens.spacing.item)
+                        .width(0.5.dp)
                         .height(40.dp)
-                        .background(DesignTokens.base.s200),
+                        .background(DesignTokens.base.s300.copy(alpha = 0.6f)),
                 )
                 TextField(
                     value = nationalNumber,
@@ -158,40 +157,30 @@ fun PhoneLoginScreen(
                     ),
                 )
             }
-            Button(
+            MomentraPrimaryButton(
+                label = "Send OTP",
                 onClick = onSendOtp,
                 enabled = nationalNumber.length == 10 && !loading,
+                loading = loading,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 18.dp)
+                    .padding(top = DesignTokens.spacing.screenH)
                     .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = brand,
-                    disabledContainerColor = DesignTokens.base.s300,
-                ),
-            ) {
-                if (loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = DesignTokens.base.onDark,
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Text("Send OTP", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = DesignTokens.base.onDark)
-                }
-            }
+            )
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
+                    .padding(top = DesignTokens.spacing.screenV),
                 horizontalArrangement = Arrangement.Center,
             ) {
                 Row(
                     Modifier
-                        .clip(RoundedCornerShape(999.dp))
+                        .clip(RoundedCornerShape(DesignTokens.radius.pill))
                         .background(DesignTokens.base.s200)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(
+                            horizontal = DesignTokens.spacing.section,
+                            vertical = DesignTokens.spacing.inline,
+                        ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
@@ -207,7 +196,7 @@ fun PhoneLoginScreen(
                     )
                 }
             }
-            orDivider(Modifier.padding(top = 20.dp))
+            orDivider(Modifier.padding(top = DesignTokens.spacing.section + DesignTokens.spacing.item))
             socialButton(
                 title = "Continue with Google",
                 showLetterG = false,
@@ -227,7 +216,10 @@ fun PhoneLoginScreen(
                 color = Footer,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 32.dp),
+                    .padding(
+                        top = DesignTokens.spacing.screenV,
+                        bottom = DesignTokens.spacing.screenV + DesignTokens.spacing.screenV,
+                    ),
             )
         }
     }
@@ -236,9 +228,14 @@ fun PhoneLoginScreen(
 @Composable
 private fun orDivider(modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.weight(1f).height(1.dp).background(DesignTokens.base.s300))
-        Text("or continue with", fontSize = 12.sp, color = Muted, modifier = Modifier.padding(horizontal = 8.dp))
-        Box(Modifier.weight(1f).height(1.dp).background(DesignTokens.base.s300))
+        Box(Modifier.weight(1f).height(0.5.dp).background(DesignTokens.base.s300.copy(alpha = 0.7f)))
+        Text(
+            "or continue with",
+            fontSize = 12.sp,
+            color = Muted,
+            modifier = Modifier.padding(horizontal = DesignTokens.spacing.item),
+        )
+        Box(Modifier.weight(1f).height(0.5.dp).background(DesignTokens.base.s300.copy(alpha = 0.7f)))
     }
 }
 
@@ -253,10 +250,10 @@ private fun socialButton(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp)
+            .padding(top = DesignTokens.spacing.item)
             .height(52.dp),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, DesignTokens.base.s300),
+        shape = RoundedCornerShape(DesignTokens.radius.button),
+        border = BorderStroke(0.5.dp, DesignTokens.base.s300.copy(alpha = 0.8f)),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = DesignTokens.base.s100),
     ) {
         Row(

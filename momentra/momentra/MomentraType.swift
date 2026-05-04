@@ -70,6 +70,8 @@ enum MomentraType {
     
     // MARK: - Caption & Labels
     static let caption = plusJakarta(size: 12, weight: .regular)
+    /// Context switcher — kit `.ctx-btn` 12px / 500.
+    static let contextTab = plusJakarta(size: 12, weight: .medium)
     static let label = plusJakarta(size: 11, weight: .semibold)
     static let micro = plusJakarta(size: 10, weight: .semibold)
     static let nano = plusJakarta(size: 9, weight: .medium)

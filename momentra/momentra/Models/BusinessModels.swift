@@ -66,6 +66,20 @@ struct BusinessVendorOut: Codable, Identifiable {
     }
 }
 
+struct BusinessBudgetPendingApprovalOut: Codable, Identifiable {
+    let approvalId: String
+    let status: String
+    let receiptAttached: Bool
+
+    var id: String { approvalId }
+
+    enum CodingKeys: String, CodingKey {
+        case approvalId = "approval_id"
+        case status
+        case receiptAttached = "receipt_attached"
+    }
+}
+
 struct BusinessBudgetCreateOut: Codable, Identifiable {
     let budgetId: String
     let budgetName: String
@@ -79,6 +93,7 @@ struct BusinessBudgetCreateOut: Codable, Identifiable {
     let categories: [BusinessBudgetCategoryOut]
     let reminderPrefs: BusinessBudgetReminderPrefsOut?
     let teamMembers: [BusinessBudgetTeamMemberOut]?
+    let pendingApprovals: [BusinessBudgetPendingApprovalOut]?
     let vendorBalances: [BusinessVendorBalanceOut]?
     let vendors: [BusinessVendorOut]?
 
@@ -97,6 +112,7 @@ struct BusinessBudgetCreateOut: Codable, Identifiable {
         case categories
         case reminderPrefs = "reminder_prefs"
         case teamMembers = "team_members"
+        case pendingApprovals = "pending_approvals"
         case vendorBalances = "vendor_balances"
         case vendors
     }
@@ -146,6 +162,8 @@ struct BusinessBudgetMemberIn: Codable {
     let initials: String?
     let displayName: String
     let role: String
+    let firebaseUid: String?
+    let email: String?
     let limit: String?
     let added: Bool
 
@@ -153,6 +171,8 @@ struct BusinessBudgetMemberIn: Codable {
         case initials
         case displayName = "display_name"
         case role
+        case firebaseUid = "firebase_uid"
+        case email
         case limit
         case added
     }
@@ -301,5 +321,123 @@ struct BusinessBudgetPatchIn: Codable {
         case reminderPrefs = "reminder_prefs"
         case categories
     }
+}
+
+// MARK: - Business workspace API (v2)
+
+struct BusinessWorkspaceOut: Codable, Identifiable {
+    let workspaceId: String
+    let title: String
+    let businessType: String
+    let totalBudget: Double?
+    let currency: String
+    let createdBy: String
+    let status: String
+    let createdAt: String?
+    let updatedAt: String?
+
+    var id: String { workspaceId }
+
+    enum CodingKeys: String, CodingKey {
+        case workspaceId = "workspace_id"
+        case title
+        case businessType = "business_type"
+        case totalBudget = "total_budget"
+        case currency
+        case createdBy = "created_by"
+        case status
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+struct BusinessUnitOut: Codable, Identifiable {
+    let unitId: String
+    let workspaceId: String
+    let name: String
+    let unitType: String
+    let location: String?
+    let managerUserId: String?
+    let budgetLimit: Double?
+    let status: String
+    let createdAt: String?
+
+    var id: String { unitId }
+
+    enum CodingKeys: String, CodingKey {
+        case unitId = "unit_id"
+        case workspaceId = "workspace_id"
+        case name
+        case unitType = "unit_type"
+        case location
+        case managerUserId = "manager_user_id"
+        case budgetLimit = "budget_limit"
+        case status
+        case createdAt = "created_at"
+    }
+}
+
+/// POST `/business/workspaces/{workspace_id}/spends`
+struct BusinessWorkspaceSpendCreateIn: Encodable {
+    let unitId: String
+    let title: String
+    let amount: Double
+    let spendType: String
+
+    enum CodingKeys: String, CodingKey {
+        case unitId = "unit_id"
+        case title
+        case amount
+        case spendType = "spend_type"
+    }
+}
+
+struct BusinessWorkspaceSpendOut: Codable, Identifiable {
+    let spendId: String
+    let workspaceId: String
+    let unitId: String
+    let title: String
+    let amount: Double
+    let pricePerUnit: Double?
+    let quantity: Double?
+    let measurementUnit: String?
+    let spendType: String
+    let costCenterId: String?
+    let vendorId: String?
+    let status: String
+    let submittedBy: String
+    let approvedBy: String?
+    let submittedAt: String?
+    let approvedAt: String?
+    let rejectionReason: String?
+    let createdAt: String?
+
+    var id: String { spendId }
+
+    enum CodingKeys: String, CodingKey {
+        case spendId = "spend_id"
+        case workspaceId = "workspace_id"
+        case unitId = "unit_id"
+        case title
+        case amount
+        case pricePerUnit = "price_per_unit"
+        case quantity
+        case measurementUnit = "measurement_unit"
+        case spendType = "spend_type"
+        case costCenterId = "cost_center_id"
+        case vendorId = "vendor_id"
+        case status
+        case submittedBy = "submitted_by"
+        case approvedBy = "approved_by"
+        case submittedAt = "submitted_at"
+        case approvedAt = "approved_at"
+        case rejectionReason = "rejection_reason"
+        case createdAt = "created_at"
+    }
+}
+
+struct StorageUploadOut: Codable {
+    let bucket: String
+    let path: String
 }
 

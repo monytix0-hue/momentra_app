@@ -73,8 +73,12 @@ fun MomentraTheme(
     val fontFamily = rememberMomentraFontFamily()
     val colorScheme = momentraDarkColorScheme()
     val typography = momentraTypography(fontFamily)
+    val themeState = rememberMomentraThemeState(momentraContext)
 
-    CompositionLocalProvider(LocalMomentraContext provides momentraContext) {
+    CompositionLocalProvider(
+        LocalMomentraContext provides momentraContext,
+        LocalMomentraTheme provides themeState,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = typography,

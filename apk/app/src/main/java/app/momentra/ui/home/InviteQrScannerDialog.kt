@@ -1,5 +1,6 @@
 package app.momentra.ui.home
 
+import android.annotation.SuppressLint
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -112,21 +113,23 @@ fun InviteQrScannerDialog(
                 onClick = onDismiss,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(12.dp),
+                    .padding(DesignTokens.spacing.section),
             ) {
-                Text("Close", color = DesignTokens.base.onDark)
+                Text("Close", color = DesignTokens.base.onDark, style = DesignTokens.type.bodyMedium)
             }
             Text(
                 "Point at an invite QR code",
                 color = DesignTokens.base.onDark,
+                style = DesignTokens.type.caption,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(24.dp),
+                    .padding(DesignTokens.spacing.screenV + DesignTokens.spacing.item),
             )
         }
     }
 }
 
+@SuppressLint("UnsafeOptInUsageError")
 private fun processFrame(
     imageProxy: ImageProxy,
     scanner: com.google.mlkit.vision.barcode.BarcodeScanner,

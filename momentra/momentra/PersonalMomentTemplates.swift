@@ -28,9 +28,21 @@ struct BusinessQuickTemplate: Hashable {
     var approvalThreshold: Double?
 }
 
+struct GroupQuickTemplate: Hashable {
+    let title: String
+    let subtitle: String
+    var momentType: String = "trip_fund"
+    var splitMode: String = GroupSplitMode.equal
+    var targetAmount: Double?
+    var destination: String?
+    var tripStartDateIso: String?
+    var tripEndDateIso: String?
+}
+
 enum HomeEmptyTemplate: Hashable {
     case simple(String)
     case withPreset(PersonalQuickTemplate)
+    case withGroupPreset(GroupQuickTemplate)
     case withBusinessPreset(BusinessQuickTemplate)
 }
 
@@ -61,9 +73,106 @@ func homeEmptyTemplates(for context: MomentraContext) -> [HomeEmptyTemplate] {
                 description: "Vacation fund with an end date",
                 endDateIso: nil
             )),
+            .withPreset(PersonalQuickTemplate(
+                title: "Health Fund",
+                subtitle: "Medical and wellness safety",
+                durationType: PersonalMomentDuration.recurringMonthly,
+                targetAmount: 75_000,
+                savingMode: "monthly",
+                description: "Emergency and preventive health expenses"
+            )),
+            .withPreset(PersonalQuickTemplate(
+                title: "Education Goal",
+                subtitle: "Courses and certifications",
+                durationType: PersonalMomentDuration.fixedEnd,
+                targetAmount: 120_000,
+                savingMode: "monthly",
+                description: "Upskilling plan with a fixed deadline"
+            )),
+            .withPreset(PersonalQuickTemplate(
+                title: "Device Upgrade",
+                subtitle: "Phone or laptop replacement",
+                durationType: PersonalMomentDuration.fixedEnd,
+                targetAmount: 90_000,
+                savingMode: "monthly",
+                description: "Upgrade essential devices without debt"
+            )),
         ]
     case .group:
-        return [.simple("Trip Split"), .simple("House Expenses"), .simple("Event Planning")]
+        return [
+            .withGroupPreset(
+                GroupQuickTemplate(
+                    title: "Trip Split",
+                    subtitle: "Shared travel fund — split evenly",
+                    momentType: "trip_fund",
+                    splitMode: GroupSplitMode.equal,
+                    targetAmount: nil,
+                    destination: "Trip",
+                    tripStartDateIso: nil,
+                    tripEndDateIso: nil
+                )
+            ),
+            .withGroupPreset(
+                GroupQuickTemplate(
+                    title: "House Expenses",
+                    subtitle: "Rent and utilities — by percent",
+                    momentType: "trip_fund",
+                    splitMode: GroupSplitMode.percent,
+                    targetAmount: nil,
+                    destination: nil,
+                    tripStartDateIso: nil,
+                    tripEndDateIso: nil
+                )
+            ),
+            .withGroupPreset(
+                GroupQuickTemplate(
+                    title: "Event Planning",
+                    subtitle: "Parties and tickets — by shares",
+                    momentType: "trip_fund",
+                    splitMode: GroupSplitMode.shares,
+                    targetAmount: nil,
+                    destination: nil,
+                    tripStartDateIso: nil,
+                    tripEndDateIso: nil
+                )
+            ),
+            .withGroupPreset(
+                GroupQuickTemplate(
+                    title: "Wedding Pool",
+                    subtitle: "Shared wedding spends — split by shares",
+                    momentType: "trip_fund",
+                    splitMode: GroupSplitMode.shares,
+                    targetAmount: nil,
+                    destination: "Wedding",
+                    tripStartDateIso: nil,
+                    tripEndDateIso: nil
+                )
+            ),
+            .withGroupPreset(
+                GroupQuickTemplate(
+                    title: "Roommate Groceries",
+                    subtitle: "Monthly groceries — equal split",
+                    momentType: "trip_fund",
+                    splitMode: GroupSplitMode.equal,
+                    targetAmount: nil,
+                    destination: nil,
+                    tripStartDateIso: nil,
+                    tripEndDateIso: nil
+                )
+            ),
+            .withGroupPreset(
+                GroupQuickTemplate(
+                    title: "Weekend Outing",
+                    subtitle: "Short trip and activities — exact split",
+                    momentType: "trip_fund",
+                    splitMode: GroupSplitMode.exact,
+                    targetAmount: nil,
+                    destination: "Weekend Outing",
+                    tripStartDateIso: nil,
+                    tripEndDateIso: nil
+                )
+            ),
+        ]
     case .business:
         return [
             .withBusinessPreset(
@@ -99,9 +208,50 @@ func homeEmptyTemplates(for context: MomentraContext) -> [HomeEmptyTemplate] {
                     approvalThreshold: 7000
                 )
             ),
+            .withBusinessPreset(
+                BusinessQuickTemplate(
+                    budgetName: "Marketing Sprint Budget",
+                    subtitle: "Campaign ad spends and creatives",
+                    budgetType: "marketing",
+                    totalBudget: 95_000,
+                    budgetPeriod: "Monthly",
+                    department: "Marketing",
+                    approvalThreshold: 3000
+                )
+            ),
+            .withBusinessPreset(
+                BusinessQuickTemplate(
+                    budgetName: "Payroll Reserve",
+                    subtitle: "Salary and contractor payouts",
+                    budgetType: "payroll",
+                    totalBudget: 420_000,
+                    budgetPeriod: "Monthly",
+                    department: "People Ops",
+                    approvalThreshold: 10_000
+                )
+            ),
+            .withBusinessPreset(
+                BusinessQuickTemplate(
+                    budgetName: "Equipment Maintenance",
+                    subtitle: "Service and repair of machinery",
+                    budgetType: "maintenance",
+                    totalBudget: 160_000,
+                    budgetPeriod: "Quarterly",
+                    department: "Operations",
+                    approvalThreshold: 6000
+                )
+            ),
         ]
     case .circle:
         return [.simple("Community Goals"), .simple("Neighborhood Events"), .simple("Creator Pods")]
+    }
+}
+
+/// Group moment presets for create flow (same catalog as `homeEmptyTemplates(for: .group)`).
+func groupQuickTemplates() -> [GroupQuickTemplate] {
+    homeEmptyTemplates(for: .group).compactMap { item in
+        if case .withGroupPreset(let preset) = item { return preset }
+        return nil
     }
 }
 

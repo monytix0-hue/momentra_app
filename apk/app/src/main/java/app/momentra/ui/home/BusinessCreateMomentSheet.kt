@@ -1,20 +1,14 @@
 package app.momentra.ui.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -25,17 +19,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.momentra.network.BusinessBudgetCreateIn
 import app.momentra.ui.theme.DesignTokens
+import app.momentra.ui.theme.MomentraPrimaryButton
 
 data class BusinessCreateMomentFormState(
     val budgetName: String = "",
@@ -82,6 +72,13 @@ fun BusinessCreateMomentSheet(
     onSubmit: (BusinessBudgetCreateIn) -> Unit,
 ) {
     var form by remember(sheetKey) { mutableStateOf(defaultBusinessCreateForm(preset)) }
+    val createCtaStyle = DesignTokens.ActionStyle(
+        solid = contextAccent,
+        solidAlt = accentEnd,
+        gradientStart = contextAccent,
+        gradientEnd = accentEnd,
+        text = DesignTokens.semantic.ctaText,
+    )
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         modifier = Modifier.imePadding(),
@@ -91,15 +88,17 @@ fun BusinessCreateMomentSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(
+                    horizontal = DesignTokens.spacing.screenH,
+                    vertical = DesignTokens.spacing.item,
+                ),
         ) {
             Text(
                 "New business moment",
                 color = DesignTokens.base.onDark,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+                style = DesignTokens.type.titleLG,
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
             OutlinedTextField(
                 value = form.budgetName,
                 onValueChange = { form = form.copy(budgetName = it, error = null) },
@@ -111,7 +110,7 @@ fun BusinessCreateMomentSheet(
                     cursorColor = contextAccent,
                 ),
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
             OutlinedTextField(
                 value = form.budgetType,
                 onValueChange = { form = form.copy(budgetType = it, error = null) },
@@ -123,7 +122,7 @@ fun BusinessCreateMomentSheet(
                     cursorColor = contextAccent,
                 ),
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
             OutlinedTextField(
                 value = form.totalBudgetInput,
                 onValueChange = {
@@ -141,7 +140,7 @@ fun BusinessCreateMomentSheet(
                     cursorColor = contextAccent,
                 ),
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
             OutlinedTextField(
                 value = form.budgetPeriod,
                 onValueChange = { form = form.copy(budgetPeriod = it, error = null) },
@@ -153,7 +152,7 @@ fun BusinessCreateMomentSheet(
                     cursorColor = contextAccent,
                 ),
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
             OutlinedTextField(
                 value = form.department,
                 onValueChange = { form = form.copy(department = it, error = null) },
@@ -165,7 +164,7 @@ fun BusinessCreateMomentSheet(
                     cursorColor = contextAccent,
                 ),
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(DesignTokens.spacing.section))
             OutlinedTextField(
                 value = form.approvalThresholdInput,
                 onValueChange = {
@@ -188,48 +187,35 @@ fun BusinessCreateMomentSheet(
                 Text(
                     text = it,
                     color = DesignTokens.urgency.high,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 8.dp),
+                    style = DesignTokens.type.caption,
+                    modifier = Modifier.padding(top = DesignTokens.spacing.item),
                 )
             }
 
-            Box(
+            MomentraPrimaryButton(
+                label = "Create business moment",
+                onClick = createBiz@{
+                    if (form.budgetName.trim().isEmpty()) {
+                        form = form.copy(error = "Enter a business moment name")
+                        return@createBiz
+                    }
+                    if (form.totalBudgetInput.isNotBlank() && form.totalBudgetInput.toDoubleOrNull() == null) {
+                        form = form.copy(error = "Total budget must be a valid number")
+                        return@createBiz
+                    }
+                    if (form.approvalThresholdInput.isNotBlank() && form.approvalThresholdInput.toDoubleOrNull() == null) {
+                        form = form.copy(error = "Approval threshold must be a valid number")
+                        return@createBiz
+                    }
+                    onSubmit(form.toCreateIn())
+                },
                 modifier = Modifier
-                    .padding(top = 14.dp, bottom = 18.dp)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Brush.horizontalGradient(listOf(contextAccent, accentEnd)))
-                    .clickable(
-                        enabled = !isSubmitting,
-                        onClick = {
-                            if (form.budgetName.trim().isEmpty()) {
-                                form = form.copy(error = "Enter a business moment name")
-                                return@clickable
-                            }
-                            if (form.totalBudgetInput.isNotBlank() && form.totalBudgetInput.toDoubleOrNull() == null) {
-                                form = form.copy(error = "Total budget must be a valid number")
-                                return@clickable
-                            }
-                            if (form.approvalThresholdInput.isNotBlank() && form.approvalThresholdInput.toDoubleOrNull() == null) {
-                                form = form.copy(error = "Approval threshold must be a valid number")
-                                return@clickable
-                            }
-                            onSubmit(form.toCreateIn())
-                        },
-                    )
-                    .padding(vertical = 14.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        color = DesignTokens.semantic.ctaText,
-                        strokeWidth = 2.dp,
-                    )
-                } else {
-                    Text("Create business moment", color = DesignTokens.semantic.ctaText, style = DesignTokens.type.label)
-                }
-            }
+                    .padding(top = DesignTokens.spacing.cardH, bottom = DesignTokens.spacing.screenH),
+                actionStyle = createCtaStyle,
+                enabled = !isSubmitting,
+                loading = isSubmitting,
+            )
         }
     }
 }

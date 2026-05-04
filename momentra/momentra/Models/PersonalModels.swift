@@ -1,10 +1,42 @@
 import Foundation
 
+struct PersonalAccountOut: Codable, Identifiable {
+    let accountId: String
+    let name: String
+    let accountType: String
+    let iconEmoji: String?
+    let colorHex: String?
+    let balance: Double
+
+    var id: String { accountId }
+
+    enum CodingKeys: String, CodingKey {
+        case accountId = "account_id"
+        case name
+        case accountType = "account_type"
+        case iconEmoji = "icon_emoji"
+        case colorHex = "color_hex"
+        case balance
+    }
+}
+
 struct PersonalHomeOut: Codable {
     let netBalance: Double
+    let monthSpend: Double
+    let monthIncome: Double
+    let budgetSpent: Double
+    let budgetCap: Double
+    let accounts: [PersonalAccountOut]
+    let recent: [PersonalTransactionOut]
 
     enum CodingKeys: String, CodingKey {
         case netBalance = "net_balance"
+        case monthSpend = "month_spend"
+        case monthIncome = "month_income"
+        case budgetSpent = "budget_spent"
+        case budgetCap = "budget_cap"
+        case accounts
+        case recent
     }
 }
 
@@ -20,6 +52,7 @@ struct PersonalMomentItemOut: Codable, Identifiable {
     let description: String?
     let savingMode: String?
     let isPrivateMoment: Bool?
+    let savedAmount: Double?
 
     var id: String { momentId }
 
@@ -35,6 +68,37 @@ struct PersonalMomentItemOut: Codable, Identifiable {
         case description
         case savingMode = "saving_mode"
         case isPrivateMoment = "is_private_moment"
+        case savedAmount = "saved_amount"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        momentId = try c.decode(String.self, forKey: .momentId)
+        title = try c.decode(String.self, forKey: .title)
+        momentType = try c.decodeIfPresent(String.self, forKey: .momentType)
+        durationType = try c.decodeIfPresent(String.self, forKey: .durationType)
+        status = try c.decodeIfPresent(String.self, forKey: .status)
+        targetAmount = Self.decodeLossyDouble(c, key: .targetAmount)
+        startDate = try Self.decodeLossyOptionalString(c, key: .startDate)
+        endDate = try Self.decodeLossyOptionalString(c, key: .endDate)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        savingMode = try c.decodeIfPresent(String.self, forKey: .savingMode)
+        isPrivateMoment = try c.decodeIfPresent(Bool.self, forKey: .isPrivateMoment)
+        savedAmount = Self.decodeLossyDouble(c, key: .savedAmount)
+    }
+
+    private static func decodeLossyDouble(_ c: KeyedDecodingContainer<CodingKeys>, key: CodingKeys) -> Double? {
+        guard c.contains(key), (try? c.decodeNil(forKey: key)) == false else { return nil }
+        if let v = try? c.decode(Double.self, forKey: key) { return v }
+        if let s = try? c.decode(String.self, forKey: key) { return Double(s) }
+        return nil
+    }
+
+    /// Accepts a JSON string or omits if the server encodes dates differently.
+    private static func decodeLossyOptionalString(_ c: KeyedDecodingContainer<CodingKeys>, key: CodingKeys) throws -> String? {
+        guard c.contains(key), (try? c.decodeNil(forKey: key)) == false else { return nil }
+        if let s = try? c.decode(String.self, forKey: key) { return s }
+        return nil
     }
 }
 
@@ -48,8 +112,22 @@ struct PersonalTransactionOut: Codable, Identifiable {
     let subtitle: String
     let amount: Double
     let isIncome: Bool
+    let category: String?
+    let subcategoryId: String?
+    let subcategoryLabel: String?
+    let accountName: String?
+    let emoji: String?
+    let note: String?
+    let txnDate: Date?
 
     var id: String { transactionId }
+
+    /// When `subtitle` already includes the category path, hide the duplicate category line.
+    var categoryIfNotRedundant: String? {
+        guard let cat = category?.trimmingCharacters(in: .whitespacesAndNewlines), !cat.isEmpty else { return nil }
+        if subtitle.localizedCaseInsensitiveContains(cat) { return nil }
+        return cat
+    }
 
     enum CodingKeys: String, CodingKey {
         case transactionId = "transaction_id"
@@ -57,6 +135,55 @@ struct PersonalTransactionOut: Codable, Identifiable {
         case subtitle
         case amount
         case isIncome = "is_income"
+        case category
+        case subcategoryId = "subcategory_id"
+        case subcategoryLabel = "subcategory_label"
+        case accountName = "account_name"
+        case emoji
+        case note
+        case txnDate = "txn_date"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        transactionId = try c.decode(String.self, forKey: .transactionId)
+        title = try c.decode(String.self, forKey: .title)
+        subtitle = try c.decodeIfPresent(String.self, forKey: .subtitle) ?? ""
+        amount = try c.decode(Double.self, forKey: .amount)
+        isIncome = try c.decode(Bool.self, forKey: .isIncome)
+        category = try c.decodeIfPresent(String.self, forKey: .category)
+        subcategoryId = try c.decodeIfPresent(String.self, forKey: .subcategoryId)
+        subcategoryLabel = try c.decodeIfPresent(String.self, forKey: .subcategoryLabel)
+        accountName = try c.decodeIfPresent(String.self, forKey: .accountName)
+        emoji = try c.decodeIfPresent(String.self, forKey: .emoji)
+        note = try c.decodeIfPresent(String.self, forKey: .note)
+        // FastAPI sends Python `date` as "YYYY-MM-DD"; NetworkService JSONDecoder expects full ISO-8601 instants.
+        txnDate = Self.decodeTxnDate(from: c, key: .txnDate)
+    }
+
+    private static func decodeTxnDate(from c: KeyedDecodingContainer<CodingKeys>, key: CodingKeys) -> Date? {
+        guard c.contains(key), (try? c.decodeNil(forKey: key)) == false else { return nil }
+        if let s = try? c.decode(String.self, forKey: key) {
+            // Book date is a civil calendar day in the user's timezone (not UTC midnight of that string).
+            if s.count >= 10 {
+                let dayPrefix = String(s.prefix(10))
+                var cal = Calendar(identifier: .gregorian)
+                cal.timeZone = TimeZone.current
+                let parts = dayPrefix.split(separator: "-")
+                if parts.count == 3,
+                   let y = Int(parts[0]), let mo = Int(parts[1]), let d = Int(parts[2]),
+                   let localDay = cal.date(from: DateComponents(year: y, month: mo, day: d))
+                {
+                    return localDay
+                }
+            }
+            var iso = ISO8601DateFormatter()
+            iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let d = iso.date(from: s) { return d }
+            iso.formatOptions = [.withInternetDateTime]
+            return iso.date(from: s)
+        }
+        return try? c.decode(Date.self, forKey: key)
     }
 }
 
@@ -98,6 +225,39 @@ struct PersonalCategoryListOut: Codable {
     let categories: [PersonalCategoryOut]
 }
 
+/// POST `/personal/signals` — also used to persist Circle social intents until a dedicated Circle API exists.
+struct PersonalSignalCreateIn: Codable {
+    let signalType: String
+    let severity: String
+    let message: String
+
+    enum CodingKeys: String, CodingKey {
+        case signalType = "signal_type"
+        case severity
+        case message
+    }
+}
+
+struct PersonalSignalOut: Codable, Identifiable {
+    let signalId: String
+    let userId: String
+    let signalType: String
+    let severity: String
+    let message: String
+    let createdAt: String?
+
+    var id: String { signalId }
+
+    enum CodingKeys: String, CodingKey {
+        case signalId = "signal_id"
+        case userId = "user_id"
+        case signalType = "signal_type"
+        case severity
+        case message
+        case createdAt = "created_at"
+    }
+}
+
 struct PersonalTransactionCreateIn: Codable {
     let isIncome: Bool
     let amount: Double
@@ -107,6 +267,8 @@ struct PersonalTransactionCreateIn: Codable {
     let accountId: String?
     let title: String?
     let note: String?
+    /// Local book date `YYYY-MM-DD`; when nil the server defaults to today.
+    let txnDate: String?
 
     enum CodingKeys: String, CodingKey {
         case isIncome = "is_income"
@@ -117,18 +279,57 @@ struct PersonalTransactionCreateIn: Codable {
         case accountId = "account_id"
         case title
         case note
+        case txnDate = "txn_date"
     }
 }
 
-struct PersonalMomentPatchIn: Codable {
-    let title: String?
-    let targetAmount: Double?
-    let durationType: String?
-    let startDate: String?
-    let endDate: String?
-    let description: String?
-    let savingMode: String?
-    let isPrivateMoment: Bool?
+/// PATCH `/personal/transactions/{id}` — only non-nil fields are encoded.
+struct PersonalTransactionPatchIn: Encodable {
+    var isIncome: Bool?
+    var amount: Double?
+    var category: String?
+    var subcategoryId: String?
+    var subcategoryLabel: String?
+    var accountId: String?
+    var title: String?
+    var note: String?
+    var txnDate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case isIncome = "is_income"
+        case amount
+        case category
+        case subcategoryId = "subcategory_id"
+        case subcategoryLabel = "subcategory_label"
+        case accountId = "account_id"
+        case title
+        case note
+        case txnDate = "txn_date"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(isIncome, forKey: .isIncome)
+        try c.encodeIfPresent(amount, forKey: .amount)
+        try c.encodeIfPresent(category, forKey: .category)
+        try c.encodeIfPresent(subcategoryId, forKey: .subcategoryId)
+        try c.encodeIfPresent(subcategoryLabel, forKey: .subcategoryLabel)
+        try c.encodeIfPresent(accountId, forKey: .accountId)
+        try c.encodeIfPresent(title, forKey: .title)
+        try c.encodeIfPresent(note, forKey: .note)
+        try c.encodeIfPresent(txnDate, forKey: .txnDate)
+    }
+}
+
+struct PersonalMomentPatchIn: Encodable {
+    var title: String?
+    var targetAmount: Double?
+    var durationType: String?
+    var startDate: String?
+    var endDate: String?
+    var description: String?
+    var savingMode: String?
+    var isPrivateMoment: Bool?
 
     enum CodingKeys: String, CodingKey {
         case title
@@ -139,6 +340,18 @@ struct PersonalMomentPatchIn: Codable {
         case description
         case savingMode = "saving_mode"
         case isPrivateMoment = "is_private_moment"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(title, forKey: .title)
+        try c.encodeIfPresent(targetAmount, forKey: .targetAmount)
+        try c.encodeIfPresent(durationType, forKey: .durationType)
+        try c.encodeIfPresent(startDate, forKey: .startDate)
+        try c.encodeIfPresent(endDate, forKey: .endDate)
+        try c.encodeIfPresent(description, forKey: .description)
+        try c.encodeIfPresent(savingMode, forKey: .savingMode)
+        try c.encodeIfPresent(isPrivateMoment, forKey: .isPrivateMoment)
     }
 }
 
@@ -200,6 +413,18 @@ struct PersonalMomentCreateOut: Codable {
         case title
         case momentType = "moment_type"
         case durationType = "duration_type"
+    }
+}
+
+/// Civil `YYYY-MM-DD` in the user's current timezone (matches personal transaction book dates).
+enum PersonalBookDateFormatting {
+    static func yyyyMMdd(from date: Date = Date()) -> String {
+        let f = DateFormatter()
+        f.calendar = Calendar.current
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone.current
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: date)
     }
 }
 

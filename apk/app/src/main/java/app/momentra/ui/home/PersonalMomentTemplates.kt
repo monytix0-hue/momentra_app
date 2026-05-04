@@ -81,6 +81,36 @@ fun homeEmptyTemplates(context: MomentraContext): List<HomeEmptyTemplate> = when
                 endDateIso = null,
             ),
         ),
+        HomeEmptyTemplate.WithPreset(
+            PersonalQuickTemplate(
+                title = "Health Fund",
+                subtitle = "Medical and wellness safety",
+                durationType = PersonalMomentDuration.RECURRING_MONTHLY,
+                savingMode = "monthly",
+                targetAmount = 75_000.0,
+                description = "Emergency and preventive health expenses",
+            ),
+        ),
+        HomeEmptyTemplate.WithPreset(
+            PersonalQuickTemplate(
+                title = "Education Goal",
+                subtitle = "Courses and certifications",
+                durationType = PersonalMomentDuration.FIXED_END,
+                savingMode = "monthly",
+                targetAmount = 120_000.0,
+                description = "Upskilling plan with a fixed deadline",
+            ),
+        ),
+        HomeEmptyTemplate.WithPreset(
+            PersonalQuickTemplate(
+                title = "Device Upgrade",
+                subtitle = "Phone or laptop replacement",
+                durationType = PersonalMomentDuration.FIXED_END,
+                savingMode = "monthly",
+                targetAmount = 90_000.0,
+                description = "Upgrade essential devices without debt",
+            ),
+        ),
     )
     MomentraContext.Group -> listOf(
         HomeEmptyTemplate.WithGroupPreset(
@@ -106,6 +136,32 @@ fun homeEmptyTemplates(context: MomentraContext): List<HomeEmptyTemplate> = when
                 subtitle = "Parties & tickets — by shares",
                 momentType = "trip_fund",
                 splitMode = GroupSplitMode.SHARES,
+            ),
+        ),
+        HomeEmptyTemplate.WithGroupPreset(
+            GroupQuickTemplate(
+                title = "Wedding Pool",
+                subtitle = "Shared wedding spends — split by shares",
+                momentType = "trip_fund",
+                splitMode = GroupSplitMode.SHARES,
+                destination = "Wedding",
+            ),
+        ),
+        HomeEmptyTemplate.WithGroupPreset(
+            GroupQuickTemplate(
+                title = "Roommate Groceries",
+                subtitle = "Monthly groceries — equal split",
+                momentType = "trip_fund",
+                splitMode = GroupSplitMode.EQUAL,
+            ),
+        ),
+        HomeEmptyTemplate.WithGroupPreset(
+            GroupQuickTemplate(
+                title = "Weekend Outing",
+                subtitle = "Short trip and activities — exact split",
+                momentType = "trip_fund",
+                splitMode = GroupSplitMode.EXACT,
+                destination = "Weekend Outing",
             ),
         ),
     )
@@ -141,6 +197,39 @@ fun homeEmptyTemplates(context: MomentraContext): List<HomeEmptyTemplate> = when
                 budgetPeriod = "Monthly",
                 department = "Finance",
                 approvalThreshold = 7000.0,
+            ),
+        ),
+        HomeEmptyTemplate.WithBusinessPreset(
+            BusinessQuickTemplate(
+                budgetName = "Marketing Sprint Budget",
+                subtitle = "Campaign ad spends and creatives",
+                budgetType = "marketing",
+                totalBudget = 95_000.0,
+                budgetPeriod = "Monthly",
+                department = "Marketing",
+                approvalThreshold = 3000.0,
+            ),
+        ),
+        HomeEmptyTemplate.WithBusinessPreset(
+            BusinessQuickTemplate(
+                budgetName = "Payroll Reserve",
+                subtitle = "Salary and contractor payouts",
+                budgetType = "payroll",
+                totalBudget = 420_000.0,
+                budgetPeriod = "Monthly",
+                department = "People Ops",
+                approvalThreshold = 10_000.0,
+            ),
+        ),
+        HomeEmptyTemplate.WithBusinessPreset(
+            BusinessQuickTemplate(
+                budgetName = "Equipment Maintenance",
+                subtitle = "Service and repair of machinery",
+                budgetType = "maintenance",
+                totalBudget = 160_000.0,
+                budgetPeriod = "Quarterly",
+                department = "Operations",
+                approvalThreshold = 6000.0,
             ),
         ),
     )

@@ -26,6 +26,8 @@ object MomentraType {
     val bodyMedium = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium)
 
     val caption = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)
+    /** Context switcher labels — kit `.ctx-btn` 12px / 500. */
+    val contextTab = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium)
     val label = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
     val micro = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
     val nano = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.Medium)

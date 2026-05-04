@@ -27,11 +27,10 @@ struct BusinessCreateMomentView: View {
                 TextField("Approval threshold (optional)", text: $approvalThreshold)
                     .keyboardType(.decimalPad)
                 if let validationError, !validationError.isEmpty {
-                    Text(validationError).foregroundColor(DesignTokens.urgency.high)
+                    Text(validationError).foregroundColor(DesignTokens.urgency.highText)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(DesignTokens.base.bg)
+            .momentraFormSheetChrome()
             .navigationTitle("New business moment")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -46,6 +45,9 @@ struct BusinessCreateMomentView: View {
                 }
             }
         }
+        .tint(DesignTokens.business.accent)
+        .toolbarBackground(DesignTokens.base.s100, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .id(sheetId)
         .onAppear { applyPreset() }
     }

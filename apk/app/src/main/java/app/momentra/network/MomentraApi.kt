@@ -295,6 +295,51 @@ interface MomentraApi {
         @Header("Authorization") authorization: String,
         @Path("token") token: String,
     ): Map<String, String>
+
+    @GET("v1/moments/{moment_id}/health")
+    suspend fun v1MomentHealth(
+        @Header("Authorization") authorization: String,
+        @Path("moment_id") momentId: String,
+    ): V1HealthOut
+
+    @GET("v1/moments/{moment_id}/health/history")
+    suspend fun v1MomentHealthHistory(
+        @Header("Authorization") authorization: String,
+        @Path("moment_id") momentId: String,
+        @Query("limit") limit: Int = 20,
+    ): List<V1HealthOut>
+
+    @GET("v1/moments/{moment_id}/commitments")
+    suspend fun v1MomentCommitments(
+        @Header("Authorization") authorization: String,
+        @Path("moment_id") momentId: String,
+    ): List<V1CommitmentOut>
+
+    @GET("v1/moments/{moment_id}/signals")
+    suspend fun v1MomentSignals(
+        @Header("Authorization") authorization: String,
+        @Path("moment_id") momentId: String,
+    ): List<V1SignalOut>
+
+    @GET("v1/moments/{moment_id}/guidance")
+    suspend fun v1MomentGuidance(
+        @Header("Authorization") authorization: String,
+        @Path("moment_id") momentId: String,
+    ): List<V1GuidanceOut>
+
+    @POST("v1/moments/{moment_id}/signals/{signal_id}/resolve")
+    suspend fun v1ResolveSignal(
+        @Header("Authorization") authorization: String,
+        @Path("moment_id") momentId: String,
+        @Path("signal_id") signalId: String,
+    ): Map<String, String>
+
+    @POST("v1/moments/{moment_id}/guidance/{guidance_id}/read")
+    suspend fun v1MarkGuidanceRead(
+        @Header("Authorization") authorization: String,
+        @Path("moment_id") momentId: String,
+        @Path("guidance_id") guidanceId: String,
+    ): Map<String, String>
 }
 
 fun createMomentraApi(baseUrl: String): MomentraApi {

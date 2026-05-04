@@ -193,7 +193,7 @@ struct SignUpView: View {
             try await authManager.signUp(email: email, password: password, name: name)
             // Success - AuthManager will update isAuthenticated
         } catch let error as AuthError {
-            errorMessage = error.localizedDescription ?? "Sign up failed"
+            errorMessage = error.localizedDescription
             showError = true
         } catch {
             errorMessage = "An unexpected error occurred"

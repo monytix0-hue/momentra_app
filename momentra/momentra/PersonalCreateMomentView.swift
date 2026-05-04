@@ -35,11 +35,10 @@ struct PersonalCreateMomentView: View {
                     .lineLimit(2...4)
                 Toggle("Private moment", isOn: $isPrivateMoment)
                 if let validationError, !validationError.isEmpty {
-                    Text(validationError).foregroundColor(DesignTokens.urgency.high)
+                    Text(validationError).foregroundColor(DesignTokens.urgency.highText)
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(DesignTokens.base.bg)
+            .momentraFormSheetChrome()
             .navigationTitle("New moment")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -54,6 +53,9 @@ struct PersonalCreateMomentView: View {
                 }
             }
         }
+        .tint(DesignTokens.personal.accent)
+        .toolbarBackground(DesignTokens.base.s100, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .id(sheetId)
         .onAppear {
             applyPreset()

@@ -61,5 +61,55 @@ extension NetworkService {
             token: token
         )
     }
+
+    func approveBusinessBudgetApproval(budgetId: String, approvalId: String, token: String) async throws -> BusinessBudgetCreateOut {
+        try await request(
+            endpoint: "/business/budgets/\(budgetId)/approvals/\(approvalId)/approve",
+            method: "POST",
+            body: EmptyEncodable(),
+            token: token
+        )
+    }
+
+    func rejectBusinessBudgetApproval(budgetId: String, approvalId: String, token: String) async throws -> BusinessBudgetCreateOut {
+        try await request(
+            endpoint: "/business/budgets/\(budgetId)/approvals/\(approvalId)/reject",
+            method: "POST",
+            body: EmptyEncodable(),
+            token: token
+        )
+    }
+
+    func addBusinessBudgetMember(budgetId: String, body: BusinessBudgetMemberIn, token: String) async throws -> BusinessBudgetCreateOut {
+        try await request(
+            endpoint: "/business/budgets/\(budgetId)/members",
+            method: "POST",
+            body: body,
+            token: token
+        )
+    }
+
+    // MARK: - Workspace v2
+
+    func listBusinessWorkspaces(token: String) async throws -> [BusinessWorkspaceOut] {
+        try await request(endpoint: "/business/workspaces", method: "GET", token: token)
+    }
+
+    func listBusinessUnits(workspaceId: String, token: String) async throws -> [BusinessUnitOut] {
+        try await request(endpoint: "/business/workspaces/\(workspaceId)/units", method: "GET", token: token)
+    }
+
+    func createBusinessWorkspaceSpend(
+        workspaceId: String,
+        body: BusinessWorkspaceSpendCreateIn,
+        token: String
+    ) async throws -> BusinessWorkspaceSpendOut {
+        try await request(
+            endpoint: "/business/workspaces/\(workspaceId)/spends",
+            method: "POST",
+            body: body,
+            token: token
+        )
+    }
 }
 
