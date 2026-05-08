@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+venv/
+.venv/
+
+# Frontend
+.next/
+out/
+build/
+.vercel/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Firebase credentials (never commit)
+**/firebase-credentials.json
+**/serviceAccountKey.json
+
+# Secrets
+*.key
+*.pem
+*.p12
+
+# Logs
+*.log
+logs/
+
+# Mobile
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/local.properties
+mobile/android/app/build/
+mobile/android/captures/
+mobile/ios/Pods/
+mobile/ios/*.xcworkspace
+mobile/ios/build/
+
+# System
+*~
+~$*
+
+# Test artifacts
+test-results/
+*.tsbuildinfo
+next-env.d.ts
