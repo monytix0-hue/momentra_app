@@ -1,0 +1,8 @@
+# Cloudflare Pages (next-on-pages): enables Node.js APIs used by the Next.js worker bundle.
+# `name` must match your Pages project name in the dashboard (e.g. *.pages.dev subdomain).
+# If deploy fails on "name", fix it here or set nodejs_compat only in the dashboard instead.
+
+name = "momentra-v1"
+pages_build_output_dir = ".vercel/output/static"
+compatibility_date = "2026-04-10"
+compatibility_flags = ["nodejs_compat"]

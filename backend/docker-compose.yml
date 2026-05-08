@@ -1,0 +1,20 @@
+# Dockge: set the project stack directory to this folder (`backend/`) so `build.context: .`
+# and paths like `./secrets/...` resolve next to this file.
+#
+# Default stack: no Firebase file mount — use FIREBASE_SERVICE_ACCOUNT_JSON in `.env` (one line).
+# For file-based credentials instead, merge docker-compose.firebase-file.yml (see .env.example).
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Local tag only — do not pull from Docker Hub (avoids "pull access denied" in Dockge).
+    image: momentra-api:latest
+    pull_policy: never
+    container_name: momentra-api
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env

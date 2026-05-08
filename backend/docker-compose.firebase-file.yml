@@ -1,0 +1,16 @@
+# Optional overlay: file-based Firebase (mount JSON into the container).
+# Use only when `./secrets/firebase-service-account.json` exists on the host next to docker-compose.yml.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.firebase-file.yml up -d
+#
+# Dockge: add this file as an additional compose file (after the main one), or paste its
+# `services.api` keys into the UI if you use a single merged compose.
+#
+# Bind mount must use :ro (read-only), not :r.
+
+services:
+  api:
+    environment:
+      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase.json
+    volumes:
+      - ./secrets/firebase-service-account.json:/run/secrets/firebase.json:ro

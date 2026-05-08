@@ -1,0 +1,675 @@
+Momentra
+REST API Specification & Screen–SQL Mapping
+MVP v1.0  ·  Multi-tenant  ·  PostgreSQL backend
+Base URL:  https://api.momentra.app/v1
+Auth:  Bearer JWT in Authorization header. Tenant resolved from JWT tenant_id claim.
+Content-Type:  application/json  for all request/response bodies.
+Pagination:  Cursor-based via ?cursor=&limit= query params. All list endpoints return { data: [], next_cursor, total }.
+1. Full Endpoint Reference
+All endpoints scoped to authenticated user's tenant. {momentId}, {participantId}, etc. are UUID path params.
+1.1  Authentication
+Method
+Path
+Description
+SQL Tables
+POST
+/auth/otp/request
+Request OTP for phone number
+—  (external SMS)
+POST
+/auth/otp/verify
+Verify OTP → returns JWT + user profile
+users (external)
+GET
+/auth/me
+Get current user profile + wallet balance
+users
+POST
+/auth/logout
+Invalidate session token
+—
+1.2  Moments
+Method
+Path
+Description
+SQL Tables
+GET
+/moments
+List all moments for user (Active/Completed/Drafts tabs)
+moments, commitments, moment_health_snapshot
+POST
+/moments
+Create a new moment (DRAFT state)
+moments, event_logs
+GET
+/moments/{momentId}
+Get full moment detail + health + milestones
+moments, moment_health_snapshot, moment_milestones, moment_participants
+PUT
+/moments/{momentId}
+Update moment title/description/dates/target
+moments, event_logs
+PATCH
+/moments/{momentId}/state
+Transition lifecycle state (DRAFT→CONFIGURED→ACTIVE…)
+moments, moment_lifecycle_history, event_logs
+DELETE
+/moments/{momentId}
+Soft-delete / archive moment
+moments, event_logs
+GET
+/moments/{momentId}/overview
+Moment overview: funding %, milestones, health gauge
+moments, moment_health_snapshot, moment_milestones, commitments
+GET
+/moments/{momentId}/activity
+Activity feed / event log for moment
+event_logs, guidance_events
+GET
+/moments/archive
+Archived moments with category filter
+moments
+1.3  Participants & Circle
+Method
+Path
+Description
+SQL Tables
+GET
+/moments/{momentId}/participants
+List all participants + roles + statuses
+moment_participants
+POST
+/moments/{momentId}/participants
+Invite participant (phone/email/link)
+moment_participants, event_logs
+PATCH
+/moments/{momentId}/participants/{participantId}
+Update role or status (accept/decline/remove)
+moment_participants, event_logs
+DELETE
+/moments/{momentId}/participants/{participantId}
+Remove participant from moment
+moment_participants, commitments, event_logs
+GET
+/circles
+Get user's circles (Team, Friends, etc.)
+—  (derived from moment_participants history)
+GET
+/circles/{circleId}/members
+List frequent collaborators for invite screen
+moment_participants
+1.4  Split Rules
+Method
+Path
+Description
+SQL Tables
+GET
+/moments/{momentId}/split-rule
+Get active split rule + preview per-participant amounts
+split_rules, moment_participants
+POST
+/moments/{momentId}/split-rule
+Create / replace split rule (versions automatically)
+split_rules, commitments, event_logs
+GET
+/moments/{momentId}/split-rule/history
+Get split rule version history + rebalancing events
+split_rules, rebalancing_history
+1.5  Commitments
+Method
+Path
+Description
+SQL Tables
+GET
+/moments/{momentId}/commitments
+List all participant commitments + paid/overdue status
+commitments, moment_participants
+GET
+/moments/{momentId}/commitments/summary
+Totals: expected, collected, overdue count
+commitments
+GET
+/moments/{momentId}/commitments/{commitmentId}
+Single commitment detail + installment schedule
+commitments, commitment_schedule
+PUT
+/moments/{momentId}/commitments/{commitmentId}
+Update contribution amount + payment method
+commitments, event_logs
+POST
+/moments/{momentId}/commitments/{commitmentId}/pay
+Record a payment transaction (UPI/card/bank)
+contribution_transactions, commitments, event_logs
+GET
+/moments/{momentId}/commitments/{commitmentId}/schedule
+Get installment schedule for a commitment
+commitment_schedule
+POST
+/moments/{momentId}/commitments/{commitmentId}/remind
+Send payment reminder to overdue participant
+guidance_events, event_logs
+GET
+/commitments/overdue
+All overdue commitments across user's moments
+commitments, moment_participants, moments
+1.6  Transactions
+Method
+Path
+Description
+SQL Tables
+GET
+/moments/{momentId}/transactions
+List all transactions for a moment
+contribution_transactions
+GET
+/moments/{momentId}/transactions/{txnId}
+Single transaction detail + status
+contribution_transactions
+POST
+/moments/{momentId}/transactions/{txnId}/reverse
+Reverse a transaction (marks REVERSED, decrements fulfilled)
+contribution_transactions, commitments, event_logs
+1.7  Milestones
+Method
+Path
+Description
+SQL Tables
+GET
+/moments/{momentId}/milestones
+List milestones + statuses (Upcoming/Due/Achieved/Missed)
+moment_milestones
+POST
+/moments/{momentId}/milestones
+Create milestone (name, target_date, funding_pct)
+moment_milestones, event_logs
+PUT
+/moments/{momentId}/milestones/{milestoneId}
+Update milestone target or date
+moment_milestones, event_logs
+PATCH
+/moments/{momentId}/milestones/{milestoneId}/achieve
+Mark milestone as achieved (triggers health recompute)
+moment_milestones, moment_health_snapshot, event_logs
+DELETE
+/moments/{momentId}/milestones/{milestoneId}
+Cancel / remove milestone
+moment_milestones, event_logs
+1.8  Health & Signals
+Method
+Path
+Description
+SQL Tables
+GET
+/moments/{momentId}/health
+Latest health snapshot (scores + state + trend)
+moment_health_snapshot
+GET
+/moments/{momentId}/health/history
+Health score history for trend chart
+moment_health_snapshot
+GET
+/moments/{momentId}/signals
+Active (unresolved) signals for a moment
+signals
+PATCH
+/moments/{momentId}/signals/{signalId}/resolve
+Mark signal as resolved
+signals, event_logs
+GET
+/signals/dashboard
+Signals dashboard: health distribution + key insights across all moments
+moment_health_snapshot, signals, commitments
+1.9  Guidance & Activity Flow
+Method
+Path
+Description
+SQL Tables
+GET
+/moments/{momentId}/guidance
+Pending guidance messages for this moment + user
+guidance_events
+PATCH
+/moments/{momentId}/guidance/{guidanceId}/read
+Mark guidance message as read
+guidance_events
+GET
+/flow
+Momentra Flow — cross-moment activity feed (Momentra Flow screen)
+event_logs, guidance_events, signals
+GET
+/reminders
+Payment reminders: all overdue across moments
+commitments, guidance_events, moment_participants
+POST
+/reminders/send
+Batch send friendly reminders to selected participants
+guidance_events, event_logs
+1.10  Moment Closure & Records
+Method
+Path
+Description
+SQL Tables
+POST
+/moments/{momentId}/close
+Close moment → generate summary, set COMPLETED state
+moments, commitments, contribution_transactions, moment_lifecycle_history, event_logs
+GET
+/moments/{momentId}/summary
+Moment closure summary: total collected, per-participant breakdown
+moments, commitments, contribution_transactions, moment_participants
+GET
+/moments/{momentId}/receipt
+Generate downloadable receipt (PDF link)
+moments, contribution_transactions
+GET
+/records
+Financial records / archive with category + date filters
+moments, contribution_transactions
+GET
+/records/insights
+Analytics: contribution speed, reliability score, history
+moment_health_snapshot, commitments, contribution_transactions
+2. Screen → SQL Query Mapping
+Each prototype screen and the primary SQL queries it triggers. Queries use PostgreSQL syntax; all filter by tenant_id implicitly.
+2.1  Onboarding & Login
+Screen
+Primary SQL Query
+Tables Used
+Onboarding splash
+— (static, no DB read)
+—
+OTP Login — verify
+SELECT user_id, display_name, wallet_balance FROM users WHERE phone = $1
+users
+OTP Login — wallet badge
+SELECT balance FROM wallets WHERE user_id = $1
+wallets
+2.2  Moments Home
+Screen
+Primary SQL Query
+Tables Used
+Active tab
+SELECT m.*, mhs.health_state, mhs.composite_score, SUM(c.fulfilled_amount) as collected, m.funding_target, COUNT(mp.participant_id) as participant_count, EXTRACT(DAY FROM m.end_date - now()) as days_remaining FROM moments m JOIN moment_health_snapshot mhs ON (mhs.moment_id = m.moment_id) LEFT JOIN commitments c ON c.moment_id = m.moment_id LEFT JOIN moment_participants mp ON mp.moment_id = m.moment_id WHERE m.lifecycle_state = 'ACTIVE' AND m.tenant_id = $1 GROUP BY m.moment_id, mhs.health_state, mhs.composite_score ORDER BY m.updated_at DESC
+moments, moment_health_snapshot, commitments, moment_participants
+Completed tab
+SELECT m.*, SUM(c.fulfilled_amount) as final_collected FROM moments m LEFT JOIN commitments c ON c.moment_id = m.moment_id WHERE m.lifecycle_state = 'COMPLETED' AND m.tenant_id = $1 GROUP BY m.moment_id ORDER BY m.updated_at DESC
+moments, commitments
+Drafts tab
+SELECT * FROM moments WHERE lifecycle_state = 'DRAFT' AND tenant_id = $1 ORDER BY updated_at DESC
+moments
+Health badge (ON TRACK / AT RISK)
+SELECT health_state FROM moment_health_snapshot WHERE moment_id = $1 ORDER BY calculated_at DESC LIMIT 1
+moment_health_snapshot
+Running count badge
+SELECT COUNT(*) FROM moments WHERE lifecycle_state = 'ACTIVE' AND tenant_id = $1
+moments
+2.3  Design Moment (Create)
+Screen
+Primary SQL Query
+Tables Used
+Create moment form submit
+INSERT INTO moments (tenant_id, title, intent, description, start_date, end_date, funding_target, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING moment_id
+moments
+Post-create event log
+SELECT log_event($1, $2, 'MOMENT_CREATED', 'USER', $3, $4)
+event_logs
+2.4  Circle Invite
+Screen
+Primary SQL Query
+Tables Used
+Frequent collaborators list
+SELECT u.user_id, u.display_name, u.role_hint, COUNT(*) as shared_moments FROM moment_participants mp JOIN users u ON u.user_id = mp.user_id WHERE mp.moment_id IN (SELECT moment_id FROM moment_participants WHERE user_id = $1) AND mp.user_id != $1 GROUP BY u.user_id ORDER BY shared_moments DESC LIMIT 20
+moment_participants, users
+Invite participant (send)
+INSERT INTO moment_participants (tenant_id, moment_id, user_id, role, added_by) VALUES ($1,$2,$3,$4,$5)
+moment_participants
+2.5  Commitment Setup
+Screen
+Primary SQL Query
+Tables Used
+Total & per-person preview
+SELECT sr.rule_type, sr.rule_payload, COUNT(mp.participant_id) as participant_count, m.funding_target / COUNT(mp.participant_id) as per_person FROM split_rules sr JOIN moments m ON m.moment_id = sr.moment_id JOIN moment_participants mp ON mp.moment_id = sr.moment_id WHERE sr.moment_id = $1 AND sr.is_active = TRUE GROUP BY sr.split_rule_id, m.funding_target
+split_rules, moments, moment_participants
+Participant list + status
+SELECT mp.participant_id, u.display_name, u.avatar_url, mp.role, mp.status FROM moment_participants mp JOIN users u ON u.user_id = mp.user_id WHERE mp.moment_id = $1
+moment_participants, users
+Initialize commitment (save)
+INSERT INTO split_rules (tenant_id, moment_id, rule_type, rule_payload) VALUES ($1,$2,$3,$4); INSERT INTO commitments (tenant_id, moment_id, participant_id, committed_amount, due_date) SELECT $1, $2, participant_id, $3, $4 FROM moment_participants WHERE moment_id = $2 AND status = 'ACTIVE'
+split_rules, commitments
+2.6  Moment Overview
+Screen
+Primary SQL Query
+Tables Used
+Funding gauge (65% funded)
+SELECT m.funding_target, SUM(c.fulfilled_amount) as collected, ROUND(SUM(c.fulfilled_amount)/NULLIF(m.funding_target,0)*100) as pct FROM moments m LEFT JOIN commitments c ON c.moment_id = m.moment_id WHERE m.moment_id = $1 GROUP BY m.moment_id, m.funding_target
+moments, commitments
+Health state badge
+SELECT health_state FROM moment_health_snapshot WHERE moment_id = $1 ORDER BY calculated_at DESC LIMIT 1
+moment_health_snapshot
+Milestones timeline
+SELECT milestone_id, name, target_date, target_funding_pct, status, achieved_at FROM moment_milestones WHERE moment_id = $1 ORDER BY target_date ASC
+moment_milestones
+Current/target amounts
+SELECT SUM(c.fulfilled_amount) as current_amount, m.funding_target FROM moments m LEFT JOIN commitments c ON c.moment_id = m.moment_id WHERE m.moment_id = $1 GROUP BY m.funding_target
+moments, commitments
+2.7  Commitments Tracking
+Screen
+Primary SQL Query
+Tables Used
+Summary row (expected / collected)
+SELECT SUM(committed_amount) as total_expected, SUM(fulfilled_amount) as total_collected FROM commitments WHERE moment_id = $1
+commitments
+Participant list with status
+SELECT mp.participant_id, u.display_name, u.avatar_url, c.committed_amount, c.fulfilled_amount, c.status FROM commitments c JOIN moment_participants mp ON mp.participant_id = c.participant_id JOIN users u ON u.user_id = mp.user_id WHERE c.moment_id = $1 ORDER BY c.status DESC, u.display_name
+commitments, moment_participants, users
+Overdue badge + Remind button
+SELECT c.commitment_id, u.display_name FROM commitments c JOIN moment_participants mp ON mp.participant_id = c.participant_id JOIN users u ON u.user_id = mp.user_id WHERE c.moment_id = $1 AND c.status = 'OVERDUE'
+commitments, moment_participants, users
+2.8  Update Commitment
+Screen
+Primary SQL Query
+Tables Used
+Load current commitment
+SELECT c.committed_amount, c.fulfilled_amount, c.status, c.due_date FROM commitments c WHERE c.commitment_id = $1
+commitments
+Update amount & method
+UPDATE commitments SET committed_amount = $2, updated_at = now() WHERE commitment_id = $1; SELECT log_event($3,$4,'COMMITMENT_UPDATED','USER',$5,$6)
+commitments, event_logs
+Record payment transaction
+INSERT INTO contribution_transactions (tenant_id, commitment_id, moment_id, payer_user_id, amount, payment_reference, status) VALUES ($1,$2,$3,$4,$5,$6,'SUCCESS'); SELECT recompute_commitment_rollup($1, $2)
+contribution_transactions, commitments
+2.9  Signals Dashboard
+Screen
+Primary SQL Query
+Tables Used
+Health distribution chart
+SELECT health_state, COUNT(*) FROM moment_health_snapshot mhs WHERE mhs.calculated_at = (SELECT MAX(calculated_at) FROM moment_health_snapshot WHERE moment_id = mhs.moment_id) AND mhs.moment_id IN (SELECT moment_id FROM moments WHERE tenant_id = $1 AND lifecycle_state = 'ACTIVE') GROUP BY health_state
+moment_health_snapshot, moments
+Total value + trend
+SELECT SUM(m.funding_target) as total_value FROM moments m WHERE m.lifecycle_state = 'ACTIVE' AND m.tenant_id = $1
+moments
+Contribution speed insight
+SELECT AVG(EXTRACT(EPOCH FROM ct.transaction_date - c.created_at)/3600) as avg_hours FROM contribution_transactions ct JOIN commitments c ON c.commitment_id = ct.commitment_id WHERE c.moment_id IN (SELECT moment_id FROM moments WHERE tenant_id = $1) AND ct.status = 'SUCCESS'
+contribution_transactions, commitments
+Successful completion rate
+SELECT COUNT(*) FILTER (WHERE lifecycle_state='COMPLETED') * 100.0 / NULLIF(COUNT(*),0) as pct FROM moments WHERE tenant_id = $1
+moments
+Recent signals feed
+SELECT s.signal_type, s.severity, s.triggered_at, m.title FROM signals s JOIN moments m ON m.moment_id = s.moment_id WHERE m.tenant_id = $1 AND s.resolved_flag = FALSE ORDER BY s.triggered_at DESC LIMIT 10
+signals, moments
+2.10  Payment Reminders
+Screen
+Primary SQL Query
+Tables Used
+Total overdue amount
+SELECT SUM(committed_amount - fulfilled_amount) as total_overdue FROM commitments WHERE moment_id IN (SELECT moment_id FROM moments WHERE tenant_id=$1 AND lifecycle_state='ACTIVE') AND status='OVERDUE'
+commitments, moments
+Overdue participants list
+SELECT u.display_name, c.committed_amount - c.fulfilled_amount as overdue_amount, now()::date - c.due_date::date as days_overdue FROM commitments c JOIN moment_participants mp ON mp.participant_id = c.participant_id JOIN users u ON u.user_id = mp.user_id WHERE c.status='OVERDUE' AND c.moment_id IN (SELECT moment_id FROM moments WHERE tenant_id=$1) ORDER BY days_overdue DESC
+commitments, moment_participants, users, moments
+Send reminder (batch)
+INSERT INTO guidance_events (tenant_id, moment_id, target_user_id, guidance_type, delivered_channel) SELECT $1, c.moment_id, mp.user_id, 'REMINDER', 'PUSH' FROM commitments c JOIN moment_participants mp ON mp.participant_id = c.participant_id WHERE c.commitment_id = ANY($2) RETURNING guidance_id
+guidance_events
+2.11  Moment Closure / Summary
+Screen
+Primary SQL Query
+Tables Used
+Total collected + status
+SELECT SUM(ct.amount) as total_collected, COUNT(DISTINCT mp.participant_id) as participant_count FROM contribution_transactions ct JOIN commitments c ON c.commitment_id = ct.commitment_id JOIN moment_participants mp ON mp.moment_id = c.moment_id WHERE ct.moment_id = $1 AND ct.status='SUCCESS'
+contribution_transactions, commitments, moment_participants
+Per-participant breakdown
+SELECT u.display_name, u.avatar_url, SUM(ct.amount) as paid, c.committed_amount FROM commitments c JOIN moment_participants mp ON mp.participant_id = c.participant_id JOIN users u ON u.user_id = mp.user_id LEFT JOIN contribution_transactions ct ON ct.commitment_id = c.commitment_id AND ct.status='SUCCESS' WHERE c.moment_id = $1 GROUP BY u.display_name, u.avatar_url, c.committed_amount
+commitments, moment_participants, users, contribution_transactions
+Close moment (transition)
+UPDATE moments SET lifecycle_state='COMPLETED', updated_at=now() WHERE moment_id=$1; INSERT INTO moment_lifecycle_history (tenant_id,moment_id,previous_state,new_state,triggered_by,triggered_by_id) VALUES ($2,$1,'ACTIVE','COMPLETED','USER_ACTION',$3)
+moments, moment_lifecycle_history
+2.12  Activity Flow (Momentra Flow)
+Screen
+Primary SQL Query
+Tables Used
+Campaign health badge
+SELECT mhs.health_state FROM moment_health_snapshot mhs JOIN moments m ON m.moment_id = mhs.moment_id WHERE m.tenant_id=$1 AND m.lifecycle_state='ACTIVE' ORDER BY mhs.calculated_at DESC LIMIT 1
+moment_health_snapshot, moments
+Activity feed (vertical)
+SELECT el.event_type, el.actor_type, el.actor_id, el.payload, el.created_at, u.display_name FROM event_logs el LEFT JOIN users u ON u.user_id = el.actor_id WHERE el.moment_id = ANY($1) ORDER BY el.created_at DESC LIMIT 50
+event_logs, users
+Guidance nudges in feed
+SELECT ge.guidance_type, ge.created_at, ge.delivery_status FROM guidance_events ge WHERE ge.target_user_id=$1 AND ge.moment_id = ANY($2) AND ge.delivery_status != 'READ' ORDER BY ge.created_at DESC LIMIT 20
+guidance_events
+2.13  Circle Network
+Screen
+Primary SQL Query
+Tables Used
+Your circles (Team, Friends)
+SELECT COALESCE(mp.circle_label,'Other') as circle_name, COUNT(DISTINCT mp.user_id) as member_count FROM moment_participants mp WHERE mp.moment_id IN (SELECT moment_id FROM moments WHERE tenant_id=$1) AND mp.user_id != $2 GROUP BY circle_name
+moment_participants
+Connected now (online status)
+SELECT u.user_id, u.display_name, u.avatar_url, u.last_active_at FROM users u WHERE u.user_id IN (SELECT DISTINCT user_id FROM moment_participants WHERE moment_id IN (SELECT moment_id FROM moments WHERE tenant_id=$1)) AND u.user_id != $2 ORDER BY u.last_active_at DESC LIMIT 20
+users, moment_participants
+2.14  Financial Records (Archive)
+Screen
+Primary SQL Query
+Tables Used
+Archived list with filters
+SELECT m.moment_id, m.title, m.intent, m.end_date, SUM(ct.amount) as final_spends, COUNT(DISTINCT mp.user_id) as people FROM moments m LEFT JOIN contribution_transactions ct ON ct.moment_id = m.moment_id AND ct.status='SUCCESS' LEFT JOIN moment_participants mp ON mp.moment_id = m.moment_id WHERE m.lifecycle_state IN ('COMPLETED','ARCHIVED') AND m.tenant_id=$1 AND ($2::text IS NULL OR m.intent = $2) GROUP BY m.moment_id ORDER BY m.end_date DESC
+moments, contribution_transactions, moment_participants
+Year grouping header
+SELECT EXTRACT(YEAR FROM end_date) as year, COUNT(*) as count FROM moments WHERE lifecycle_state='COMPLETED' AND tenant_id=$1 GROUP BY year ORDER BY year DESC
+moments
+3. Key Request / Response Shapes
+3.1  POST /moments  —  Create Moment
+Request body
+Field
+Type
+Required
+Description
+title
+string
+Yes
+Moment title, max 140 chars
+intent
+string
+Yes
+Category: TRIP, GIFTING, RENT, NGO, PURCHASE, OTHER
+description
+string
+No
+Optional description text
+start_date
+ISO8601
+No
+Start date/time (nullable)
+end_date
+ISO8601
+No
+End date/time (nullable, must be ≥ start_date)
+funding_target
+number
+Yes
+Target amount in INR, min 0
+Response  201 Created
+Field
+Type
+Required
+Description
+moment_id
+uuid
+Yes
+Newly created moment UUID
+lifecycle_state
+string
+Yes
+Always 'DRAFT' on creation
+created_at
+ISO8601
+Yes
+Server timestamp
+...all request fields echoed back
+3.2  POST /moments/{momentId}/split-rule
+Request body
+Field
+Type
+Required
+Description
+rule_type
+string
+Yes
+EQUAL | WEIGHTED | ROLE_BASED | CUSTOM_PERCENT | CUSTOM_AMOUNT
+rule_payload
+object
+Yes
+Shape varies by type — see below
+rule_payload shapes by type:
+EQUAL: {} (no payload — server divides funding_target by active participant count)
+WEIGHTED: { "weights": { "<participant_id>": 0.4, "<participant_id>": 0.6 } }
+CUSTOM_AMOUNT: { "amounts": { "<participant_id>": 1500.00, "<participant_id>": 3500.00 } }
+CUSTOM_PERCENT: { "percentages": { "<participant_id>": 30, "<participant_id>": 70 } }
+3.3  POST /moments/{momentId}/commitments/{id}/pay
+Request body
+Field
+Type
+Required
+Description
+amount
+number
+Yes
+Payment amount in INR (positive)
+payment_method
+string
+Yes
+UPI | CARD | NET_BANKING
+payment_reference
+string
+No
+UPI transaction ref, card approval code, etc.
+Response  200 OK
+Field
+Type
+Required
+Description
+transaction_id
+uuid
+Yes
+New transaction UUID
+new_status
+string
+Yes
+Commitment status after payment: FULFILLED | PARTIAL
+fulfilled_amount
+number
+Yes
+Updated total fulfilled on this commitment
+health_recomputed
+boolean
+Yes
+True if health snapshot was recalculated
+3.4  GET /moments/{momentId}/health
+Response  200 OK
+Field
+Type
+Required
+Description
+health_state
+string
+Yes
+STABLE | BALANCED | DRIFTING | AT_RISK
+composite_score
+int
+Yes
+0–100 weighted composite score
+funding_score
+int
+Yes
+0–100 based on collection progress vs target
+timeline_score
+int
+Yes
+0–100 based on days remaining vs milestones
+fulfillment_score
+int
+Yes
+0–100 based on % participants FULFILLED
+responsiveness_score
+int
+Yes
+0–100 based on avg response time to reminders
+calculated_at
+ISO8601
+Yes
+When this snapshot was computed
+active_signals
+array
+Yes
+List of unresolved signal objects
+3.5  PATCH /moments/{momentId}/state
+Request body
+Field
+Type
+Required
+Description
+new_state
+string
+Yes
+Target lifecycle state
+reason_code
+string
+No
+Reason for manual state override
+Valid transitions:
+DRAFT → CONFIGURED (once split rule and ≥1 participant confirmed)
+CONFIGURED → ACTIVE (start_date reached or manual activation)
+ACTIVE → DRIFTING / AT_RISK (system-triggered via health engine, or manual)
+ACTIVE / DRIFTING / AT_RISK → COMPLETED (via POST /close or manual)
+COMPLETED → ARCHIVED (after retention period or manual archive)
+4. Standard Error Responses
+HTTP Status
+Error Code
+When It Occurs
+400
+VALIDATION_ERROR
+Missing required field, invalid enum value, date constraint violated
+401
+UNAUTHORIZED
+Missing or expired JWT token
+403
+FORBIDDEN
+User lacks role permission for this action on this moment
+404
+NOT_FOUND
+Resource does not exist or belongs to a different tenant
+409
+STATE_CONFLICT
+Invalid lifecycle transition (e.g. COMPLETED → ACTIVE)
+422
+RULE_VIOLATION
+Split rule percentages don't sum to 100, duplicate participant, etc.
+500
+INTERNAL_ERROR
+Unexpected server error — includes correlation_id for debugging
+All error responses use the envelope:
+{ "error": { "code": "STATE_CONFLICT", "message": "...", "correlation_id": "..." } }
+5. SQL Trigger Functions Called by API
+The Momentra SQL layer includes deterministic trigger functions. The API layer does NOT duplicate this logic — it calls or relies on these functions directly.
+Function / Trigger
+Called When
+What It Does
+recompute_commitment_rollup()
+After any INSERT into contribution_transactions
+Recomputes fulfilled_amount on commitments; re-derives commitment status (PENDING/PARTIAL/FULFILLED/OVERDUE)
+recompute_moment_health()
+After commitment status changes or milestone updates
+Inserts new row in moment_health_snapshot with weighted scores; sets health_state (STABLE/BALANCED/DRIFTING/AT_RISK)
+evaluate_signals()
+After health snapshot or on scheduled job
+Upserts/resolves signals: FUNDING_GAP, OVERDUE_COMMITMENT, TIMELINE_DRIFT, INACTIVITY, IMBALANCE, MOMENTUM_SLOWDOWN
+log_event()
+Called explicitly by API after every state-changing operation
+Inserts audit record in event_logs — powers Activity Flow screen and lifecycle history
+trg_set_updated_at()
+BEFORE UPDATE on moments, commitments, moment_participants
+Automatically sets updated_at = now() — no API layer code needed
+derive_commitment_status()
+Immutable SQL function used inside recompute_commitment_rollup
+Returns PENDING | PARTIAL | FULFILLED | OVERDUE from committed_amount, fulfilled_amount, due_date
+Momentra API Specification v1.0 · Confidential · Sandeep Malla
+Patent pending (Indian Patents Act 1970) · All rights reserved
